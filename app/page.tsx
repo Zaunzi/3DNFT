@@ -1,0 +1,30 @@
+'use client';
+import {useEffect,useState,useRef} from 'react';
+import {flushSync} from 'react-dom';
+import {Sprout,Wind,Droplets,ArrowUpRight,Check,Coins,Move,Leaf} from 'lucide-react';
+import {Progress} from '@/components/ui/progress';
+import Island from './island';
+import {accrue,harvest,upgrade,rate,capacity,UPGRADES,type Farm} from '@/lib/farm';
+const KEY='cloudacre-demo-v1';
+export default function Home(){
+ const [farm,setFarm]=useState<Farm>({balance:0,stored:20,updated:0,level:0});const [ready,setReady]=useState(false);const [message,setMessage]=useState('Your first harvest is ready. Let’s grow something.');const [saved,setSaved]=useState(true);
+ useEffect(()=>{let initial:Farm={balance:0,stored:20,updated:Date.now(),level:0};try{const raw=localStorage.getItem(KEY);if(raw){const f=JSON.parse(raw);if(Number.isInteger(f.level)&&f.level>=0&&f.level<=3&&Number.isFinite(f.balance)&&f.balance>=0&&Number.isFinite(f.stored)&&f.stored>=0&&Number.isFinite(f.updated)&&f.updated>0)initial=accrue(f,Date.now())}}catch{setSaved(false)}setFarm(initial);setReady(true)},[]);
+ useEffect(()=>{if(!ready)return;const timer=setInterval(()=>setFarm(f=>accrue(f,Date.now())),1000);return()=>clearInterval(timer)},[ready]);
+ useEffect(()=>{if(ready)try{localStorage.setItem(KEY,JSON.stringify(farm))}catch{setSaved(false)}},[farm,ready]);
+ function collect(){if(!ready)return;setFarm(f=>{const a=accrue(f,Date.now());const n=Math.floor(a.stored);setMessage(n?`+${n} SEED harvested. Your next harvest is already growing.`:'Your wheat is still growing.');return harvest(a,Date.now())})}
+ function buy(){if(!ready)return;setFarm(f=>{const result=upgrade(f,Date.now());if(result.level>f.level)setMessage(`${UPGRADES[f.level].type} built! Your island earns ${rate(result.level)} SEED per minute.`);return result})}
+ const latest=useRef({farm,ready});latest.current={farm,ready};
+ useEffect(()=>{
+  const context=(document as Document & {modelContext?:{registerTool:(tool:unknown,options:unknown)=>unknown}}).modelContext;
+  if(!context)return;const lifecycle=new AbortController();
+  for(const action of ['read','harvest','upgrade'] as const){try{Promise.resolve(context.registerTool({name:`${action}_farm`,description:`${action} the device-local demo farm. No real tokens or wallet transactions.`,inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:action==='read'},execute:(input:unknown)=>{if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)throw new Error('Expected an empty object');if(!latest.current.ready)throw new Error('Farm is loading');const f=latest.current.farm;if(action==='upgrade'&&(!UPGRADES[f.level]||f.balance<UPGRADES[f.level].cost))throw new Error('Upgrade unavailable');const result=action==='read'?accrue(f,Date.now()):action==='harvest'?harvest(f,Date.now()):upgrade(f,Date.now());if(action!=='read')flushSync(()=>setFarm(result));return result;}},{signal:lifecycle.signal})).catch(()=>{})}catch{}}
+  return()=>lifecycle.abort();
+ },[]);
+ const full=farm.stored>=capacity(farm.level);const icons=[Sprout,Droplets,Wind];
+ return <main><header><a className="brand" href="/" aria-label="Cloudacre home"><span className="brandmark"><Sprout size={23}/></span>cloudacre<span className="beta">PLAYGROUND</span></a><div className="demo"><i/>Demo world · no real tokens</div></header>
+ <div className="game"><section className="world"><div className="world-heading"><div className="eyebrow">YOUR LITTLE CORNER OF THE SKY</div><h1>Windfall Island <span>#{'001'}</span></h1><div className="level"><Leaf size={14}/> {['The beginning','Taking root','In full bloom','A thriving acre'][farm.level]}<span>LEVEL {farm.level+1}</span></div></div><Island level={farm.level}/><div className="world-bottom"><span><Move size={15}/> Drag to explore · Scroll or pinch to zoom</span><span className="live"><i/>Growing, even while you’re away</span></div></section>
+ <aside className="dashboard"><div className="wallet"><div><span className="eyebrow">YOUR BALANCE</span><div className="balance"><Coins size={27}/>{Math.floor(farm.balance)}<small>SEED</small></div></div><span className="token">DEMO<br/>RESOURCE</span></div>
+ <section className="harvest"><div className="section-row"><h2>Your harvest</h2><span className={full?'status full':'status'}>{full?'Ready to collect':'Growing'}</span></div><div className="harvest-number">{Math.floor(farm.stored)}<span>/ {capacity(farm.level)} SEED</span></div><Progress value={farm.stored/capacity(farm.level)*100} aria-label="Harvest storage"/><div className="harvest-meta"><span>+{rate(farm.level)} SEED / min</span><span>{full?'Storage full':`${Math.ceil((capacity(farm.level)-farm.stored)/rate(farm.level))} min until full`}</span></div><button className="harvest-button" onClick={collect} disabled={!ready||farm.stored<1}><Sprout size={20}/>Harvest SEED<ArrowUpRight size={19}/></button><p className="feedback" role="status">{message}</p></section>
+ <section className="upgrades"><div className="section-row"><h2>Room to grow</h2><span className="counter">{farm.level} / 3</span></div><p className="hint">Reinvest your harvest. Watch your land evolve.</p>{UPGRADES.map((u,i)=>{const Icon=icons[i];const built=farm.level>i;const current=farm.level===i;return <div className={`upgrade ${built?'built':''}`} key={u.type}><span className="upgrade-icon"><Icon size={22}/></span><div className="upgrade-copy"><h3>{u.type}</h3><p>{u.description}</p><span>{u.rate} SEED / min · {u.cap} storage</span></div><button aria-label={built?`${u.type} built`:`Build ${u.type} for ${u.cost} SEED`} disabled={!ready||!current||farm.balance<u.cost} onClick={buy}>{built?<Check size={19}/>:<>{u.cost}<small>SEED</small></>}</button></div>})}</section>
+ <p className="save-note">{saved?'Progress saves on this device.':'Storage unavailable — progress lasts for this visit.'} Demo resources have no monetary value.</p></aside></div><footer><span><Sprout size={15}/> A little land. A living world.</span><span>3D farming concept · Built with Three.js</span></footer></main>
+}
