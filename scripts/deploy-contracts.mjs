@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import {JsonRpcProvider,Wallet,ContractFactory} from 'ethers';
+import {compile} from './compile-contracts.mjs';
+const {DEPLOY_RPC_URL,DEPLOY_PRIVATE_KEY,PUBLIC_SITE_ORIGIN}=process.env;
+if(!DEPLOY_RPC_URL||!DEPLOY_PRIVATE_KEY||!PUBLIC_SITE_ORIGIN)throw new Error('Set DEPLOY_RPC_URL, DEPLOY_PRIVATE_KEY and PUBLIC_SITE_ORIGIN. Never place the private key in VITE_ variables.');
+const origin=new URL(PUBLIC_SITE_ORIGIN);
+if(origin.protocol!=='https:'||origin.pathname!=='/'||origin.search||origin.hash||origin.username||origin.password)throw new Error('PUBLIC_SITE_ORIGIN must be a public HTTPS origin without a path or credentials.');
+const provider=new JsonRpcProvider(DEPLOY_RPC_URL);const {chainId}=await provider.getNetwork();
+if(chainId!==84532n)throw new Error('This deployment script only supports Base Sepolia (84532).');
+compile();const artifact=JSON.parse(fs.readFileSync('artifacts/Cloudacre.json','utf8'));
+const contract=await new ContractFactory(artifact.abi,artifact.bytecode,new Wallet(DEPLOY_PRIVATE_KEY,provider)).deploy(origin.origin);
+await contract.waitForDeployment();const result={chainId:Number(chainId),land:await contract.getAddress(),seed:await contract.seed(),transaction:contract.deploymentTransaction().hash,origin:origin.origin};
+fs.mkdirSync('deployments',{recursive:true});fs.writeFileSync('deployments/base-sepolia.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));

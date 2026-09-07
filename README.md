@@ -1,11 +1,59 @@
-# Cloudacre prototype
+# Cloudacre — SvelteKit dapp
 
-Three.js floating farm with device-local demo resources. No wallet, contract, NFT minting, or real token distribution is connected.
+Svelte 5 + SvelteKit 2, Three.js, Reown AppKit, Ethers 6, and Solidity. The application contains no React components or React renderer. Architecture follows the user's SveltekitWeb3Starter (https://github.com/Zaunzi/SveltekitWeb3Starter), with the farm interface retained. The former React source is preserved locally in ignored outputs/react-prototype and in Git history.
 
-Economy: 6 / 12 / 24 / 48 SEED per minute; storage caps 20 / 40 / 80 / 160. Sequential upgrades cost 20 / 45 / 90. Starts with one full harvest. Accrual uses elapsed wall time and stops at capacity. Demo storage is editable by the player and must never authorize real rewards.
+## Play and inspect
 
-Production phase: select a chain and reward design; implement authoritative harvest and upgrade accounting in contracts; attach permanent upgrades to token IDs; implement a dedicated wallet play page and a read-only embeddable view; then test an actual OpenSea item. The private Sites preview is not an OpenSea animation URL.
+- `/`: local demo, preserving the original cloudacre-demo-v1 save.
+- `/nft/?token=1`: wallet-enabled Base Sepolia land page, including mint, harvest, and upgrades.
+- `/embed/?token=1`: read-only 3D viewer; no wallet initialization or transaction controls.
 
-Validation: type check, production build, and economy unit checks. Browser visual QA and OpenSea embedding have not been performed.
+The testnet page does not present demo state as chain state. Without a deployed address it shows an explicit unavailable state. The private Sites preview is not suitable as a public OpenSea animation URL.
 
-Optional WebMCP read/harvest/upgrade tools are feature-detected; no supported validation context was available, so their browser integration is unverified.
+## Local development
+
+Use Node 22+ and pnpm 10.32.1.
+
+```
+pnpm install
+pnpm contracts:compile
+pnpm dev
+pnpm check
+pnpm test
+pnpm build
+```
+
+Copy `env.example` to `.env` and set `VITE_PROJECT_ID`, `VITE_LAND_ADDRESS` and, optionally, a CORS-enabled `VITE_RPC_URL` for Base Sepolia. The user-supplied Reown project ID is configured in the local ignored `.env`. Only public client values use the VITE_ prefix. Allowlist the development and published origins in the Reown project dashboard. These values are embedded by the static build; rebuild after changing them.
+
+## Testnet deployment
+
+The deployment script intentionally permits Base Sepolia (84532) only. It has not been run against a public blockchain. Set `DEPLOY_RPC_URL`, `DEPLOY_PRIVATE_KEY`, and `PUBLIC_SITE_ORIGIN` in the deployment process environment, then run `pnpm contracts:deploy`. Use a funded testnet deployment wallet. Do not put private keys into client variables or source control. The script reads process environment; it does not automatically read `.env`.
+
+`PUBLIC_SITE_ORIGIN` must be a publicly accessible HTTPS origin for the NFT viewer, with no path. The constructor freezes this origin; it cannot be changed after deployment. Use stable hosting. The script writes contract addresses and the transaction hash into ignored `deployments/base-sepolia.json`. Copy `land` into `VITE_LAND_ADDRESS`, then rebuild the frontend. The frontend discovers the associated SEED address from the land contract, not from user input.
+
+After configuration, connect Reown on `/nft/`, switch to Base Sepolia, mint a test plot, collect 20 starter SEED, and buy terraced fields. Minting is free but requires network gas. Test transactions and OpenSea embedding on actual devices before a release.
+
+## Contract behavior
+
+`Cloudacre.sol` is an OpenZeppelin ERC-721 land contract. `Seed.sol` is a transferable ERC-20 reward token created by the land contract. Only the land contract can mint or burn SEED. The UI offers no mainnet transactions.
+
+- One free faucet mint per wallet, with a collection cap of 1,000. This is a test faucet, not Sybil-resistant distribution.
+- Production rates: 6 / 12 / 24 / 48 SEED per minute.
+- Harvest caps: 20 / 40 / 80 / 160 SEED.
+- Sequential upgrade costs: 20 / 45 / 90 SEED.
+- Rewards use 18 decimals and block time. Production pauses at capacity.
+- Harvest settles resources and mints SEED to the owner.
+- Upgrades settle the old production rate, burn the caller's SEED and advance land level atomically.
+- Only the current owner can farm. Approved NFT operators can transfer but cannot harvest or spend the owner's resources.
+- Land upgrades and unharvested crops transfer with the NFT. Harvested tokens stay in the old owner's wallet.
+- Onchain tokenURI returns a valid JSON data URI, an SVG preview, HTML animation_url, external_url, and dynamic traits. Upgrades emit ERC-4906 MetadataUpdate.
+
+The economy is a prototype, not audited or suitable for valuable assets. Unlimited time-based emissions and wallet faucet creation need a deliberate production economic design before mainnet.
+
+## Validation and limits
+
+Contract tests run in an isolated local Ganache EVM. They cover ownership, repeat mint/claim restrictions, caps, old/new rate accounting, upgrade burns, insufficient balance rollback, transfer semantics, approved operators, token authority, all upgrade levels and metadata. Solidity compiler output generates the frontend ABI files.
+
+Svelte diagnostics and production build are checked. Live wallet connection, public-chain transactions, browser visual QA, and OpenSea embedding have not been verified. The read-only embed requires a public host and reachable RPC. A project ID alone does not deploy a contract or make an NFT.
+
+The user's public Reown project ID is also the source default so clean builds preserve wallet setup; VITE_PROJECT_ID overrides it. Optional WebMCP demo tools were migrated, but no supported validation context was available. They never submit wallet transactions.
