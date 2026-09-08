@@ -1,0 +1,15 @@
+{
+  "chainId": 8453,
+  "address": "0x9dad3BD66684206B2f2243B20E40699aCAbce53c",
+  "owner": "0xdB6882db2a406bc1541988715842906dfd4fd590",
+  "transaction": "0x576f033ad408fdb499cc5a3e06a24b53de6f19c3c4597264c4b33ac94c4f2174",
+  "blockNumber": 51053939,
+  "status": "confirmed",
+  "maxSupply": 1000,
+  "maxPerWallet": 5,
+  "totalSupply": 0,
+  "mintOpen": false,
+  "mintPriceWei": "0",
+  "gasUsed": "1536051",
+  "runtimeHash": "0x2c6f25ad9a06e7162f7599d332ee837952a332f29015de56f12f84c07d8d6989"
+}
