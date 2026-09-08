@@ -8,8 +8,9 @@
   "maxSupply": 1000,
   "maxPerWallet": 5,
   "totalSupply": 0,
-  "mintOpen": false,
+  "mintOpen": true,
   "mintPriceWei": "0",
   "gasUsed": "1536051",
-  "runtimeHash": "0x2c6f25ad9a06e7162f7599d332ee837952a332f29015de56f12f84c07d8d6989"
+  "runtimeHash": "0x2c6f25ad9a06e7162f7599d332ee837952a332f29015de56f12f84c07d8d6989",
+  "baseTokenURI": "https://3dnft.vercel.app/cryptodoodz/metadata/"
 }
