@@ -1,0 +1,28 @@
+<script lang="ts">
+ import {onMount} from 'svelte';
+ import {wallet,connect,switchNetwork,initWallet} from '$lib/web3/wallet';
+ import {oilConfigured,readOwnedParcels,oilTransaction,oilError} from '$lib/web3/oil-contracts';
+ import {PARCELS} from '$lib/oil';
+ import {plannedSize} from '$lib/district';
+ import OilScene from './OilScene.svelte';
+ import '$lib/oil.css';
+ let {mint=false}=$props<{mint?:boolean}>();
+ let ready=$state(false),loading=$state(false),busy=$state(false),error=$state(''),ids=$state<number[]>([]),size=$state(0),minted=$state(''),hash=$state('');let request=0;
+ onMount(()=>{ready=true;void initWallet().catch(e=>{if(ready)error=oilError(e)});return()=>{ready=false;request++}});
+ async function refresh(address:string){const seq=++request;ids=[];error='';if(!oilConfigured){error='OilField is not configured.';return}loading=true;try{const result=await readOwnedParcels(address);if(seq===request)ids=result}catch(e){if(seq===request)error=oilError(e)}finally{if(seq===request)loading=false}}
+ $effect(()=>{const address=$wallet.address;if(!ready)return;if(!mint&&address)void refresh(address);else{request++;ids=[];loading=false}});
+ async function connectWallet(){try{await connect()}catch(e){error=oilError(e)}}
+ async function network(){try{await switchNetwork()}catch(e){error=oilError(e)}}
+ async function doMint(){busy=true;error='';minted='';hash='';try{const result=await oilTransaction('mint','1',1,size,h=>hash=h);hash=result.hash;minted=result.id}catch(e){error=oilError(e)}finally{busy=false}}
+</script>
+<svelte:head><title>Cloudacre Oil · {mint?'Mint a parcel':'My parcels'}</title></svelte:head>
+<main class="oil-app collection"><header class="oil-header"><a class="oil-brand" href="/">CLOUDACRE <b>OIL</b></a><nav><a class:active={!mint} href="/oil/nft/">My parcels</a><a class:active={mint} href="/oil/mint/">Mint</a><a href="/oil/world/">District</a><a href="/">Playground</a></nav><button class="connect-oil" onclick={connectWallet} disabled={busy}>{$wallet.address?`${$wallet.address.slice(0,6)}...${$wallet.address.slice(-4)}`:'Connect wallet'}</button></header>
+ <section class="collection-body"><p class="oil-kicker">BASE SEPOLIA</p><h1>{mint?'Mint your oil parcel':'My parcels'}</h1><p>{mint?'Choose your land size and claim its permanent place in the district.':'Your wallet’s oilfields, ready to survey, harvest, and upgrade.'}</p>
+ {#if mint}<div class="mint-layout"><div class="mint-scene"><OilScene {size}/></div><div class="mint-options"><fieldset class="parcel-options"><legend>Choose a size</legend>{#each PARCELS as parcel,i}<label class:selected={size===i}><input type="radio" name="mint-size" value={i} bind:group={size} disabled={busy}/><span><b>{parcel.name} · {parcel.supply} total</b><small>{parcel.min.toLocaleString()}–{parcel.max.toLocaleString()} OIL per season</small></span></label>{/each}</fieldset><p>Test mint · one parcel per wallet · gas required.</p>{#if !$wallet.address}<button class="oil-primary" onclick={connectWallet}>Connect wallet to mint</button>{:else if $wallet.chainId!==84532}<button class="oil-primary" onclick={network}>Switch to Base Sepolia</button>{:else}<button class="oil-primary" onclick={doMint} disabled={busy||!oilConfigured}>{busy?'Confirming mint…':`Mint ${PARCELS[size].name.toLowerCase()} parcel`}</button>{/if}{#if minted}<p role="status">Parcel #{minted} minted!</p><a class="oil-primary" href={`/oil/nft/?token=${minted}`}>Open your new parcel ↗</a><a href="/oil/nft/">View all my parcels</a>{/if}{#if hash}<p><a href={`https://sepolia.basescan.org/tx/${hash}`} target="_blank" rel="noreferrer">View transaction</a></p>{/if}</div></div>
+ {:else if !$wallet.address}<div class="collection-empty"><h2>Connect to see your parcels</h2><p>We’ll find every parcel this wallet owns, including transferred NFTs.</p><button class="oil-primary" onclick={connectWallet}>Connect wallet</button></div>
+ {:else}<button class="oil-secondary" onclick={()=>refresh($wallet.address!)} disabled={loading}>Refresh my parcels</button>{#if loading}<p role="status">Finding your parcels on Base Sepolia…</p>{:else if !error&&ids.length===0}<div class="collection-empty"><h2>No parcels in this wallet yet</h2><a class="oil-primary" href="/oil/mint/">Mint your first parcel ↗</a></div>{:else}<div class="parcel-grid">{#each ids as id}<a class="owned-card" href={`/oil/nft/?token=${id}`}><span class="oil-kicker">PARCEL #{id}</span><h2>{PARCELS[plannedSize(id)].name} oilfield</h2><p>{PARCELS[plannedSize(id)].area} · Season-based OIL reserves</p><strong>Survey · Harvest · Upgrade ↗</strong></a>{/each}</div>{/if}{/if}
+ {#if error}<p class="oil-warning" role="alert">{error}</p>{/if}{#if !oilConfigured&&mint}<p class="oil-warning">OilField is not configured.</p>{/if}</section>
+</main>
+<style>
+ .collection{min-height:100vh}.collection-body{max-width:1200px;margin:auto;padding:36px 24px}.collection-body>h1{font-size:36px;margin:12px 0}.collection-body p{line-height:1.6;color:#c0cdcd}.collection-empty{padding:40px 0}.collection .oil-primary{display:inline-flex;text-decoration:none;margin:12px 0}.parcel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:24px}.owned-card{display:block;padding:26px;border:1px solid #536267;border-radius:14px;background:#213138;color:#fff;text-decoration:none}.owned-card:hover{border-color:#e3b167}.owned-card strong{color:#e3b167}.mint-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:28px}.mint-scene{position:relative;min-height:500px}.mint-options{padding:24px 0}.collection a{color:#e3b167}@media(max-width:750px){.mint-layout{grid-template-columns:1fr}.mint-scene{min-height:320px}.collection .oil-header{flex-wrap:wrap;height:auto;gap:16px}}
+</style>

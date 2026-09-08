@@ -81,3 +81,7 @@ The district groups five plots into compact modules, eight modules per block, wi
 ## On-foot exploration
 
 Choose Explore on foot in the district to spawn a local third-person character beside the selected plot. WASD moves relative to camera heading at 3 m/s; Shift runs at 6 m/s. Click the scene for pointer-locked mouse look (Escape releases it); drag-look is available when pointer lock is unavailable. Scroll changes follow distance. Equipment has basic horizontal collision checks and the camera moves inward at obstructions. The character stays on the flat district surface and inside district bounds. Overview restores map controls. This is local exploration, not networked multiplayer or a full physics simulation.
+
+## Wallet collection and mint routes
+
+`/oil/nft/` now loads the connected wallet's parcels. It restores the Reown session, reads the NFT balance and minted size ranges at one block, then checks ownership in bounded batches. This includes received transfers and excludes sent transfers. Failures are displayed rather than presenting an incomplete collection as complete. Each card opens `/oil/nft/?token=ID` for survey, harvest, and upgrade controls. Explicit token links and the read-only embed remain supported. `/oil/mint/` is the dedicated size-selection and mint flow, linking to the new NFT after confirmation. No contract change is needed for these pages.

@@ -40,3 +40,14 @@ export async function readDistrictParcel(id:number){
  const field=new Contract(oilFieldAddress,abi,rpc);const p=await field.districtParcel(id);
  return {size:Number(p.size),owner:p.owner as string,level:Number(p.level),minted:p.owner!=='0x0000000000000000000000000000000000000000'};
 }
+
+export async function readOwnedParcels(address:string):Promise<number[]>{
+ if(!oilConfigured||!isAddress(address))throw new Error('Connect a wallet and configure OilField.');
+ const rpc=reader();if((await rpc.getNetwork()).chainId!==84532n)throw new Error('Wrong RPC network.');
+ const block=await rpc.getBlockNumber();const options={blockTag:block};const field=new Contract(oilFieldAddress,abi,rpc);
+ const [balance,...counts]=await Promise.all([field.balanceOf(address,options),...[0,1,2].map(size=>field.mintedBySize(size,options))]);
+ if(balance===0n)return [];
+ const ids=counts.flatMap((count,size)=>Array.from({length:Number(count)},(_,i)=>[0,400,800][size]+i+1));const owned:number[]=[];
+ for(let offset=0;offset<ids.length&&owned.length<Number(balance);offset+=8){const chunk=ids.slice(offset,offset+8);const owners=await Promise.all(chunk.map(id=>field.ownerOf(id,options)));owners.forEach((owner,i)=>{if(owner.toLowerCase()===address.toLowerCase())owned.push(chunk[i])})}
+ if(owned.length!==Number(balance))throw new Error('Unable to load every owned parcel. Please refresh.');return owned;
+}
