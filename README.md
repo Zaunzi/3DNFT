@@ -1,3 +1,13 @@
+Current oil release adds OIL-burning equipment upgrades and an explorable district at `/oil/world/`. Small/medium/large use consistent metre dimensions and a 1:3:6 area ratio. The district is a local simulation prepared for future avatar scaling; live multiplayer is not included. See [oil economy](docs/OIL_ECONOMY.md) for rates, costs and deployment requirements.
+
+# Cloudacre Oil — seasonal oil parcels
+
+The current homepage is the new SvelteKit + Three.js oilfield. Small, medium, and large NFT parcels receive finite seasonal reserves through Pyth Entropy. See [Oil economy and deployment](docs/OIL_ECONOMY.md) for rules, limitations, routes, and setup.
+
+Run `pnpm contracts:compile`, `pnpm test`, `pnpm check`, and `pnpm build`. Deploy the new contracts with `pnpm oil:deploy`; set `VITE_OIL_FIELD_ADDRESS` afterward. The existing SEED deployment and original NFT routes are preserved. No new contract has been deployed by this change.
+
+## Preserved SEED farm documentation
+
 # Cloudacre — SvelteKit dapp
 
 Svelte 5 + SvelteKit 2, Three.js, Reown AppKit, Ethers 6, and Solidity. The application contains no React components or React renderer. Architecture follows the user's SveltekitWeb3Starter (https://github.com/Zaunzi/SveltekitWeb3Starter), with the farm interface retained. The former React source is preserved locally in ignored outputs/react-prototype and in Git history.
@@ -57,3 +67,4 @@ Contract tests run in an isolated local Ganache EVM. They cover ownership, repea
 Svelte diagnostics and production build are checked. Live wallet connection, public-chain transactions, browser visual QA, and OpenSea embedding have not been verified. The read-only embed requires a public host and reachable RPC. A project ID alone does not deploy a contract or make an NFT.
 
 The user's public Reown project ID is also the source default so clean builds preserve wallet setup; VITE_PROJECT_ID overrides it. Optional WebMCP demo tools were migrated, but no supported validation context was available. They never submit wallet transactions.
+

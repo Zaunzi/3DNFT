@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import {JsonRpcProvider,Wallet,ContractFactory,Contract,isAddress} from 'ethers';
+import {compile} from './compile-contracts.mjs';
+const {DEPLOY_RPC_URL,DEPLOY_PRIVATE_KEY,PUBLIC_SITE_ORIGIN,PYTH_ENTROPY_ADDRESS}=process.env;
+if(!DEPLOY_RPC_URL||!DEPLOY_PRIVATE_KEY||!PUBLIC_SITE_ORIGIN||!isAddress(PYTH_ENTROPY_ADDRESS??''))throw new Error('Set deployment RPC, private key, public site origin, and PYTH_ENTROPY_ADDRESS from the official Pyth Base Sepolia chainlist.');
+const origin=new URL(PUBLIC_SITE_ORIGIN);
+if(origin.protocol!=='https:'||origin.pathname!=='/'||origin.search||origin.hash||origin.username||origin.password)throw new Error('Use a public HTTPS origin without path or credentials.');
+const provider=new JsonRpcProvider(DEPLOY_RPC_URL);if((await provider.getNetwork()).chainId!==84532n)throw new Error('Oil deployment is restricted to Base Sepolia.');
+if(await provider.getCode(PYTH_ENTROPY_ADDRESS)==='0x')throw new Error('No Entropy contract at that address.');
+const entropy=new Contract(PYTH_ENTROPY_ADDRESS,['function getDefaultProvider() view returns(address)','function getFeeV2(address,uint32) view returns(uint128)'],provider);
+const randomnessProvider=await entropy.getDefaultProvider();await entropy.getFeeV2(randomnessProvider,200000);
+compile();const artifact=JSON.parse(fs.readFileSync('artifacts/OilField.json','utf8'));
+const field=await new ContractFactory(artifact.abi,artifact.bytecode,new Wallet(DEPLOY_PRIVATE_KEY,provider)).deploy(origin.origin,PYTH_ENTROPY_ADDRESS);
+await field.waitForDeployment();const result={chainId:84532,oilField:await field.getAddress(),oil:await field.oil(),entropy:PYTH_ENTROPY_ADDRESS,provider:randomnessProvider,genesis:(await field.genesis()).toString(),transaction:field.deploymentTransaction().hash,origin:origin.origin};
+fs.mkdirSync('deployments',{recursive:true});const output=`deployments/oil-base-sepolia-${Date.now()}.json`;fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));console.log(`Saved ${output}; set VITE_OIL_FIELD_ADDRESS to oilField and rebuild.`);

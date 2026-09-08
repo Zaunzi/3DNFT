@@ -1,0 +1,8 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {surveyDemo,harvestDemo,available,seasonAt,validBook,DEMO_DURATION,upgradeDemo} from '../src/lib/oil.ts';
+const empty=()=>({version:1,genesis:1000,balance:0,reserves:{}});
+test('oil demo surveys once per size and season with bounds enforced',()=>{const book=surveyDemo(empty(),0,1,1200,1000);assert.throws(()=>surveyDemo(book,0,1,1800,1000));assert.throws(()=>surveyDemo(book,1,1,1200,1000));assert.throws(()=>surveyDemo(book,0,2,1200,1000));assert.equal(validBook(book),true);assert.equal(validBook({}),false)});
+test('demo extraction and historical claims cannot exceed a seasonal allocation',()=>{let book=surveyDemo(empty(),0,1,1200,1000);assert.equal(available(book.reserves['0:1'],1000,1,1000+DEMO_DURATION/2),600);book=harvestDemo(book,0,1,1000+DEMO_DURATION/2);assert.equal(book.balance,600);book=harvestDemo(book,0,1,1000+DEMO_DURATION*3);assert.equal(book.balance,1200);book=harvestDemo(book,0,1,1000+DEMO_DURATION*4);assert.equal(book.balance,1200);assert.equal(seasonAt(1000,1000+DEMO_DURATION),2);book=surveyDemo(book,0,5,1500,1000+DEMO_DURATION*4);assert.equal(book.reserves['0:1'].harvested,1200)});
+
+test('demo upgrades burn balances and apply speed prospectively',()=>{let b=surveyDemo(empty(),0,1,1200,1000);b=harvestDemo(b,0,1,151000);b=upgradeDemo(b,0,151000);assert.equal(b.balance,350);assert.equal(b.levels[0],1);assert.equal(available(b.reserves['0:1'],1000,1,151000),0);assert.equal(available(b.reserves['0:1'],1000,1,181000),150);assert.throws(()=>upgradeDemo(b,0,181000));assert.equal(available(b.reserves['0:1'],1000,1,901000),600)});
