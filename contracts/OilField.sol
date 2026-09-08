@@ -19,7 +19,8 @@ contract OilField is ERC721, ReentrancyGuard, IEntropyConsumer {
     address public immutable entropyProvider;
     Oil public immutable oil;
     string public publicOrigin;
-    uint256 public nextTokenId = 1;
+    uint256 public constant MAX_SUPPLY = 1000;
+    uint256 public totalMinted;
     uint256[3] public mintedBySize;
     mapping(address => bool) public hasMinted;
     mapping(uint256 => uint8) public parcelSize;
@@ -63,7 +64,14 @@ contract OilField is ERC721, ReentrancyGuard, IEntropyConsumer {
     }
     function sizeSupply(uint8 size) public pure returns (uint256) {
         if(size > 2) revert InvalidSize();
-        return size == 0 ? 500 : size == 1 ? 300 : 200;
+        return size == 2 ? 200 : 400;
+    }
+    function plannedSize(uint256 id) public pure returns (uint8) {
+        require(id > 0 && id <= MAX_SUPPLY, "Invalid parcel ID");
+        return id <= 400 ? 0 : id <= 800 ? 1 : 2;
+    }
+    function districtParcel(uint256 id) external view returns (uint8 size, address owner, uint8 level) {
+        return (plannedSize(id), _ownerOf(id), equipmentLevel[id]);
     }
     function allocationBounds(uint8 size) public pure returns (uint256 minimum, uint256 maximum) {
         if(size > 2) revert InvalidSize();
@@ -76,8 +84,8 @@ contract OilField is ERC721, ReentrancyGuard, IEntropyConsumer {
         uint256 limit = sizeSupply(size);
         if(hasMinted[msg.sender] || mintedBySize[size] >= limit) revert FaucetLimit();
         hasMinted[msg.sender] = true;
-        mintedBySize[size]++;
-        id = nextTokenId++;
+        id = (size == 0 ? 0 : size == 1 ? 400 : 800) + ++mintedBySize[size];
+        totalMinted++;
         parcelSize[id] = size;
         mintedSeason[id] = currentSeason();
         _safeMint(msg.sender, id);

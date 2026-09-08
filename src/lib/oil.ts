@@ -1,6 +1,6 @@
 export const PARCELS = [
- {name:'Small',area:'24 × 18.5 m',min:1000,max:2000,supply:500,pumps:1},
- {name:'Medium',area:'41.6 × 32 m',min:2500,max:5000,supply:300,pumps:2},
+ {name:'Small',area:'24 × 18.5 m',min:1000,max:2000,supply:400,pumps:1},
+ {name:'Medium',area:'41.6 × 32 m',min:2500,max:5000,supply:400,pumps:2},
  {name:'Large',area:'58.8 × 45.3 m',min:6000,max:10000,supply:200,pumps:3}
 ] as const;
 export const DEMO_DURATION=5*60*1000;

@@ -32,3 +32,11 @@ export async function oilTransaction(action:'mint'|'survey'|'harvest'|'upgrade',
  return {id:token,hash:receipt.hash};
 }
 export function oilError(error:unknown){const e=error as {code?:string;shortMessage?:string;message?:string;revert?:{name?:string}};if(e.code==='ACTION_REJECTED')return 'Wallet request cancelled.';const errors:Record<string,string>={AlreadyRequested:'This parcel already has a survey for that season. No rerolls.',IncorrectFee:'The Pyth fee changed. Refresh and try again.',WrongSeason:'The season changed. Select the current season.',FaucetLimit:'This wallet already minted, or that parcel size is sold out.',NothingToHarvest:'No unlocked oil is available yet.',NotOwner:'Only the current owner can use this parcel.'};return errors[e.revert?.name||'']||e.shortMessage||e.message||'Unable to complete the request.'}
+
+export async function readDistrictParcel(id:number){
+ if(!Number.isInteger(id)||id<1||id>1000)throw new Error('Invalid parcel ID.');
+ if(!oilConfigured)throw new Error('OilField is not configured.');
+ const rpc=reader();if((await rpc.getNetwork()).chainId!==84532n)throw new Error('Wrong network.');
+ const field=new Contract(oilFieldAddress,abi,rpc);const p=await field.districtParcel(id);
+ return {size:Number(p.size),owner:p.owner as string,level:Number(p.level),minted:p.owner!=='0x0000000000000000000000000000000000000000'};
+}

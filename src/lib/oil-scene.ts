@@ -11,7 +11,7 @@ export function createOilScene(el:HTMLDivElement,size:number,level=0){
 }
 
 export function createOilParcel(size:number,level=0){
- const land=new THREE.Group();const width=[6,Math.sqrt(108),Math.sqrt(216)][size];
+ const land=new THREE.Group();const width=[6,Math.sqrt(108),Math.sqrt(216)][size];const depth=width*.77;
  const materials=new Map<number,THREE.MeshStandardMaterial>();
  function mesh(geometry:THREE.BufferGeometry,color:number,x:number,y:number,z:number,parent:THREE.Object3D=land){let mat=materials.get(color);if(!mat){mat=new THREE.MeshStandardMaterial({color,roughness:.8,metalness:color===0x34454b?.5:.08,flatShading:true});materials.set(color,mat)}const m=new THREE.Mesh(geometry,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
  function box(w:number,h:number,d:number,c:number,x:number,y:number,z:number,parent:THREE.Object3D=land){return mesh(new THREE.BoxGeometry(w,h,d),c,x,y,z,parent)}
@@ -25,16 +25,31 @@ export function createOilParcel(size:number,level=0){
  box(.55,.5,.55,0x435962,-.7,.48,0,g);mesh(new THREE.CylinderGeometry(.32,.32,.17,14),0xdb9741,-.48,.62,.38,g).rotation.x=Math.PI/2;
  for(let step=0;step<4;step++)box(.22,.03,.06,0xd9d5c1,-.45,.3+step*.27,-.45,g);
  }
- pump(-.8,.1);if(size>=1)pump(1.6,-1.4,Math.PI);if(size>=2)pump(-2.8,-1.6);
- function tank(x:number,z:number,r:number){mesh(new THREE.CylinderGeometry(r,r,1.1,20),0xa8b9b7,x,.76,z);mesh(new THREE.CylinderGeometry(r*1.01,r*1.01,.06,20),0x5b7377,x,1.32,z);mesh(new THREE.CylinderGeometry(r*1.01,r*1.01,.07,20),0x34454b,x,.26,z);box(r*1.9,.2,.03,0xe4aa50,x,.9,z+r);for(let i=0;i<5;i++)box(.2,.03,.05,0x34454b,x+r,.3+i*.2,z);box(.04,1.05,.04,0x34454b,x+r-.1,.8,z);box(.04,1.05,.04,0x34454b,x+r+.1,.8,z)}
- tank(width/2-1,1.45,.63);if(size>=1)tank(width/2-2.5,1.7,.52);if(size>=2)tank(width/2-1,-.3,.55);
- box(width-1,.1,.14,0x66787b,0,.28,2.15);box(.14,.1,2.2,0x66787b,width/2-1,.28,1.05);
- box(1.15,.7,.85,0xf0dfb8,-width/2+1,.55,1.5);box(1.25,.12,.95,0x435962,-width/2+1,.98,1.5);box(.25,.42,.03,0x435962,-width/2+1,.42,1.94);box(.25,.2,.035,0x8ab8bc,-width/2+.64,.65,1.94);
+ // Keep machinery human-scaled; distribute work areas across the available land.
+ const pumpSites=size===0?[{x:-.8,z:-.25}]:size===1?
+  [{x:-width*.24,z:-depth*.22},{x:width*.24,z:-depth*.04}]:
+  [{x:-width*.28,z:-depth*.26},{x:width*.28,z:-depth*.26},{x:0,z:depth*.05}];
+ pumpSites.forEach(({x,z})=>pump(x,z));
+ function tank(x:number,z:number,r:number){mesh(new THREE.CylinderGeometry(r,r,1.1,20),0xa8b9b7,x,.76,z);mesh(new THREE.CylinderGeometry(r*1.01,r*1.01,.06,20),0x5b7377,x,1.32,z);mesh(new THREE.CylinderGeometry(r*1.01,r*1.01,.07,20),0x34454b,x,.26,z);for(let i=0;i<5;i++)box(.2,.03,.05,0x34454b,x+r,.3+i*.2,z);box(.04,1.05,.04,0x34454b,x+r-.1,.8,z);box(.04,1.05,.04,0x34454b,x+r+.1,.8,z)}
+ const serviceZ=depth*.31;
+ const tankX=width/2-1;
+ tank(tankX,serviceZ,.63);
+ if(size>=1)tank(tankX-1.7,serviceZ,.63);
+ if(size>=2)tank(tankX-3.4,serviceZ,.63);
+ // A full-width collection manifold connects each spaced pump to storage.
+ const manifoldZ=serviceZ-.95;
+ box(width-1.5,.1,.14,0x66787b,0,.28,manifoldZ);
+ pumpSites.forEach(({x,z})=>{const length=manifoldZ-z;box(.1,.1,length,0x66787b,x,.28,z+length/2)});
+ box(.14,.1,.95,0x66787b,tankX,.28,serviceZ-.475);
+ const cabinX=-width/2+1;
+ box(1.15,.7,.85,0xf0dfb8,cabinX,.55,serviceZ);box(1.25,.12,.95,0x435962,cabinX,.98,serviceZ);box(.25,.5,.03,0x435962,cabinX,.45,serviceZ+.44);box(.25,.2,.035,0x8ab8bc,cabinX-.36,.65,serviceZ+.44);
  for(let i=0;i<8;i++){const a=i*2.33;mesh(new THREE.DodecahedronGeometry(.12+(i%3)*.05),0xb39065,Math.cos(a)*(width/2-.25),.25,Math.sin(a)*(width*.385-.25))}
  for(let i=0;i<Math.floor(width);i++){const x=-width/2+.4+i;box(.055,.55,.055,0x34454b,x,.42,-width*.385+.22);box(.85,.025,.03,0x7d857a,x+.43,.58,-width*.385+.22)}
 
  for(let i=0;i<level;i++)box(.45,.8,.6,0xe3a548,-width/2+.7+i*.6,.6,-width*.385+.8);
  // Model units become metres: a 2.2-unit walking beam is 8.8 m long.
+ // The finished sand surface is the shared y=0 datum in both viewers.
+ land.children.forEach(child=>child.position.y-=.16);
  land.scale.setScalar(4);
  return {group:land,animate:(t:number)=>{arms.forEach((a,i)=>a.rotation.z=Math.sin(t*(1.25+level*.3)+i*.8)*.22);rods.forEach((r,i)=>r.position.y=.75+Math.sin(t*(1.25+level*.3)+i*.8)*.23)},dispose:()=>{land.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose()});materials.forEach(m=>m.dispose())}};
 }

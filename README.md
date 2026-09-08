@@ -1,4 +1,4 @@
-Current oil release adds OIL-burning equipment upgrades and an explorable district at `/oil/world/`. Small/medium/large use consistent metre dimensions and a 1:3:6 area ratio. The district is a local simulation prepared for future avatar scaling; live multiplayer is not included. See [oil economy](docs/OIL_ECONOMY.md) for rates, costs and deployment requirements.
+Current oil release adds OIL-burning equipment upgrades and an explorable district at `/oil/world/`. Small/medium/large use consistent metre dimensions and a 1:3:6 area ratio. The district includes all 1,000 fixed token locations (400 small, 400 medium, 200 large), including unminted plots, with selected-token mint status when OilField is configured. Live multiplayer is not included. See [oil economy](docs/OIL_ECONOMY.md) for rates, costs and deployment requirements.
 
 # Cloudacre Oil — seasonal oil parcels
 
