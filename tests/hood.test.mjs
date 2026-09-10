@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {restoreSave,freshSave,purchase,intersects} from '../src/lib/hood-state.ts';
+test('new residents spawn with Glock, a car and starter cash',()=>{const s=freshSave();assert.equal(s.gun,'glock');assert.equal(s.cash,500);assert.deepEqual(s.cars,['compact'])});
+test('shop cannot overdraw, charges once and equips owned items',()=>{const s=freshSave();assert.equal(purchase(s,'gun','rifle').ok,false);assert.equal(s.cash,500);s.cash=1500;assert.equal(purchase(s,'gun','rifle').ok,true);assert.equal(s.cash,400);assert.equal(purchase(s,'gun','rifle').ok,true);assert.equal(s.cash,400);assert.equal(s.gun,'rifle');assert.equal(purchase(s,'car','missing').ok,false)});
+test('corrupt saves are bounded and recoverable',()=>{assert.deepEqual(restoreSave('oops'),freshSave());const s=restoreSave(JSON.stringify({cash:-100,avatar:999999,guns:['fake'],cars:[],ammo:-8}));assert.equal(s.cash,0);assert.equal(s.avatar,1000);assert.deepEqual(s.guns,['glock']);assert.equal(s.ammo,0)});
+test('circle footprint stops at buildings but open roads remain clear',()=>{const b=[{x:23,z:23,w:18,d:14}];assert.equal(intersects(0,23,.4,b),false);assert.equal(intersects(14,23,.4,b),true);assert.equal(intersects(13,23,.4,b),false);assert.equal(intersects(13,23,1.25,b),true)});
