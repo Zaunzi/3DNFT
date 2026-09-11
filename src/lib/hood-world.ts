@@ -1,11 +1,12 @@
 import * as T from 'three';
+import {buildNeighborhood} from './hood-buildings';
 import {shoulderFrame} from './hood-camera';
 import {addResidents} from './hood-npcs';
 import {dressNeighborhood} from './hood-dressing';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {GUNS,CARS,restoreSave,purchase,intersects,type Save} from './hood-state';
 export type Shop='corner'|'weapons'|'dealer'|'repair'|'police';
-export type HUD={ready:boolean;error:string;cash:number;ammo:number;reserve:number;gun:string;health:number;stamina:number;heat:number;speed:number;driving:boolean;prompt:string;message:string;shop:Shop|null;mission:string;avatar:number;ownedGuns:string[];ownedCars:string[];car:string;mapX:number;mapZ:number;active:boolean};
+export type HUD={ready:boolean;error:string;cash:number;ammo:number;reserve:number;gun:string;health:number;stamina:number;heat:number;speed:number;driving:boolean;prompt:string;message:string;shop:Shop|null;mission:string;avatar:number;ownedGuns:string[];ownedCars:string[];car:string;mapX:number;mapZ:number;active:boolean;location:string};
 export const PLACES:[Shop,string,number,number,number][]=[['police','DOODZ POLICE',-23,-22,0x568cb4],['corner','CORNER MART',23,-22,0xe5a54f],['weapons','BLOCK ARMS',-23,23,0xbb6658],['repair','REPAIR & TUNE',23,23,0x66a98c],['dealer','DOODZ MOTORS',46,0,0xa085c1]];
 export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  let save:Save;try{save=restoreSave(localStorage.getItem('cryptodoodz-hood-v1'))}catch{save=restoreSave(null)}
@@ -21,13 +22,8 @@ export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  box(150,.3,150,0,-.2,0,0x819a6b);box(140,.1,14,0,0,0,0x454e56);box(14,.11,140,0,.01,0,0x454e56);
  for(let a=-65;a<70;a+=7){if(Math.abs(a)>8){box(2,.025,.16,a,.075,0,0xdad2aa);box(.16,.025,2,0,.075,a,0xdad2aa)}}
  for(const x of [-9,9])box(2,.2,138,x,.1,0,0xb5b3a2);for(const z of [-9,9])box(138,.2,2,0,.1,z,0xb5b3a2);
- const obstacles:{x:number;z:number;w:number;d:number}[]=[],solid:T.Object3D[]=[],doors:{kind:Shop;name:string;x:number;z:number}[]=[];
- for(const [kind,name,x,z,c]of PLACES){const w=kind==='dealer'?15:18,d=kind==='dealer'?16:14;const b=box(w,8,d,x,4,z,c);solid.push(b);obstacles.push({x,z,w,d});box(w+.7,.45,d+.7,x,8,z,0x26373e);const front=z<0?z+d/2:z-d/2;
-  for(const dx of [-6,6]){box(3.6,3,.13,x+dx,3.2,front,0x253f4a);box(3.7,.18,.24,x+dx,1.6,front,0xe3dbbf)}box(2.4,3.5,.2,x,1.8,front,0x253e46);sign(name,x,6.3,front+(z<0?.13:-.13),w-1).rotation.y=z<0?0:Math.PI;box(w, .22,2.7,x,4.6,front+(z<0?1.2:-1.2),c);doors.push({kind,name,x,z:front+(z<0?2.5:-2.5)});
-  const marker=box(2.5,.04,2.5,x,.23,front+(z<0?2.5:-2.5),0xe8c268);marker.userData.marker=true;
- }
- // Dealership is approached from its south entrance; sidewalks connect the whole block.
- for(const [x,z]of [[-45,-46],[-20,-49],[23,-48],[48,-40],[-49,2],[49,46],[-48,48]]){const b=box(14,12,13,x,6,z,0x897d77);solid.push(b);obstacles.push({x,z,w:14,d:13});box(14.8,.5,13.8,x,12,z,0x3e4850);for(let floor=0;floor<3;floor++)for(let j=-1;j<=1;j++)box(2,2,.16,x+j*4,2+floor*3.4,z+6.6,0x304957)}
+ const obstacles:{x:number;z:number;w:number;d:number}[]=[],solid:T.Object3D[]=[];
+ const buildings=buildNeighborhood(scene,box,sign,obstacles,solid),doors=buildings.services;
  for(let i=0;i<16;i++){const x=i%2?11:-11,z=-58+Math.floor(i/2)*16;box(.16,5,.16,x,2.5,z,0x384b50);box(1.4,.2,.5,x+.5,5,z,0xe4d19c)}
  // Safe arcade range: shooting targets here carries no police heat.
  box(19,.2,13,-46,.1,25,0xbaa88b);const wall=box(20,5,.5,-46,2.5,32,0x59696e);solid.push(wall);obstacles.push({x:-46,z:32,w:20,d:.5});sign('TARGET RANGE  /  +$25',-46,4,31.7,16).rotation.y=Math.PI;
@@ -38,7 +34,7 @@ export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  function carModel(color:number,police=false){const g=new T.Group();box(1.9,.65,3.8,0,.7,0,color,g);box(1.6,.65,1.8,0,1.32,-.1,0x344d5c,g);box(1.7,.12,1.9,0,1.69,-.1,color,g);for(const x of [-1,1])for(const z of [-1.15,1.15])box(.28,.65,.65,x,.43,z,0x242a30,g);for(const x of [-.65,.65]){box(.35,.18,.07,x,.85,1.92,0xf7e8b0,g);box(.35,.15,.07,x,.85,-1.92,0xba524a,g)}if(police){box(.6,.16,.3,-.3,1.83,0,0x4281d2,g);box(.6,.16,.3,.3,1.83,0,0xdf5257,g)}scene.add(g);return g}
  let car=carModel(CARS.find(c=>c.id===save.car)!.color);car.position.set(5,.08,14);const policeCar=carModel(0xe3e4d9,true);policeCar.position.set(-12,.08,-8);
  const dressing=dressNeighborhood(scene,PLACES);const residents=addResidents(scene);
- let ready=false,error='',active=false,dead=false,shop:Shop|null=null,health=100,stamina=100,heat=0,mag=17,reloading=0,shootTime=0,fireCooldown=0,jumpTime=0,speed=0,driving=false,yaw=Math.PI,pitch=.16,drag=false,held=false,message='Welcome to the block. Your Glock and compact car are ready.',msgUntil=8,time=0,lastEmit=0,saveClock=0,ticketCooldown=0,crashCooldown=0;
+ let ready=false,error='',active=false,dead=false,shop:Shop|null=null,health=100,stamina=100,heat=0,mag=17,reloading=0,shootTime=0,fireCooldown=0,jumpTime=0,speed=0,driving=false,yaw=Math.PI,pitch=.16,drag=false,held=false,message='Welcome to the block. Your Glock and compact car are ready.',msgUntil=8,time=0,lastEmit=0,saveClock=0,ticketCooldown=0,crashCooldown=0,location='The Block';
  let mission:typeof doors[number]|null=null;const keys=new Set<string>();const ray=new T.Raycaster(),desired=new T.Vector3(),focus=new T.Vector3(),pivot=new T.Vector3();const effects:{mesh:T.Mesh;life:number}[]=[];
  function persist(){try{localStorage.setItem('cryptodoodz-hood-v1',JSON.stringify(save))}catch{/* Private browsing can disable local saves. */}}
  function tell(s:string){message=s;msgUntil=time+5;emit()}
@@ -46,8 +42,8 @@ export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  function play(name:string){if(anim===name)return;actions.get(anim)?.fadeOut(.13);const a=actions.get(name);a?.reset().fadeIn(.13).play();anim=name}
  async function loadAvatar(id:number){const ticket=++loadTicket;ready=false;error='';emit();try{const gltf=await new GLTFLoader().loadAsync(`/cryptodoodz/models/${String(id).padStart(4,'0')}.glb`);if(dead||ticket!==loadTicket){freeModel(gltf.scene);return}if(avatar){weapon.removeFromParent();player.remove(avatar);freeModel(avatar)}avatar=gltf.scene;player.add(avatar);avatar.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true;o.receiveShadow=true}});hand=avatar.getObjectByName('hand.R')??avatar.getObjectByName('handR');if(hand){hand.add(weapon);weapon.position.set(0,.08,0);weapon.rotation.set(-Math.PI/2,0,0)}mixer=new T.AnimationMixer(avatar);actions=new Map(gltf.animations.map(c=>[c.name,mixer!.clipAction(c)]));for(const [name,a]of actions)if(!['Idle','Walk','Run'].includes(name)){a.setLoop(T.LoopOnce,1);a.clampWhenFinished=true}anim='';play('Idle');save.avatar=id;ready=true;persist();emit()}catch{error='The Dood could not load. Check your connection and retry.';emit()}}
  function freeModel(root:T.Object3D){root.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose()}})}
- function nearest(){return doors.find(d=>Math.hypot(player.position.x-d.x,player.position.z-d.z)<4)}
- function emit(){if(dead)return;const near=nearest();publish({ready,error,cash:save.cash,ammo:mag,reserve:save.ammo,gun:gun().name,health,stamina,heat,speed:Math.abs(speed)*3.6,driving,prompt:driving?'F · Exit vehicle':Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3.4?'F · Drive car':near?`E · ${near.name}`:'',message:time<msgUntil?message:'',shop,mission:mission?`Deliver to ${mission.name} · $180`:'Police station: pick up a delivery job',avatar:save.avatar,ownedGuns:[...save.guns],ownedCars:[...save.cars],car:save.car,mapX:player.position.x,mapZ:player.position.z,active})}
+ function nearest(){return doors.find(d=>Math.abs(player.position.x-d.building.x)<d.building.w/2-.25&&Math.abs(player.position.z-d.building.z)<d.building.d/2-.25&&Math.hypot(player.position.x-d.x,player.position.z-d.z)<2.4)}
+ function emit(){if(dead)return;const near=nearest();publish({ready,error,cash:save.cash,ammo:mag,reserve:save.ammo,gun:gun().name,health,stamina,heat,speed:Math.abs(speed)*3.6,driving,prompt:driving?'F · Exit vehicle':Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3.4?'F · Drive car':near?`E · ${near.name}`:'',message:time<msgUntil?message:'',shop,mission:mission?`Deliver to ${mission.name} · $180`:'Walk inside the police station for delivery jobs',avatar:save.avatar,ownedGuns:[...save.guns],ownedCars:[...save.cars],car:save.car,mapX:player.position.x,mapZ:player.position.z,active,location})}
  function clear(){keys.clear();held=false;drag=false}
  function pause(){active=false;clear();if(document.pointerLockElement===canvas)document.exitPointerLock();emit()}
  function resume(){if(!ready)return;shop=null;active=true;canvas.focus();emit()}
@@ -74,7 +70,8 @@ export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  saveClock+=dt;if(saveClock>10){saveClock=0;persist()}
  }
  for(let i=effects.length-1;i>=0;i--){effects[i].life-=dt;if(effects[i].life<=0){scene.remove(effects[i].mesh);effects.splice(i,1)}}
- shoulderFrame(player.position,yaw,pitch,driving,pivot,focus,desired);
+ const room=buildings.update(player.position);location=room?.name??'The Block';
+ shoulderFrame(player.position,yaw,pitch,driving,pivot,focus,desired,!!room);
  // Sweep from the player to the shoulder camera, including the lateral offset.
  const distance=desired.distanceTo(pivot);ray.set(pivot,desired.clone().sub(pivot).normalize());ray.far=distance;
  const obstruction=ray.intersectObjects(solid,false).find(h=>h.object.visible);
@@ -87,7 +84,7 @@ export function createHood(host:HTMLElement,publish:(h:HUD)=>void){
  camera.position.set(0,4,4);renderer.setAnimationLoop(()=>update(Math.min(clock.getDelta(),.05)));loadAvatar(save.avatar);
  function buy(kind:'gun'|'car',id:string){const result=purchase(save,kind,id);if(result.ok){if(kind==='gun'){save.ammo=Math.min(999,save.ammo+mag);mag=Math.min(gun().capacity,save.ammo);save.ammo-=mag;weapon.scale.setScalar(id==='glock'?1:1.35)}else{scene.remove(car);freeModelUniqueCar(car);car=carModel(CARS.find(c=>c.id===save.car)!.color);car.position.set(5,.08,14);health=100}persist()}tell(result.message)}
  function freeModelUniqueCar(_car:T.Object3D){/* Car meshes use shared world geometry/materials. */}
- return{resume,pause,buy,closeShop:()=>{shop=null;resume()},setAvatar:(id:number)=>{pause();loadAvatar(Math.max(1,Math.min(1000,Math.trunc(Number(id)||1))))},service:(type:string)=>{if(type==='job'){mission=doors.filter(d=>d.kind!=='police')[Math.floor(Math.random()*4)];tell(`Delivery accepted: ${mission.name}`)}else if(type==='ammo'){if(save.cash<40){tell('Ammo costs $40');return}save.cash-=40;save.ammo=Math.min(999,save.ammo+85);tell('85 rounds added')}else if(type==='repair'){if(save.cash<90){tell('Repairs cost $90');return}save.cash-=90;health=100;tell('Vehicle repaired')}else if(type==='snack'){if(save.cash<15){tell('Snacks cost $15');return}save.cash-=15;stamina=100;tell('Stamina restored')}persist();emit()},dispose:()=>{dead=true;persist();clear();if(document.pointerLockElement===canvas)document.exitPointerLock();ro.disconnect();renderer.setAnimationLoop(null);residents.dispose();dressing.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',pause);window.removeEventListener('pointerup',pointerup);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lock);canvas.removeEventListener('pointerdown',pointer);canvas.removeEventListener('contextmenu',context);if(avatar){weapon.removeFromParent();freeModel(avatar)}geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());renderer.dispose();canvas.remove()}};
+ return{resume,pause,buy,closeShop:()=>{shop=null;resume()},setAvatar:(id:number)=>{pause();loadAvatar(Math.max(1,Math.min(1000,Math.trunc(Number(id)||1))))},service:(type:string)=>{if(type==='job'){mission=doors.filter(d=>d.kind!=='police')[Math.floor(Math.random()*4)];tell(`Delivery accepted: ${mission.name}`)}else if(type==='ammo'){if(save.cash<40){tell('Ammo costs $40');return}save.cash-=40;save.ammo=Math.min(999,save.ammo+85);tell('85 rounds added')}else if(type==='repair'){if(save.cash<90){tell('Repairs cost $90');return}save.cash-=90;health=100;tell('Vehicle repaired')}else if(type==='snack'){if(save.cash<15){tell('Snacks cost $15');return}save.cash-=15;stamina=100;tell('Stamina restored')}persist();emit()},dispose:()=>{dead=true;persist();clear();if(document.pointerLockElement===canvas)document.exitPointerLock();ro.disconnect();renderer.setAnimationLoop(null);residents.dispose();dressing.dispose();buildings.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',pause);window.removeEventListener('pointerup',pointerup);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lock);canvas.removeEventListener('pointerdown',pointer);canvas.removeEventListener('contextmenu',context);if(avatar){weapon.removeFromParent();freeModel(avatar)}geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());renderer.dispose();canvas.remove()}};
 }
 
 

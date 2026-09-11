@@ -6,11 +6,11 @@ export function dressNeighborhood(scene:T.Scene,places:readonly Place[]){
  function box(c:number,x:number,y:number,z:number,w:number,h:number,d:number,angle=0){pos.set(x,y,z);scale.set(w,h,d);q.setFromAxisAngle(new T.Vector3(0,1,0),angle);matrix.compose(pos,q,scale);if(!batches.has(c))batches.set(c,[]);batches.get(c)!.push(matrix.clone())}
  const pavement=0xc8bc9f,curb=0xe3d4b2;
  for(const [kind,_name,x,z]of places){const w=kind==='dealer'?15:18,d=kind==='dealer'?16:14,dir=z<0?1:-1,front=z+dir*d/2;
-  box(pavement,x,.10,z,w+6,.2,d+6);
+  for(const side of [-1,1]){box(pavement,x,.10,z+side*(d/2+1.5),w+6,.2,3);box(pavement,x+side*(w/2+1.5),.10,z,3,.2,d);}
   // Shop-front paving, kerb and inset tile seams.
   box(curb,x,.13,front+dir*3,w+6,.25,.23);
   for(let px=x-w/2-2;px<x+w/2+3;px+=2)box(0xabaa97,px,.215,front+dir*1.5,.025,.012,2.8);
-  for(let row=0;row<5;row++)for(let j=0;j<12;j++){const px=x-w/2+.5+j*(w-1)/11+(row%2?.17:0);box(row%2?0x777269:0x948777,px,.35+row*.19,front+dir*.12,(w-1)/12-.045,.13,.08)}
+  for(let row=0;row<5;row++)for(let j=0;j<12;j++){const px=x-w/2+.5+j*(w-1)/11+(row%2?.17:0);if(Math.abs(px-x)<1.95)continue;box(row%2?0x777269:0x948777,px,.35+row*.19,front+dir*.12,(w-1)/12-.045,.13,.08)}
   for(const dx of [-w/2+.3,w/2-.3])box(0xe7d3ad,x+dx,4,front+dir*.15,.44,7.6,.32);
   box(0xd5c4a4,x,5.1,front+dir*.20,w,.18,.32);
   // Real window frames, lower display plinths and warm window accents.
@@ -37,7 +37,7 @@ export function dressNeighborhood(scene:T.Scene,places:readonly Place[]){
  }
  // Building-depth details on the surrounding residences.
  for(const [x,z]of [[-45,-46],[-20,-49],[23,-48],[48,-40],[-49,2],[49,46],[-48,48]]){
-  for(let floor=0;floor<3;floor++)for(let j=-1;j<=1;j++){const xx=x+j*4,yy=2+floor*3.4;box(0xccbea0,xx,yy-1.05,z+6.78,2.5,.16,.35);box(0x667b78,xx,yy,z+6.73,.07,1.9,.04);if((floor+j)%2===0)box(0xc3a378,xx+.55,yy,z+6.72,.7,1.7,.04)}
+  for(let floor=0;floor<3;floor++)for(let j=-1;j<=1;j++){const xx=x+j*4,yy=2+floor*3.4;if(floor===0&&j===0)continue;box(0xccbea0,xx,yy-1.05,z+6.78,2.5,.16,.35);box(0x667b78,xx,yy,z+6.73,.07,1.9,.04);if((floor+j)%2===0)box(0xc3a378,xx+.55,yy,z+6.72,.7,1.7,.04)}
   box(0x4a5658,x+5,7,z+6.9,.10,9,.13);for(let yy=3;yy<12;yy+=.6)box(0x4a5658,x+5.5,yy,z+6.9,1.1,.07,.15);
  }
  for(let i=0;i<22;i++){const angle=i/22*Math.PI*2,x=Math.sin(angle)*98,z=Math.cos(angle)*98,h=14+(i*7%17);box([0x819697,0x91a0a0,0x728b91][i%3],x,h/2,z,10,h,12)}
