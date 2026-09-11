@@ -10,4 +10,10 @@ Current scope is a solo desktop browser sandbox with localStorage progress. Buil
 
 World geometry/materials are procedural and reused. The avatar and its six clips are existing collection assets. The Glock is a stylized game prop; all weapon behavior is game-only.
 
+The neighborhood now has warm afternoon lighting with filmic tone mapping, brick accents, striped awnings, rooftop equipment, produce displays, crosswalks, benches, planters and a distant skyline. Static details use instanced meshes grouped by material. Eight distinct collection models (38, 981, 64, 185, 296, 4, 10 and 67) walk sidewalk routes and pause using their original Idle/Walk clips. NPC loading is sequential and independent of the player; distant NPC animations are throttled and hidden beyond 62 units. They are ambient residents, not combat targets.
+
+NPC validation: `node --test tests/hood-npcs.test.mjs` imports all eight actual GLBs, checks Idle/Walk clips and samples their routes against building collision footprints.
+
+On foot, the camera sits 1.05 units over the right shoulder and 4.8 units back, keeping the character left of the center reticle. Camera collision includes the lateral offset and preserves the aim direction when pushed inward. Shots resolve the reticle target, then check the muzzle path for nearby cover. Driving retains its centered chase view. The top navbar is removed; Esc opens the menu even without pointer lock, and the collection link lives inside that menu. Camera projection tests cover four headings and the driving view.
+
 Tests: `node --test tests/hood.test.mjs` covers spawn inventory, purchases/overdraft prevention, save recovery and collision boundaries. Svelte/TypeScript diagnostics and the production build validate integration. Live gameplay/browser automation has not been performed in this task.
