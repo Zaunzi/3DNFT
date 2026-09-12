@@ -38,10 +38,12 @@ export function dressNeighborhood(scene:T.Scene,places:readonly Place[]){
  }
  // Building-depth details on the surrounding residences.
  for(const [x,z]of HOME_LOTS){
-  for(let floor=0;floor<3;floor++)for(let j=-1;j<=1;j++){const xx=x+j*4,yy=2+floor*3.4;if(floor===0&&j===0)continue;box(0xccbea0,xx,yy-1.05,z+6.78,2.5,.16,.35);box(0x667b78,xx,yy,z+6.73,.07,1.9,.04);if((floor+j)%2===0)box(0xc3a378,xx+.55,yy,z+6.72,.7,1.7,.04)}
+  for(let floor=0;floor<3;floor++)for(let j=-1;j<=1;j++){const xx=x+j*4,yy=floor===0?2:3.7+floor*3;if(floor===0&&j===0)continue;box(0xccbea0,xx,yy-1.05,z+6.78,2.5,.16,.35);box(0x667b78,xx,yy,z+6.73,.07,1.9,.04);if((floor+j)%2===0)box(0xc3a378,xx+.55,yy,z+6.72,.7,1.7,.04)}
   box(0x4a5658,x+5,7,z+6.9,.10,9,.13);for(let yy=3;yy<12;yy+=.6)box(0x4a5658,x+5.5,yy,z+6.9,1.1,.07,.15);
  }
- for(let i=0;i<22;i++){const angle=i/22*Math.PI*2,x=Math.sin(angle)*220,z=Math.cos(angle)*220,h=14+(i*7%17);box([0x819697,0x91a0a0,0x728b91][i%3],x,h/2,z,10,h,12)}
+ // Layered, broad city blocks replace the isolated placeholder pillars.
+ for(let i=0;i<16;i++){const angle=i/16*Math.PI*2,x=Math.sin(angle)*225,z=Math.cos(angle)*225,h=10+(i*7%14),w=22+i%3*5;box(0x859696,x,h/2,z,w,h,24);box(0x738789,x+4,h+1,z-2,w*.65,2,18);for(let floor=0;floor<Math.floor(h/3)-1;floor++)for(let j=-2;j<=2;j++)box(0x536f7b,x+j*3.5,3+floor*3,z+12.05,1.6,1.35,.12);}
+
  const geometry=new T.BoxGeometry(1,1,1);resources.push(geometry);
  for(const [color,list]of batches){const material=new T.MeshStandardMaterial({color,roughness:.88});resources.push(material);const mesh=new T.InstancedMesh(geometry,material,list.length);list.forEach((m,i)=>mesh.setMatrixAt(i,m));mesh.castShadow=true;mesh.receiveShadow=true;mesh.computeBoundingSphere();scene.add(mesh);objects.push(mesh)}
  return{dispose(){objects.forEach(o=>scene.remove(o));resources.forEach(r=>r.dispose())}};

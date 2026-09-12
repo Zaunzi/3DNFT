@@ -45,14 +45,14 @@ export function buildNeighborhood(scene:T.Scene,box:Box,sign:Sign,obstacles:Foot
   box(3.5,.16,.65,b.x,3.88,front,0xe5d7b6);
   for(const dx of [-1.48,1.48])box(.08,3.5,1.35,b.x+dx,1.8,front-dir*.75,0x35555d);
   sign(b.kind==='home'?'OPEN LOBBY':'WALK IN',b.x,3.45,front+dir*.27,2.5).rotation.y=dir===1?0:Math.PI;
-  sign(b.name,b.x,b.kind==='home'?5:6.3,front+dir*.28,b.w-1).rotation.y=dir===1?0:Math.PI;
+  sign(b.name,b.x,b.kind==='home'?4.7:6.3,front+dir*.40,b.kind==='home'?8:b.w-1).rotation.y=dir===1?0:Math.PI;
   for(const dx of [-b.w*.32,b.w*.32]){
    box(3.2,2.25,.10,b.x+dx,2.35,front+dir*.25,0x38545c);
    box(3.5,.14,.4,b.x+dx,1.15,front+dir*.25,0xe0cfa9);
   }
   // Each ground floor is furnished; upper apartment floors remain an exterior facade.
   if(b.kind==='home'){
-   for(let floor=1;floor<3;floor++)for(const dx of [-4,0,4])box(2,2,.12,b.x+dx,2+floor*3.4,front+dir*.25,0x3d5660);
+   for(let floor=1;floor<3;floor++)for(const dx of [-4,0,4])box(2,2,.12,b.x+dx,3.7+floor*3,front+dir*.25,0x3d5660);
    box(b.w+4,.08,5,b.x,.08,front+2.5,0xb6ad97);
    for(const dx of [-4.9,4.9]){box(1.3,.65,1.3,b.x+dx,.4,front+1.3,0x827d6c);box(1.15,.6,1.15,b.x+dx,.95,front+1.3,0x71875a);}
   }else box(b.w,.22,2.7,b.x,4.6,front+dir*1.2,b.color);

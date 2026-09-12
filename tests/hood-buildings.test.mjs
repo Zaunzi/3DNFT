@@ -23,7 +23,7 @@ function reachable(start,end,b,obstacles){
  return false;
 }
 test('all neighborhood buildings have a real entrance and enclosed sides',()=>{
- assert.equal(BUILDINGS.length,23);
+ assert.equal(BUILDINGS.length,21);
  for(const b of BUILDINGS){const walls=wallPlan(b),door=entrance(b);
   assert.equal(intersects(door.x,door.z,.37,walls),false,b.id);
   assert.equal(intersects(b.x+b.w/2,b.z,.37,walls),true,b.id);
