@@ -6,8 +6,8 @@ import {BUILDINGS} from '../src/lib/hood-buildings.ts';
 import {RESIDENTS} from '../src/lib/hood-npcs.ts';
 import {intersects} from '../src/lib/hood-state.ts';
 
-test('eight distinct collection residents have playable idle and walk animations',async()=>{
- assert.equal(new Set(RESIDENTS.map(n=>n.id)).size,8);
+test('24 distinct collection residents have playable idle and walk animations',async()=>{
+ assert.equal(new Set(RESIDENTS.map(n=>n.id)).size,24);
  for(const n of RESIDENTS){
   const raw=fs.readFileSync(`static/cryptodoodz/models/${String(n.id).padStart(4,'0')}.glb`);
   const model=await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength),'');

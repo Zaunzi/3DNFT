@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {HOME_LOTS} from './hood-layout.ts';
+import {HOME_LOTS,DOWNTOWN_LOTS} from './hood-layout.ts';
 
 export type Business='police'|'corner'|'weapons'|'repair'|'dealer';
 export type Footprint={x:number;z:number;w:number;d:number};
@@ -10,7 +10,8 @@ export const BUILDINGS:Building[]=[
  {id:'weapons',kind:'weapons',name:'BLOCK ARMS',x:-23,z:23,w:18,d:14,color:0xbb6658,dir:-1,height:8},
  {id:'repair',kind:'repair',name:'REPAIR & TUNE',x:23,z:23,w:18,d:14,color:0x66a98c,dir:-1,height:8},
  {id:'dealer',kind:'dealer',name:'DOODZ MOTORS',x:46,z:-23,w:15,d:16,color:0xa085c1,dir:1,height:8},
- ...HOME_LOTS.map(([x,z],i)=>({id:`home-${i+1}`,kind:'home' as const,name:`BLOCK HOUSE ${i+1}`,x,z,w:14,d:13,color:[0xa68e77,0x8f9b88,0x9c8682][i%3],dir:1,height:12}))
+ ...HOME_LOTS.map(([x,z],i)=>({id:`home-${i+1}`,kind:'home' as const,name:`BLOCK HOUSE ${i+1}`,x,z,w:14,d:13,color:[0xa68e77,0x8f9b88,0x9c8682][i%3],dir:1,height:12})),
+ ...DOWNTOWN_LOTS.map(([x,z],i)=>({id:`downtown-${i+1}`,kind:(i===0?'corner':i===4?'weapons':'home') as Business|'home',name:['METRO MARKET','GRAND HOUSE','SKYLINE COURT','THE EXCHANGE','CITY SPORTS','CENTRAL HOUSE','PARK AVENUE','EAST TOWER'][i],x,z,w:14,d:14,color:[0x879c9b,0xa39d8f,0x758b98][i%3],dir:z<0?1:-1,height:i===0||i===4?8:24+i%4*3}))
 ];
 export const entrance=(b:Building)=>({x:b.x,z:b.z+b.dir*b.d/2});
 export function wallPlan(b:Building){
@@ -52,9 +53,9 @@ export function buildNeighborhood(scene:T.Scene,box:Box,sign:Sign,obstacles:Foot
   }
   // Each ground floor is furnished; upper apartment floors remain an exterior facade.
   if(b.kind==='home'){
-   for(let floor=1;floor<3;floor++)for(const dx of [-4,0,4])box(2,2,.12,b.x+dx,3.7+floor*3,front+dir*.25,0x3d5660);
-   box(b.w+4,.08,5,b.x,.08,front+2.5,0xb6ad97);
-   for(const dx of [-4.9,4.9]){box(1.3,.65,1.3,b.x+dx,.4,front+1.3,0x827d6c);box(1.15,.6,1.15,b.x+dx,.95,front+1.3,0x71875a);}
+   for(let floor=1;floor<(b.id.startsWith('downtown')?Math.floor((b.height-3)/3):3);floor++)for(const dx of [-4,0,4])box(2,2,.12,b.x+dx,3.7+floor*3,front+dir*.25,0x3d5660);
+   box(b.w+4,.08,5,b.x,.08,front+dir*2.5,0xb6ad97);
+   for(const dx of [-4.9,4.9]){box(1.3,.65,1.3,b.x+dx,.4,front+dir*1.3,0x827d6c);box(1.15,.6,1.15,b.x+dx,.95,front+dir*1.3,0x71875a);}
   }else box(b.w,.22,2.7,b.x,4.6,front+dir*1.2,b.color);
   const group=new T.Group();scene.add(group);interiorGroups.push({building:b,group});
   function prop(x:number,z:number,w:number,h:number,d:number,color:number,y=h/2+.1,collision=false){return collision?collidable(w,h,d,b.x+x,y,b.z+dir*z,color,group):box(w,h,d,b.x+x,y,b.z+dir*z,color,group)}

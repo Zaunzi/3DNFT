@@ -8,7 +8,13 @@ export const RESIDENTS=[
  {id:296,path:[[-9.5,-17],[-9.5,-40]],speed:.9},
  {id:4,path:[[9.5,18],[9.5,42]],speed:.85},
  {id:10,path:[[37,-11],[54,-11]],speed:.75},
- {id:67,path:[[-38,18],[-38,27]],speed:.8}
+ {id:67,path:[[-38,18],[-38,27]],speed:.8},
+ ...[110,155,205,250,305,350,405,450,505,550,605,650,705,750,805,850].map((id,i)=>{
+  const side=i%2?1:-1,row=Math.floor(i/2)%4;
+  const path=row===0?[[83,side*12],[133,side*12]]:row===1?[[83,side*60],[133,side*60]]:row===2?[[83,side*14],[83,side*58]]:[[133,side*14],[133,side*58]];
+  if(i>=8){if(row===2)path.forEach(point=>point[0]=108);if(row===3){path[0]=[85,side*37];path[1]=[131,side*37];}}
+  return {id,path,speed:.75+(i%4)*.12};
+ })
 ] as const;
 export function addResidents(scene:T.Scene){
  const residents:{root:T.Group;mixer:T.AnimationMixer;walk:T.AnimationAction;idle:T.AnimationAction;path:readonly(readonly number[])[];destination:number;wait:number;speed:number;elapsed:number}[]=[];
