@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {HOME_LOTS} from './hood-layout.ts';
 
 export type Business='police'|'corner'|'weapons'|'repair'|'dealer';
 export type Footprint={x:number;z:number;w:number;d:number};
@@ -8,8 +9,8 @@ export const BUILDINGS:Building[]=[
  {id:'corner',kind:'corner',name:'CORNER MART',x:23,z:-22,w:18,d:14,color:0xe5a54f,dir:1,height:8},
  {id:'weapons',kind:'weapons',name:'BLOCK ARMS',x:-23,z:23,w:18,d:14,color:0xbb6658,dir:-1,height:8},
  {id:'repair',kind:'repair',name:'REPAIR & TUNE',x:23,z:23,w:18,d:14,color:0x66a98c,dir:-1,height:8},
- {id:'dealer',kind:'dealer',name:'DOODZ MOTORS',x:46,z:0,w:15,d:16,color:0xa085c1,dir:-1,height:8},
- ...[[-45,-46],[-20,-49],[23,-48],[48,-40],[-49,2],[49,46],[-48,48]].map(([x,z],i)=>({id:`home-${i+1}`,kind:'home' as const,name:`BLOCK HOUSE ${i+1}`,x,z,w:14,d:13,color:[0xa68e77,0x8f9b88,0x9c8682][i%3],dir:1,height:12}))
+ {id:'dealer',kind:'dealer',name:'DOODZ MOTORS',x:46,z:-23,w:15,d:16,color:0xa085c1,dir:1,height:8},
+ ...HOME_LOTS.map(([x,z],i)=>({id:`home-${i+1}`,kind:'home' as const,name:`BLOCK HOUSE ${i+1}`,x,z,w:14,d:13,color:[0xa68e77,0x8f9b88,0x9c8682][i%3],dir:1,height:12}))
 ];
 export const entrance=(b:Building)=>({x:b.x,z:b.z+b.dir*b.d/2});
 export function wallPlan(b:Building){
