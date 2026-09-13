@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';import * as T from 'three';
+import {trafficPose,TRAFFIC_LOOPS,trafficBlocked,addTraffic} from '../src/lib/hood-traffic.ts';
+import {ROADS,overlaps} from '../src/lib/hood-layout.ts';
+import {BUILDINGS} from '../src/lib/hood-buildings.ts';
+import {LANDMARKS} from '../src/lib/hood-landmarks.ts';
+test('traffic loops stay on roads and clear all building footprints',()=>{for(const loop of TRAFFIC_LOOPS){const length=2*(loop.right-loop.left+loop.bottom-loop.top);for(let d=0;d<length;d+=.5){const p=trafficPose(d,loop),body={...p,w:p.dx?4.1:2.2,d:p.dx?2.2:4.1};assert.ok(ROADS.some(r=>Math.abs(p.x-r.x)+body.w/2<=r.w/2&&Math.abs(p.z-r.z)+body.d/2<=r.d/2));for(const b of [...BUILDINGS,...LANDMARKS])assert.equal(overlaps(body,b),false);}assert.deepEqual(trafficPose(length,loop),trafficPose(0,loop));}});
+test('traffic yields to obstacles ahead, but not behind',()=>{const p={x:0,z:0,dx:1,dz:0};assert.equal(trafficBlocked(p,[{x:5,z:0}]),true);assert.equal(trafficBlocked(p,[{x:-5,z:0}]),false);assert.equal(trafficBlocked(p,[{x:10,z:0}]),false);assert.equal(trafficBlocked(p,[{x:0,z:6}]),false);});
+test('traffic collision footprints follow vehicles and are cleaned up',()=>{const obstacles=[],solid=[],groups=[];const traffic=addTraffic(()=>{const g=new T.Group();groups.push(g);return g;},obstacles,solid);assert.equal(obstacles.length,7);traffic.update(1,new T.Vector3(1000,0,1000),new T.Vector3(1000,0,1000));for(let i=0;i<7;i++){assert.equal(groups[i].position.x,obstacles[i].x);assert.equal(groups[i].position.z,obstacles[i].z);}traffic.dispose();assert.equal(obstacles.length,0);});
