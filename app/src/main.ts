@@ -16,6 +16,9 @@ import { MOCK_NFT_COLLECTION } from './nfts/mock.ts';
 import { getAddress } from 'viem';
 import { locationFromURL } from './portals/location.ts';
 import './style.css';
+import { embeddedViewer, setupEmbeddedViewer } from './viewer/embedded.ts';
+const embedded = embeddedViewer();
+document.documentElement.classList.toggle('embedded-viewer', embedded);
 const root = document.querySelector<HTMLDivElement>('#app')!;
 root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></canvas>
 <header><div class="brand">◈ ATLAS <span>WORLD PARCELS / EXPERIMENT 001</span> <a href="./mint.html" style="color:inherit;pointer-events:auto">Mint assets ↗</a></div><div id="mode" class="badge">LOADING STATE</div></header>
@@ -26,6 +29,11 @@ root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></can
 <aside><label><input id="borders" type="checkbox" checked> Parcel borders</label><label><input id="debug-toggle" type="checkbox" checked> Diagnostics</label><pre id="debug"></pre></aside>
 <footer><span>DETERMINISTIC TERRAIN <b>/ V1</b></span><span>64 × 64 UNITS <b>·</b> N = −Z <b>·</b> E = +X</span><span id="heading">N</span></footer>`;
 const el = (id: string) => document.getElementById(id)!;
+if (embedded) {
+  (el('borders') as HTMLInputElement).checked = false;
+  (el('debug-toggle') as HTMLInputElement).checked = false;
+  el('debug').hidden = true;
+}
 async function start() {
   let token = parseTokenId(new URLSearchParams(location.search).get('tokenId'));
   const backend = await createBackend(import.meta.env), state = backend.world;
@@ -40,7 +48,7 @@ async function start() {
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
   const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 260);
   const spawn = parcelToWorld(tokenIdToCoordinate(token), PARCEL_SIZE / 2, PARCEL_SIZE / 2); camera.position.set(spawn.x, 0, spawn.z); camera.rotation.set(-0.09, -Math.PI / 2, 0);
-  const world = new WorldManager(scene, identity.seed); world.update(token);
+  const world = new WorldManager(scene, identity.seed); world.setBorders(!embedded); world.update(token);
   const player = new Player(camera, canvas, identity.seed); player.update(0);
   let ownershipRequest = 0, toastTimer = 0;
   let parcelOwner: string | null = null;
@@ -66,6 +74,11 @@ async function start() {
       el('build-toggle').textContent = active ? 'Exit build [B]' : 'Build [B]';
       document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair', active);
     },
+  });
+  if (embedded) setupEmbeddedViewer(root, () => {
+    player.active = false;
+    if (player.controls.isLocked) player.controls.unlock();
+    if (!builder.active && !assets?.open && !experience.inventory.open) el('entry').hidden = false;
   });
   function updatePermissions() {
     const wallet = backend.wallet.snapshot;

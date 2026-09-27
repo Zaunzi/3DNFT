@@ -16,3 +16,30 @@
 .inventory-list{display:flex;flex-wrap:wrap}
 .build-panel{max-height:65vh;overflow:auto;z-index:6}
 aside{max-height:42vh;overflow:auto}
+/* Marketplace frames: terrain first, with the same controls in a compact drawer. */
+.embedded-viewer #app>.management,.embedded-viewer #app>aside,.embedded-viewer #app>.assets-button,.embedded-viewer #app>.experience-toolbar{display:none}
+.embedded-viewer header{padding:14px 16px;gap:12px;pointer-events:none}
+.embedded-viewer .brand{font-size:15px;letter-spacing:2px;display:flex;align-items:center;gap:14px}
+.embedded-viewer .brand span{display:none}
+.embedded-viewer .brand a{font-size:11px;letter-spacing:0;font-weight:400;pointer-events:auto}
+.embedded-viewer .badge{font-size:8px;letter-spacing:1px;padding:6px;white-space:nowrap}
+.embedded-viewer .location{top:54px;left:16px;max-width:calc(100vw - 32px);pointer-events:none}
+.embedded-viewer .location>.eyebrow,.embedded-viewer #coordinate,.embedded-viewer #owner{display:none}
+.embedded-viewer h1{font-size:23px;margin:0;letter-spacing:-1px}
+.embedded-viewer footer{display:none}
+.embedded-viewer #toast{top:auto;bottom:18px;max-width:70%;text-align:center}
+.embedded-viewer .entry{width:300px;padding:20px;max-height:calc(100vh - 150px);overflow:auto;transform:translate(-50%,-40%)}
+.embedded-viewer .entry h2{font-size:25px;margin:10px 0}
+.embedded-viewer .entry p{font-size:12px;line-height:1.5}
+.embedded-viewer .entry button{margin:8px 0 12px}
+.viewer-menu{position:fixed;right:16px;bottom:16px;z-index:8;width:min(300px,calc(100vw - 32px));pointer-events:none}
+.viewer-menu>summary{pointer-events:auto;cursor:pointer;background:#19332ef2;border:1px solid #bed4c355;border-radius:5px;padding:10px 14px;font-size:12px;list-style:none;width:max-content;margin-left:auto}
+.viewer-menu>summary:focus-visible{outline:2px solid #e2edc5;outline-offset:3px}
+.viewer-menu-content{pointer-events:auto;max-height:calc(100vh - 145px);overflow:auto;background:#19332ef5;border:1px solid #bed4c355;border-radius:5px;padding:12px;margin-top:6px;display:flex;flex-direction:column;gap:10px}
+.embedded-viewer .viewer-menu .management,.embedded-viewer .viewer-menu aside,.embedded-viewer .viewer-menu .experience-toolbar,.embedded-viewer .viewer-menu .assets-button{position:static;width:100%;max-width:none;margin:0;transform:none}
+.embedded-viewer .viewer-menu .management{padding:0;border:0;background:none}
+.embedded-viewer .viewer-menu aside{max-height:none;padding:8px}
+.embedded-viewer .experience-toolbar{flex-wrap:wrap}
+.embedded-viewer .build-panel{right:16px;bottom:64px;width:min(300px,calc(100vw - 32px));max-height:calc(100vh - 160px)}
+.embedded-viewer .asset-panel,.embedded-viewer .inventory-panel{top:12px;max-height:calc(100vh - 24px);padding:16px}
+@media(max-width:400px){.embedded-viewer .badge{display:none}.embedded-viewer .entry{max-height:calc(100vh - 130px)}}

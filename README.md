@@ -23,6 +23,10 @@ Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership
 
 **Phase 4:** Open **NFTs / Containers**, select a development NFT, approve it and attach it to the parcel floor or a chest. E inspects nearby assets/containers or checks a door; I opens ERC-1155 inventory. The panel provides explicit Move/Store/Detach controls and mock Alice/Bob land-transfer controls. Refresh preserves custody state. [NFT attachments](docs/NFT_ATTACHMENTS.md) documents the complete workflow, recovery trust model, safe metadata handling and deployment variables. [Items and portals](docs/ITEMS_AND_PORTALS.md) covers the Phase 3 runtime and portal build option 6.
 
+## Embedded NFT viewer
+
+Inside an iframe (including OpenSea), Atlas uses a compact parcel label and an **Open in Atlas** link. Borders and diagnostics default off; wallet, build, inventory and debugging controls live in the **Controls** drawer. Movement and the terrain runtime are unchanged. Opening the drawer pauses movement. Full-window visits keep the desktop UI. Use `/?tokenId=742&embed=1` to preview the compact layout without a marketplace; the external link removes that preview flag and keeps the currently occupied parcel.
+
 ## Mint on Base
 
 Open [Mint assets](https://atlas-mu-lime.vercel.app/mint.html), connect the contract-owner wallet and switch to Base. Mint a parcel (0–4999), a character (start with #1), or one of the six Atlas items to your chosen recipient. Each action simulates first and requires a separate wallet-confirmed transaction. Duplicate ERC-721 IDs and unauthorized mints revert. No minting occurs automatically. Open the minted parcel, connect its owner, and use Inventory or NFTs / Containers to attach assets.
