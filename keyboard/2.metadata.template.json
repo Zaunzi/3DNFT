@@ -1,0 +1,15 @@
+{
+  "name": "CryptoDoodz Items — Nocturne 88",
+  "description": "An interactive 88-key 3D keyboard for CryptoDoodz. Play A0 through C8 with touch, mouse or computer keys. Polyphonic synthesis, three voices and sustain. All editions of item 2 share this experience. Ownership does not gate playback.",
+  "image": "ipfs://REPLACE_WITH_MEDIA_CID/cryptodoodz-nocturne88.png",
+  "animation_url": "ipfs://REPLACE_WITH_MEDIA_CID/index.html",
+  "background_color": "0b0d12",
+  "attributes": [
+    {"trait_type":"Item","value":"88-key Keyboard"},
+    {"trait_type":"Series","value":"Nocturne"},
+    {"trait_type":"Category","value":"Music Equipment"},
+    {"trait_type":"Keys","display_type":"number","value":88},
+    {"trait_type":"Range","value":"A0–C8"},
+    {"trait_type":"Audio","value":"Original synthesis"}
+  ]
+}

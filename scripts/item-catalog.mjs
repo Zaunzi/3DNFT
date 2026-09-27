@@ -1,0 +1,2 @@
+export const items=[{id:1,source:'dj-board',title:'Afterhours',global:'CryptoDoodzDJ'},{id:2,source:'keyboard',title:'Nocturne 88',global:'CryptoDoodzKeys'},{id:3,source:'drumkit',title:'Backbeat',global:'CryptoDoodzDrums'},{id:4,source:'xylophone',title:'Prism',global:'CryptoDoodzXylophone'},{id:5,source:'bongos',title:'Barrio',global:'CryptoDoodzBongos'}];
+export function resolveItem(path){if(path==='/')return items[0];return items.find(i=>new RegExp(`^/(?:items/${i.id}|${i.source})(?:/|/index\\.html)?$`).test(path));}

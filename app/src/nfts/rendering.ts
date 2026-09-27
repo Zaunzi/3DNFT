@@ -1,0 +1,147 @@
+import * as THREE from 'three';
+import { objectToWorldPosition } from '../objects/model.ts';
+import { getGroundHeight } from '../world/terrain.ts';
+import { assetKey, type NFTAsset, type NFTSnapshot, type NFTStateProvider } from './model.ts';
+import { MetadataCache, loadSafeImage, type SafeMetadata } from './metadata.ts';
+export interface NFTRepresentation {
+    supports(asset: NFTAsset, metadata: SafeMetadata): boolean;
+    createObject(asset: NFTAsset, metadata: SafeMetadata): THREE.Group;
+}
+export function disposeEntity(group: THREE.Object3D) { group.traverse(o => { if (o instanceof THREE.Mesh || o instanceof THREE.Sprite) {
+    if (o instanceof THREE.Mesh)
+        o.geometry.dispose();
+    for (const material of Array.isArray(o.material) ? o.material : [o.material]) {
+        const map = (material as THREE.MeshBasicMaterial).map;
+        if (map) {
+            const image = map.image as ImageBitmap;
+            if (typeof image?.close === 'function')
+                image.close();
+            map.dispose();
+        }
+        material.dispose();
+    }
+} }); group.removeFromParent(); group.clear(); }
+const box = (w: number, h: number, d: number, color: number, y: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color })); m.position.y = y; return m; };
+export class NFTRepresentationRegistry {
+    private renderers: NFTRepresentation[] = [];
+    constructor(nativeCollection?: string) { if (nativeCollection)
+        this.register({ supports: a => a.contractAddress.toLowerCase() === nativeCollection.toLowerCase() && a.tokenId === 1n, createObject: () => { const g = new THREE.Group(); g.add(box(.8, 1.2, .5, 0x517d98, .8)); const head = new THREE.Mesh(new THREE.SphereGeometry(.35, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd8b48a })); head.position.y = 1.75; g.add(head); return g; } }); }
+    register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
+    create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
+        return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); return group; }
+    container() { const g = new THREE.Group(); g.add(box(2, 1.2, 1.2, 0x826142, .6)); g.add(box(2.1, .15, 1.3, 0xc3a45e, 1.2)); return g; }
+    door() { const g = new THREE.Group(); const frame = box(.2, 3, .3, 0x71624c, 1.5); frame.position.x = -.95; g.add(frame); const panel = box(1.8, 2.8, .2, 0x976948, 1.4); panel.name = 'door-panel'; g.add(panel); return g; }
+}
+interface Entry {
+    group: THREE.Group;
+    request: number;
+    snapshot: NFTSnapshot;
+}
+export class NFTLayer {
+    readonly parcels = new Map<number, Entry>();
+    private scene: THREE.Scene;
+    private provider: NFTStateProvider;
+    private registry: NFTRepresentationRegistry;
+    private seed: bigint;
+    private cache: MetadataCache;
+    private report: (message: string) => void;
+    constructor(scene: THREE.Scene, provider: NFTStateProvider, registry: NFTRepresentationRegistry, seed: bigint, cache: MetadataCache, report: (message: string) => void) { this.scene = scene; this.provider = provider; this.registry = registry; this.seed = seed; this.cache = cache; this.report = report; }
+    sync(ids: Iterable<number>) { const wanted = new Set(ids); for (const [id, e] of this.parcels)
+        if (!wanted.has(id)) {
+            disposeEntity(e.group);
+            this.parcels.delete(id);
+        } for (const id of wanted)
+        if (!this.parcels.has(id)) {
+            const group = new THREE.Group();
+            this.scene.add(group);
+            this.parcels.set(id, { group, request: 0, snapshot: { attachments: [], containers: [], doors: [] } });
+            void this.refresh(id);
+        } }
+    async refresh(id: number) {
+        const entry = this.parcels.get(id);
+        if (!entry)
+            return;
+        const request = ++entry.request;
+        let group: THREE.Group | undefined;
+        try {
+            const snapshot = await this.provider.snapshot(id);
+            if (this.parcels.get(id) !== entry || request !== entry.request)
+                return;
+            group = new THREE.Group();
+            const place = (mesh: THREE.Group, t: {
+                x: number;
+                z: number;
+                rotation: number;
+            }) => { const p = objectToWorldPosition(id, t); mesh.position.set(p.x, getGroundHeight(p.x, p.z, this.seed), p.z); mesh.rotation.y = t.rotation / 100 * Math.PI / 180; group!.add(mesh); };
+            for (const container of snapshot.containers) {
+                const mesh = this.registry.container();
+                mesh.userData = { kind: 'container', entity: container };
+                place(mesh, container);
+            }
+            for (const door of snapshot.doors) {
+                const mesh = this.registry.door();
+                mesh.userData = { kind: 'door', entity: door };
+                place(mesh, door);
+            }
+            // Contained NFTs have one canonical container representation; do not duplicate them on the parcel floor.
+            for (const a of snapshot.attachments) {
+                if (a.location.kind !== 'parcel')
+                    continue;
+                const metadata = await this.cache.get(a.asset);
+                if (this.parcels.get(id) !== entry || request !== entry.request) {
+                    disposeEntity(group);
+                    return;
+                }
+                const mesh = this.registry.create(a.asset, metadata);
+                mesh.userData = { kind: 'nft', entity: a, metadata };
+                place(mesh, a.location);
+                if (typeof document !== 'undefined') {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 64;
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.fillStyle = '#e6ead9';
+                    ctx.font = '24px sans-serif';
+                    ctx.fillText(`${metadata.name} · #${a.asset.tokenId}`.slice(0, 60), 8, 38);
+                    const texture = new THREE.CanvasTexture(canvas);
+                    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+                    label.scale.set(2.8, .35, 1);
+                    label.position.y = 2.5;
+                    mesh.add(label);
+                }
+                if (metadata.image) {
+                    const ownedGroup = group;
+                    void loadSafeImage(metadata.image).then(bitmap => { if (this.parcels.get(id) !== entry || request !== entry.request) {
+                        bitmap.close();
+                        return;
+                    } const texture = new THREE.Texture(bitmap); texture.needsUpdate = true; texture.colorSpace = THREE.SRGBColorSpace; const image = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })); image.position.set(0, 1.4, .071); if (mesh.parent === ownedGroup)
+                        mesh.add(image);
+                    else {
+                        texture.dispose();
+                        bitmap.close();
+                        image.geometry.dispose();
+                        (image.material as THREE.Material).dispose();
+                    } }).catch(() => { });
+                }
+            }
+            if (this.parcels.get(id) !== entry || request !== entry.request) {
+                disposeEntity(group);
+                return;
+            }
+            for (const child of [...entry.group.children])
+                disposeEntity(child);
+            entry.group.add(group);
+            entry.snapshot = snapshot;
+        }
+        catch (error) {
+            if (group)
+                disposeEntity(group);
+            this.report(`NFT state #${id}: ${String(error).slice(0, 180)}`);
+        }
+    }
+    roots() { return [...this.parcels.values()].map(e => e.group); }
+    count() { return [...this.parcels.values()].reduce((n, e) => n + e.snapshot.attachments.length, 0); }
+    focusedIdentity(object: THREE.Object3D) { return object.userData.kind === 'nft' ? assetKey(object.userData.entity.asset) : ''; }
+    dispose() { for (const entry of this.parcels.values())
+        disposeEntity(entry.group); this.parcels.clear(); }
+}

@@ -1,70 +1,79 @@
-Current oil release adds OIL-burning equipment upgrades and an explorable district at `/oil/world/`. Small/medium/large use consistent metre dimensions and a 1:3:6 area ratio. The district includes all 1,000 fixed token locations (400 small, 400 medium, 200 large), including unminted plots, with selected-token mint status when OilField is configured. Live multiplayer is not included. See [oil economy](docs/OIL_ECONOMY.md) for rates, costs and deployment requirements.
+# Atlas — shared procedural NFT world
 
-# Cloudacre Oil — seasonal oil parcels
+Each parcel ERC-721 represents a place in one continuous, deterministic world. Owners can place objects, attach ERC-1155 items and ERC-721 NFTs, use containers, and create portals and key-gated doors. Attached assets follow the land when it transfers. This runtime uses TypeScript, Vite, Three.js, viem, Solidity and Foundry; ethers remains for compatibility. The existing Cloudacre application remains available through `legacy:*` commands; its documentation is in [docs/CLOUDACRE_LEGACY.md](docs/CLOUDACRE_LEGACY.md).
 
-The current homepage is the new SvelteKit + Three.js oilfield. Small, medium, and large NFT parcels receive finite seasonal reserves through Pyth Entropy. See [Oil economy and deployment](docs/OIL_ECONOMY.md) for rules, limitations, routes, and setup.
+## Run
 
-Run `pnpm contracts:compile`, `pnpm test`, `pnpm check`, and `pnpm build`. Deploy the new contracts with `pnpm oil:deploy`; set `VITE_OIL_FIELD_ADDRESS` afterward. The existing SEED deployment and original NFT routes are preserved. No new contract has been deployed by this change.
+Use Node 22.14+ (Node 24 recommended):
 
-## Preserved SEED farm documentation
-
-# Cloudacre — SvelteKit dapp
-
-Svelte 5 + SvelteKit 2, Three.js, Reown AppKit, Ethers 6, and Solidity. The application contains no React components or React renderer. Architecture follows the user's SveltekitWeb3Starter (https://github.com/Zaunzi/SveltekitWeb3Starter), with the farm interface retained. The former React source is preserved locally in ignored outputs/react-prototype and in Git history.
-
-## Play and inspect
-
-- `/`: local demo, preserving the original cloudacre-demo-v1 save.
-- `/nft/?token=1`: wallet-enabled Base Sepolia land page, including mint, harvest, and upgrades.
-- `/embed/?token=1`: read-only 3D viewer; no wallet initialization or transaction controls.
-
-The testnet page does not present demo state as chain state. Without a deployed address it shows an explicit unavailable state. The private Sites preview is not suitable as a public OpenSea animation URL.
-
-## Local development
-
-Use Node 22+ and pnpm 10.32.1.
-
-```
-pnpm install
-pnpm contracts:compile
-pnpm dev
-pnpm check
-pnpm test
-pnpm build
+```bash
+npm install
+npm run dev
 ```
 
-Copy `env.example` to `.env` and set `VITE_PROJECT_ID`, `VITE_LAND_ADDRESS` and, optionally, a CORS-enabled `VITE_RPC_URL` for Base Sepolia. The user-supplied Reown project ID is configured in the local ignored `.env`. Only public client values use the VITE_ prefix. Allowlist the development and published origins in the Reown project dashboard. These values are embedded by the static build; rebuild after changing them.
+Open **http://localhost:5173/?tokenId=742**. Click **Enter world**, then use WASD, mouse look and Shift to sprint. Esc releases/pauses. If pointer lock is unavailable in an embedded viewer, hold and drag the terrain to look. Use the checkboxes to toggle parcel borders and diagnostics.
 
-## Testnet deployment
+You spawn in parcel #742 at grid (42, 7), facing east toward #743. Walk about 32 world units (four seconds at walking speed) to cross its border. The token label, ownership notice, coordinates and URL update without reloading. A radius-two neighborhood is generated in advance. World edges stop movement. Trees and rocks are decorative; terrain has collision.
 
-The deployment script intentionally permits Base Sepolia (84532) only. It has not been run against a public blockchain. Set `DEPLOY_RPC_URL`, `DEPLOY_PRIVATE_KEY`, and `PUBLIC_SITE_ORIGIN` in the deployment process environment, then run `pnpm contracts:deploy`. Use a funded testnet deployment wallet. Do not put private keys into client variables or source control. The script reads process environment; it does not automatically read `.env`.
+The default is **MOCK STATE** with seed 7422026. Click **Use mock owner**, then **B** to build on parcels 742, 743 or 744. Use **1–5** to choose an object, **R** to rotate, and click terrain to place. Click a saved object and press **Delete** to remove it. **Esc** clears selection; **B** exits build mode. Objects survive refresh in localStorage and render in neighboring loaded parcels. No deployment or wallet extension is required.
 
-`PUBLIC_SITE_ORIGIN` must be a publicly accessible HTTPS origin for the NFT viewer, with no path. The constructor freezes this origin; it cannot be changed after deployment. Use stable hosting. The script writes contract addresses and the transaction hash into ignored `deployments/base-sepolia.json`. Copy `land` into `VITE_LAND_ADDRESS`, then rebuild the frontend. The frontend discovers the associated SEED address from the land contract, not from user input.
+For real ownership and writes, copy `app/env.example` to `app/.env.local`, choose `onchain` mode, and set chain ID, RPC, NFT and ParcelState addresses. Connect MetaMask/Rabby; only the current parcel owner can modify state. Anonymous exploration remains available. Restart Vite after environment changes. Never put private keys into frontend variables.
 
-After configuration, connect Reown on `/nft/`, switch to Base Sepolia, mint a test plot, collect 20 starter SEED, and buy terraced fields. Minting is free but requires network gas. Test transactions and OpenSea embedding on actual devices before a release.
+Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership diagram, state provider abstraction, environment variables, object encoding, gas limitations and migration strategies.
 
-## Contract behavior
+**Phase 4:** Open **NFTs / Containers**, select a development NFT, approve it and attach it to the parcel floor or a chest. E inspects nearby assets/containers or checks a door; I opens ERC-1155 inventory. The panel provides explicit Move/Store/Detach controls and mock Alice/Bob land-transfer controls. Refresh preserves custody state. [NFT attachments](docs/NFT_ATTACHMENTS.md) documents the complete workflow, recovery trust model, safe metadata handling and deployment variables. [Items and portals](docs/ITEMS_AND_PORTALS.md) covers the Phase 3 runtime and portal build option 6.
 
-`Cloudacre.sol` is an OpenZeppelin ERC-721 land contract. `Seed.sol` is a transferable ERC-20 reward token created by the land contract. Only the land contract can mint or burn SEED. The UI offers no mainnet transactions.
+## Verify and build
 
-- One free faucet mint per wallet, with a collection cap of 1,000. This is a test faucet, not Sybil-resistant distribution.
-- Production rates: 6 / 12 / 24 / 48 SEED per minute.
-- Harvest caps: 20 / 40 / 80 / 160 SEED.
-- Sequential upgrade costs: 20 / 45 / 90 SEED.
-- Rewards use 18 decimals and block time. Production pauses at capacity.
-- Harvest settles resources and mints SEED to the owner.
-- Upgrades settle the old production rate, burn the caller's SEED and advance land level atomically.
-- Only the current owner can farm. Approved NFT operators can transfer but cannot harvest or spend the owner's resources.
-- Land upgrades and unharvested crops transfer with the NFT. Harvested tokens stay in the old owner's wallet.
-- Onchain tokenURI returns a valid JSON data URI, an SVG preview, HTML animation_url, external_url, and dynamic traits. Upgrades emit ERC-4906 MetadataUpdate.
+```bash
+npm test
+npm run world:check
+npm run build
+npm run preview
+# Optional end-to-end viem integration (requires forge):
+npm run world:integration
+# NFT/container-only local integration:
+npm run world:nfts:integration
+```
 
-The economy is a prototype, not audited or suitable for valuable assets. Unlimited time-based emissions and wallet faucet creation need a deliberate production economic design before mainnet.
+`npm test` covers all 5,000 coordinate round trips, finite boundaries, URL validation, deterministic generation, seed high bits, actual mesh edge heights/normals/colors, collision interpolation, and streaming retention/disposal. The production artifact is `app/dist/`; serve it from any static host. Relative asset URLs support deployment under `/nft/`. Configure the public base URL accordingly when deploying the contract.
 
-## Validation and limits
+Foundry must be installed separately with `forge` on PATH. OpenZeppelin is installed by `npm install`:
 
-Contract tests run in an isolated local Ganache EVM. They cover ownership, repeat mint/claim restrictions, caps, old/new rate accounting, upgrade burns, insufficient balance rollback, transfer semantics, approved operators, token authority, all upgrade levels and metadata. Solidity compiler output generates the frontend ABI files.
+```bash
+forge test --root contracts -vv
+# Equivalent: npm run world:contracts:test
+```
 
-Svelte diagnostics and production build are checked. Live wallet connection, public-chain transactions, browser visual QA, and OpenSea embedding have not been verified. The read-only embed requires a public host and reachable RPC. A project ID alone does not deploy a contract or make an NFT.
+Tests cover the original NFT behavior plus owner-only placement/removal, transfer-based permissions, approved-operator denial, events, footprint/rotation/type validation, capacity, stable IDs and fuzzed inputs. Foundry uses `contracts/world-test/` to keep these suites separate from legacy tests.
 
-The user's public Reown project ID is also the source default so clean builds preserve wallet setup; VITE_PROJECT_ID overrides it. Optional WebMCP demo tools were migrated, but no supported validation context was available. They never submit wallet transactions.
+`contracts/script/DeployWorld.s.sol` reads `WORLD_SEED`, `WORLD_RUNTIME_URL` (HTTPS, trailing slash, no query), and `WORLD_OWNER`. A dry run:
 
+```bash
+forge script contracts/script/DeployWorld.s.sol:DeployWorld --root contracts --rpc-url YOUR_RPC
+```
+
+No chain has been deployed or transactions broadcast. Choose the runtime URL, seed and owner deliberately before a future broadcast; the seed/topology/version and URL have no setters. This is an experimental contract, not an audited production sale.
+
+## Layout and architecture
+
+- `app/src/world/`: coordinates, constants, seeded noise, terrain/collision, vegetation, parcel meshes and streaming.
+- `app/src/player/`: first-person movement and pointer lock/drag controls.
+- `app/src/blockchain/`: wallet lifecycle, ownership, configuration, mock/localStorage and viem onchain providers; preserved ethers adapter.
+- `app/src/objects/`, `app/src/build/`: primitive registry, persistent streaming layer, raycast preview/selection and build toolbar.
+- `app/src/debug/`: runtime diagnostics.
+- `contracts/src/WorldParcelNFT.sol`: bounded ERC-721 collection, canonical seed/topology, minimal parcel version and metadata.
+- `contracts/src/ParcelState.sol`: separate owner-authorized object storage with compact fields, stable IDs, 128-object cap and events.
+- `contracts/world-test/`, `contracts/script/`: Foundry tests and deployment script.
+
+The world is a 100 × 50 grid of 64-unit parcels. All terrain/decorations derive from global coordinates and the collection seed. Neighboring meshes share exact border samples, including normals; tokens do not seed independent scenes. At most 25 parcels are retained. Generation is versioned independently of mutable parcel state. Read [docs/WORLD_ARCHITECTURE.md](docs/WORLD_ARCHITECTURE.md) for invariants, metadata behavior and future extension points.
+
+Persistent edits, item inventory, escrowed NFT attachments, static characters, containers, internal portals and CHECK_ONLY doors are implemented. Messages, quests, multiplayer, moving characters/vehicles and detailed buildings remain deferred. Procedural generation is unchanged; persistent state layers on top. Objects use local X/Z centimeters and derive Y from terrain. Each primitive contract object occupies one storage slot; custody records use additional slots and indexes. 100 placements still incur significant storage and transaction costs. Provider interfaces allow a future storage strategy without rewriting Three.js.
+
+Phase 4 modules live under `app/src/nfts/`. New contracts are `WorldNFTState`, `ContainerItemState`, and owner-minted `AtlasCharacters`. ERC-721s use per-token approvals and real escrow in onchain mode. The recovery authority can recover only unregistered unsafe deposits after a seven-day delay; it cannot take registered attachments. SVG/HTML/animation metadata is never executed. Doors govern local interactions, not secret content or an authoritative onchain player position.
+
+## Existing application
+
+`npm run legacy:dev` opens the prior Cloudacre application on port 3000. `legacy:build`, `legacy:preview`, `legacy:test` and `check` retain the original workflows. Existing contracts, routes, assets and uncommitted user files are preserved. The new runtime reads only environment files under `app/`.
+
+Attached item ownership: selling or transferring land transfers the claim to items still attached to it. See [attached item ownership](docs/ATTACHED_ITEM_OWNERSHIP.md).

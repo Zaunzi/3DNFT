@@ -1,0 +1,1 @@
+export const drums=[{id:'kick',name:'Kick',key:'A'},{id:'snare',name:'Snare',key:'S'},{id:'tom1',name:'High tom',key:'D'},{id:'tom2',name:'Mid tom',key:'F'},{id:'floor',name:'Floor tom',key:'G'},{id:'hat',name:'Hi-hat',key:'H'},{id:'crash',name:'Crash',key:'J'},{id:'ride',name:'Ride',key:'K'}];

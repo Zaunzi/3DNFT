@@ -1,0 +1,15 @@
+{
+  "name": "CryptoDoodz Items — Backbeat Drum Kit",
+  "description": "A playable 3D drum kit for CryptoDoodz. Kick, snare, three toms, hi-hat, crash and ride with original synthesized percussion. Play the kit or the touch pads; keyboard A S D F G H J K. Item type 3; all editions share this experience. Ownership does not gate playback.",
+  "image": "ipfs://REPLACE_WITH_MEDIA_CID/cryptodoodz-backbeat.png",
+  "animation_url": "ipfs://REPLACE_WITH_MEDIA_CID/index.html",
+  "background_color": "0b0d12",
+  "attributes": [
+    {"trait_type":"Item","value":"Drum Kit"},
+    {"trait_type":"Series","value":"Backbeat"},
+    {"trait_type":"Category","value":"Music Equipment"},
+    {"trait_type":"Drums","display_type":"number","value":5},
+    {"trait_type":"Cymbals","display_type":"number","value":3},
+    {"trait_type":"Audio","value":"Original synthesis"}
+  ]
+}

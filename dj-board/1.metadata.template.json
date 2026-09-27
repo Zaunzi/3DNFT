@@ -1,0 +1,14 @@
+{
+  "name": "CryptoDoodz Items — Afterhours DJ Board",
+  "description": "A playable 3D DJ board for CryptoDoodz. Two synthesized decks, eight performance pads, touch scratch effects, filters and a crossfader. Enable audio to play. Item type 1; all editions share this experience. Ownership does not gate playback.",
+  "image": "ipfs://REPLACE_WITH_MEDIA_CID/cryptodoodz-afterhours.png",
+  "animation_url": "ipfs://REPLACE_WITH_MEDIA_CID/index.html",
+  "background_color": "0b0d12",
+  "attributes": [
+    {"trait_type":"Item","value":"DJ Board"},
+    {"trait_type":"Series","value":"Afterhours"},
+    {"trait_type":"Category","value":"Music Equipment"},
+    {"trait_type":"Interaction","value":"Touch + Mouse + Keyboard"},
+    {"trait_type":"Audio","value":"Original synthesis"}
+  ]
+}
