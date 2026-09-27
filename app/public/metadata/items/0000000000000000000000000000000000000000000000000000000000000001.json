@@ -1,0 +1,15 @@
+{
+  "name": "Stone",
+  "description": "A stack of stone.",
+  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000001.svg",
+  "attributes": [
+    {
+      "trait_type": "Item ID",
+      "value": 1
+    },
+    {
+      "trait_type": "Registry version",
+      "value": 1
+    }
+  ]
+}

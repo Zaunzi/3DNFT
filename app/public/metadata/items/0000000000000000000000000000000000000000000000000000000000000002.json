@@ -1,0 +1,15 @@
+{
+  "name": "Wood",
+  "description": "A bundle of wood.",
+  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000002.svg",
+  "attributes": [
+    {
+      "trait_type": "Item ID",
+      "value": 2
+    },
+    {
+      "trait_type": "Registry version",
+      "value": 1
+    }
+  ]
+}

@@ -53,7 +53,7 @@ Tests cover the original NFT behavior plus owner-only placement/removal, transfe
 forge script contracts/script/DeployWorld.s.sol:DeployWorld --root contracts --rpc-url YOUR_RPC
 ```
 
-No chain has been deployed or transactions broadcast. Choose the runtime URL, seed and owner deliberately before a future broadcast; the seed/topology/version and URL have no setters. This is an experimental contract, not an audited production sale.
+The eight Atlas contracts are deployed on **Base mainnet (8453)**. No parcels, items or characters were minted during deployment. See [Base deployment](docs/BASE_DEPLOYMENT.md) for addresses, receipts, owner roles and optional runtime configuration. The seed/topology/version and runtime URL have no setters. This is an experimental contract, not an audited production sale.
 
 ## Layout and architecture
 

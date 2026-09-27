@@ -1,0 +1,83 @@
+{
+  "chainId": 8453,
+  "owner": "0xdB6882db2a406bc1541988715842906dfd4fd590",
+  "runtime": "https://atlas-mu-lime.vercel.app/",
+  "seed": "7422026",
+  "minted": 0,
+  "addresses": {
+    "WorldParcelNFT": "0xAe4b6B896e53E596e5dC97594e3Ef14b0e4414d4",
+    "ParcelState": "0xdf102c4bdd07B456064E85cC70Ed85bab254EB4D",
+    "AtlasItems": "0xFD4fb9C2457Ec28De05860f993f8dACE01D94FCB",
+    "WorldItemState": "0xdBE1B626a4815fc104F22Eb84dc0b4078b4B8B28",
+    "PortalState": "0xe22a5487eed81ff2C8079E8319fe1fAc4A8F96D8",
+    "WorldNFTState": "0xCe937A13D1Ab9AA3cA2694030Bd85Dc4e7aF0d9F",
+    "ContainerItemState": "0x2343C663D0E1Ea3D18b9e6b1e395741CE5577b9D",
+    "AtlasCharacters": "0x959Ddc30fAe546C3A2b3924afF1c20131e22EF05"
+  },
+  "totalFeeETH": "0.000065531253049751",
+  "transactions": [
+    {
+      "name": "WorldParcelNFT",
+      "hash": "0xea30447c9eb254796ffa95171db507278b7ade7262b9c155071dfca01a0505bb",
+      "blockNumber": 51869313,
+      "gasUsed": "1721575",
+      "feeETH": "0.000010826494628439"
+    },
+    {
+      "name": "ParcelState",
+      "hash": "0x65417b066608c0c414d48a07bbb8c193ed13364321dc5a5e66d22a699251ddb7",
+      "blockNumber": 51869318,
+      "gasUsed": "697255",
+      "feeETH": "0.000004356439132471"
+    },
+    {
+      "name": "AtlasItems",
+      "hash": "0xeb2c2e506cb2b4b8640a2b319baecdc4e7dcb1c712a4724ca366532784388bc2",
+      "blockNumber": 51869322,
+      "gasUsed": "1210545",
+      "feeETH": "0.000007563853609019"
+    },
+    {
+      "name": "WorldItemState",
+      "hash": "0x53d5609016d20e89cf132bc3f2c85d4a06dd03c5c6732fd7ffd5877bf54c61f0",
+      "blockNumber": 51869327,
+      "gasUsed": "1198955",
+      "feeETH": "0.000007477705040137"
+    },
+    {
+      "name": "PortalState",
+      "hash": "0x31283c0d88e9b4943f18456e97531d7310d84163df4294c3057a32ac073ea453",
+      "blockNumber": 51869331,
+      "gasUsed": "603436",
+      "feeETH": "0.000003778241595746"
+    },
+    {
+      "name": "WorldNFTState",
+      "hash": "0x27c3b27e983b2f4e9953ab80178138fd1966e51ee67295761fe2cee4d7a0dcc0",
+      "blockNumber": 51869336,
+      "gasUsed": "3040048",
+      "feeETH": "0.000018896975694103"
+    },
+    {
+      "name": "ContainerItemState",
+      "hash": "0xfe435bf7b2f258c2f242ad8b2426ce74bb49620fef06e38cba0eae99b44b0159",
+      "blockNumber": 51869340,
+      "gasUsed": "1010141",
+      "feeETH": "0.000006285531787086"
+    },
+    {
+      "name": "AtlasCharacters",
+      "hash": "0xfd9dd2214b988264a51463feef3e39c8f52f55cf9f81b7d950fe1c39a332fb75",
+      "blockNumber": 51869345,
+      "gasUsed": "964246",
+      "feeETH": "0.000006043313267308"
+    },
+    {
+      "name": "Bind container custody",
+      "hash": "0xb0b1109e124720db144d10107b97b7cbea67cd062bdda7ca9f793ee632f57763",
+      "blockNumber": 51869350,
+      "gasUsed": "48924",
+      "feeETH": "0.000000302698295442"
+    }
+  ]
+}
