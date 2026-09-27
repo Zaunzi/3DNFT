@@ -23,6 +23,8 @@ All eight contracts also received **exact-match source verification on Sourcify*
 
 The Vercel production build runs `node scripts/build-atlas-base.mjs`, which loads the checked-in public Base configuration and produces `app/dist`. All eight contract addresses are bundled into the runtime. Local `npm run dev` and `npm run build` retain their existing mock/environment defaults.
 
+The browser uses the public Base RPC at `https://base-rpc.publicnode.com`. Base contract reads are aggregated through the chain's Multicall3 deployment to avoid a burst of individual requests for every loaded parcel. This public endpoint can be changed in the configuration; it is not an Atlas backend or a custody authority.
+
 To connect a runtime later, copy [public environment configuration](deployments/atlas-base.env.example) into `app/.env.local` for development, or set those public `VITE_*` values in the production build environment and rebuild. Never put a private key into a frontend environment variable. Parcel #742 is unminted; exploration works, but nobody can build there until the contract owner explicitly mints it in a separate transaction.
 
 AtlasItems uses `https://atlas-mu-lime.vercel.app/metadata/items/{id}.json`, with ERC-1155 lowercase 64-character hexadecimal IDs. Six static metadata/image pairs are prepared under `app/public/metadata/items/`; the website release publishes these alongside the runtime. Parcel metadata and fallback SVG, and character metadata, are generated onchain.

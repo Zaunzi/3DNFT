@@ -1,4 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, http, type Address, type Hex } from 'viem';
+import { base } from 'viem/chains';
 import { landAbi, stateAbi } from './contracts.ts';
 import type { WorldStateProvider } from './state.ts';
 import type { InjectedWallet } from './wallet.ts';
@@ -15,8 +16,11 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
   private chainId: number;
   private wallet: InjectedWallet;
   constructor(rpc: string, land: Address, state: Address | undefined, chainId: number, wallet: InjectedWallet) {
-    const chain = defineChain({ id: chainId, name: `World chain ${chainId}`, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
-    this.client = createPublicClient({ chain, transport: http(rpc), pollingInterval: 4000 });
+    const chain = defineChain({ id: chainId, name: chainId === base.id ? 'Base' : `World chain ${chainId}`, nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } }, contracts: chainId === base.id ? base.contracts : undefined });
+    // A streamed neighborhood reads several contracts per parcel. Aggregate Base
+    // reads through its known Multicall3 deployment instead of bursting RPC calls.
+    // Other chains keep the existing behavior and do not assume Multicall exists.
+    this.client = createPublicClient({ chain, transport: http(rpc), batch: { multicall: chainId === base.id ? { wait: 40, batchSize: 16384 } : false }, pollingInterval: 4000 });
     this.land = land; this.state = state; this.chainId = chainId; this.wallet = wallet;
   }
   async getWorld() {
