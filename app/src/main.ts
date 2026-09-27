@@ -18,7 +18,7 @@ import { locationFromURL } from './portals/location.ts';
 import './style.css';
 const root = document.querySelector<HTMLDivElement>('#app')!;
 root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></canvas>
-<header><div class="brand">◈ ATLAS <span>WORLD PARCELS / EXPERIMENT 001</span></div><div id="mode" class="badge">LOADING STATE</div></header>
+<header><div class="brand">◈ ATLAS <span>WORLD PARCELS / EXPERIMENT 001</span> <a href="./mint.html" style="color:inherit;pointer-events:auto">Mint assets ↗</a></div><div id="mode" class="badge">LOADING STATE</div></header>
 <section class="location"><div class="eyebrow">YOU ARE HERE</div><h1>Parcel <span id="token">—</span></h1><p id="coordinate"></p><p id="owner">Resolving ownership…</p></section>
 <section class="management"><button id="wallet-connect">Connect wallet</button><button id="wallet-disconnect" hidden>Disconnect</button><p id="wallet-state">Exploring anonymously</p><p id="permission">Connect wallet to manage this parcel</p><button id="build-toggle" disabled>Build [B]</button><button id="refresh-state">Refresh state</button><p id="state-message" role="status"></p></section>
 <div id="toast" role="status"></div><div class="crosshair">+</div>

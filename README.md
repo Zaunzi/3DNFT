@@ -23,6 +23,12 @@ Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership
 
 **Phase 4:** Open **NFTs / Containers**, select a development NFT, approve it and attach it to the parcel floor or a chest. E inspects nearby assets/containers or checks a door; I opens ERC-1155 inventory. The panel provides explicit Move/Store/Detach controls and mock Alice/Bob land-transfer controls. Refresh preserves custody state. [NFT attachments](docs/NFT_ATTACHMENTS.md) documents the complete workflow, recovery trust model, safe metadata handling and deployment variables. [Items and portals](docs/ITEMS_AND_PORTALS.md) covers the Phase 3 runtime and portal build option 6.
 
+## Mint on Base
+
+Open [Mint assets](https://atlas-mu-lime.vercel.app/mint.html), connect the contract-owner wallet and switch to Base. Mint a parcel (0–4999), a character (start with #1), or one of the six Atlas items to your chosen recipient. Each action simulates first and requires a separate wallet-confirmed transaction. Duplicate ERC-721 IDs and unauthorized mints revert. No minting occurs automatically. Open the minted parcel, connect its owner, and use Inventory or NFTs / Containers to attach assets.
+
+Vercel needs no additional environment variables: `scripts/build-atlas-base.mjs` loads the public configuration in `docs/deployments/atlas-base.env.example`. Never add private keys to Vercel or `VITE_*` variables. Local mock mode remains unchanged; the mint page requires the Base production build or equivalent local onchain configuration.
+
 ## Verify and build
 
 ```bash
