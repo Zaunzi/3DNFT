@@ -80,7 +80,7 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
     const receipt = await this.client.waitForTransactionReceipt({ hash, confirmations: 1 });
     if (receipt.status !== 'success') throw new Error(`Transaction reverted: ${hash}`);
   }
-  async addObject(tokenId: bigint, placement: ObjectPlacement) { validatePlacement(placement); await this.write(tokenId, placement); }
+  async addObject(tokenId: bigint, placement: ObjectPlacement) { validatePlacement(placement); if(placement.objectType>=7)throw new Error('Modular building is currently mock-only.'); await this.write(tokenId, placement); }
   async removeObject(tokenId: bigint, objectId: number) { await this.write(tokenId, objectId); }
   subscribe(onChange: (tokenId: bigint) => void, onError?: (error: unknown) => void) {
     let active = true;

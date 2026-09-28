@@ -44,6 +44,8 @@ export type AccessRequirement = {
     mode: 'CHECK_ONLY';
 };
 export interface WorldDoor extends LocalTransform {
+    /** Mock building elevation only; the deployed door contract remains terrain anchored. */
+    y?: number;
     id: number;
     parcelId: number;
     requirement: AccessRequirement;

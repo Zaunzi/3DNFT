@@ -79,7 +79,7 @@ async function start() {
     if(document.hidden){last=now;return;} if(now-last<1000/30)return;
     const dt=Math.min((now-last)/1000,0.1);last=now;if(!paused)angle+=dt*0.055;
     if(now-fitAt>1000){bounds.setFromObject(parcel.group);for(const group of [...objectLayer.roots(),...itemLayer.roots(),...nftLayer.roots()])bounds.expandByObject(group);bounds.min.y=Math.min(bounds.min.y,bottom);bounds.getCenter(target);bounds.getBoundingSphere(sphere);const fov=Math.min(THREE.MathUtils.degToRad(camera.fov),2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*camera.aspect));distance=sphere.radius/Math.sin(fov/2)*1.12;fitAt=now;}
-    camera.position.set(target.x+Math.cos(angle)*distance*0.78,target.y+distance*0.63,target.z+Math.sin(angle)*distance*0.78);camera.lookAt(target);renderer.render(scene,camera);
+    camera.position.set(target.x+Math.cos(angle)*distance*0.78,target.y+distance*0.63,target.z+Math.sin(angle)*distance*0.78);camera.lookAt(target);objectLayer.updateLighting(camera.position);renderer.render(scene,camera);
   });
   disposers.push(()=>{renderer.setAnimationLoop(null);renderer.dispose();});
   const timer=window.setInterval(()=>{if(!document.hidden){void objectLayer.refresh(id);void itemLayer.refresh(id);void nftLayer.refresh(id);}},60000);disposers.push(()=>clearInterval(timer));

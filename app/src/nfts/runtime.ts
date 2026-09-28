@@ -1,3 +1,6 @@
+import { localPoint } from '../objects/building.ts';
+import { getGroundHeight } from '../world/terrain.ts';
+import { EYE_HEIGHT } from '../world/constants.ts';
 import * as THREE from 'three';
 import { getAddress, type Address } from 'viem';
 import type { createBackend } from '../blockchain/backend.ts';
@@ -71,7 +74,7 @@ export class NFTRuntime {
                 }
                 if (kind === 'door') {
                     const d = object.userData.entity as WorldDoor;
-                    return { id: String(d.id), type: 'door', getInteractionLabel: () => `Check / open door #${d.id}`, canInteract: () => true, interact: async () => { const account = options.backend.wallet.snapshot.connectedAddress; const allowed = !!account && await options.backend.nfts.canOpen(d, account); this.accessResult = allowed ? 'Access granted (CHECK_ONLY)' : 'Access denied: required wallet asset missing'; options.report(this.accessResult); if (allowed) {
+                    return { id: String(d.id), type: 'door', getInteractionLabel: () => this.openedDoors.has(`${d.parcelId}:${d.id}`)?`Close door #${d.id}`:`Check / open door #${d.id}`, canInteract: () => true, interact: async () => { const key=`${d.parcelId}:${d.id}`;if(this.openedDoors.delete(key)){this.restoreDoors();return;} const account = options.backend.wallet.snapshot.connectedAddress; const allowed = !!account && await options.backend.nfts.canOpen(d, account); this.accessResult = allowed ? 'Access granted (CHECK_ONLY)' : 'Access denied: required wallet asset missing'; options.report(this.accessResult); if (allowed) {
                             this.openedDoors.add(`${d.parcelId}:${d.id}`);
                             const panel = object.getObjectByName('door-panel');
                             if (panel)
@@ -241,7 +244,8 @@ export class NFTRuntime {
             if (this.openedDoors.has(`${d.parcelId}:${d.id}`))
                 continue;
             const p = objectToWorldPosition(d.parcelId, d);
-            if (Math.hypot(position.x - p.x, position.z - p.z) < 1.3)
+            const local=localPoint(position.x,position.z,p.x,p.z,d.rotation),base=d.y===undefined?getGroundHeight(p.x,p.z,this.options.seed):d.y/100,feet=position.y-EYE_HEIGHT;
+            if (Math.abs(local.x)<1.18 && Math.abs(local.z)<.4 && feet<base+2.8 && feet+1.65>base)
                 return true;
         } return false; }
     debug() { const snapshots = [...this.layer.parcels.values()].map(e => e.snapshot); const attachments = snapshots.flatMap(s => s.attachments); const focused = attachments.find(a => assetKey(a.asset) === this.interactions.focused?.id); const container = snapshots.flatMap(s => s.containers).find(c => c.id === this.openContainer); return `\nATTACHED721 ${attachments.length}\nNFT ENTITIES ${attachments.filter(a => a.location.kind === 'parcel').length}\nNFT FOCUS   ${focused ? assetKey(focused.asset) : 'none'}\nCUSTODY     ${focused ? 'WorldNFTState escrow' : '—'}\nCANONICAL   ${focused ? `${focused.location.kind} / #${focused.location.parcelId}` : '—'}\nCONTAINER   ${this.openContainer || 'none'} · ${container?.occupied ?? 0} assets\nACCESS      ${this.accessResult}\nMETA CACHE  ${this.cache.hits} hits / ${this.cache.misses} misses`; }

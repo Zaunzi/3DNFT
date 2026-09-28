@@ -15,13 +15,17 @@ Open **http://localhost:5173/?tokenId=742**. Click **Enter world**, then use WAS
 
 You spawn in parcel #742 at grid (42, 7), facing east toward #743. Walk about 32 world units (four seconds at walking speed) to cross its border. The token label, ownership notice, coordinates and URL update without reloading. A radius-two neighborhood is generated in advance. World edges stop movement. Trees and rocks are decorative; terrain has collision.
 
-The default is **MOCK STATE** with seed 7422026. Click **Use mock owner**, then **B** to build on parcels 742, 743 or 744. Use **1–5** to choose an object, **R** to rotate, and click terrain to place. Click a saved object and press **Delete** to remove it. **Esc** clears selection; **B** exits build mode. Objects survive refresh in localStorage and render in neighboring loaded parcels. No deployment or wallet extension is required.
+The default is **MOCK STATE** with seed 7422026. Click **Use mock owner**, then **B** to build on parcels 742, 743 or 744. Use **1–5** to choose an object, **R** to rotate, and click terrain to place. Choose **Select / Remove**, click a saved object, then press **Delete** to remove it. **Esc** clears selection; **B** exits build mode. Objects survive refresh in localStorage and render in neighboring loaded parcels. No deployment or wallet extension is required.
 
 For real ownership and writes, copy `app/env.example` to `app/.env.local`, choose `onchain` mode, and set chain ID, RPC, NFT and ParcelState addresses. Connect MetaMask/Rabby; only the current parcel owner can modify state. Anonymous exploration remains available. Restart Vite after environment changes. Never put private keys into frontend variables.
 
 Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership diagram, state provider abstraction, environment variables, object encoding, gas limitations and migration strategies.
 
 **Phase 4:** Open **NFTs / Containers**, select a development NFT, approve it and attach it to the parcel floor or a chest. E inspects nearby assets/containers or checks a door; I opens ERC-1155 inventory. The panel provides explicit Move/Store/Detach controls and mock Alice/Bob land-transfer controls. Refresh preserves custody state. [NFT attachments](docs/NFT_ATTACHMENTS.md) documents the complete workflow, recovery trust model, safe metadata handling and deployment variables. [Items and portals](docs/ITEMS_AND_PORTALS.md) covers the Phase 3 runtime and portal build option 6.
+
+## Modular building prototype
+
+Run `npm run dev:mock` for the expanded local build catalog: foundations, walls, doorways, window walls, roofs, lanterns and key-checked doors. This expansion is mock-only; Base contracts and existing builds are unchanged. See [Modular building](docs/MODULAR_BUILDING.md) for snapping, elevation and a room layout.
 
 ## Embedded NFT viewer
 
@@ -87,4 +91,3 @@ Phase 4 modules live under `app/src/nfts/`. New contracts are `WorldNFTState`, `
 `npm run legacy:dev` opens the prior Cloudacre application on port 3000. `legacy:build`, `legacy:preview`, `legacy:test` and `check` retain the original workflows. Existing contracts, routes, assets and uncommitted user files are preserved. The new runtime reads only environment files under `app/`.
 
 Attached item ownership: selling or transferring land transfers the claim to items still attached to it. See [attached item ownership](docs/ATTACHED_ITEM_OWNERSHIP.md).
-

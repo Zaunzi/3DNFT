@@ -12,7 +12,8 @@ import { BuildController } from './build/buildController.ts';
 import { updateDebug } from './debug/hud.ts';
 import { ItemPortalRuntime } from './items/runtime.ts';
 import { NFTRuntime } from './nfts/runtime.ts';
-import { MOCK_NFT_COLLECTION } from './nfts/mock.ts';
+import { NFTRepresentationRegistry } from './nfts/rendering.ts';
+import { MOCK_ITEMS, MOCK_NFT_COLLECTION } from './nfts/mock.ts';
 import { getAddress } from 'viem';
 import { locationFromURL } from './portals/location.ts';
 import './style.css';
@@ -59,7 +60,7 @@ async function start() {
   const experience=new ItemPortalRuntime({backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
   assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.inventory.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.inventory.open)experience.inventory.setOpen(false);}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
   assets.sync();
-  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
+  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.config.mode==='mock', lockedDoor:backend.config.mode==='mock'?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:MOCK_ITEMS,tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
     onMode(active) {
       if(active){if(assets?.open)assets.setOpen(false);if(experience.inventory.open)experience.inventory.setOpen(false);}
       player.active = false;
@@ -69,6 +70,8 @@ async function start() {
       document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair', active);
     },
   });
+  player.surface=(x,z,feet)=>layer.floorHeight(x,z,feet);
+  player.obstructed=(position)=>layer.blocks(position.x,position.z,position.y-1.75)||!!assets?.blocks(position);
   function updatePermissions() {
     const wallet = backend.wallet.snapshot;
     el('wallet-connect').hidden = wallet.isConnected;
@@ -123,9 +126,10 @@ async function start() {
   const direction = new THREE.Vector3();
   await experience.initializeSpawn();
   renderer.setAnimationLoop(now => {
-    const dt = Math.min((now - previous) / 1000, 0.1); previous = now; const priorPosition=camera.position.clone();player.update(dt);if(assets?.blocks(camera.position))camera.position.copy(priorPosition);
+    const dt = Math.min((now - previous) / 1000, 0.1); previous = now; player.update(dt);
     const c = worldToParcel(camera.position.x, camera.position.z), next = coordinateToTokenId(c.x, c.z)!;
     if (next !== token) { token = next; world.update(token); layer.sync(world.parcels.keys());experience.sync();assets?.sync(); void enterParcel(token); const url = new URL(location.href); url.searchParams.set('tokenId', String(token)); history.replaceState(null, '', url); }
+    layer.updateLighting(camera.position);
     builder.update();experience.update();assets?.update();
     frames++; elapsed += dt; hudTime += dt;
     if (hudTime > 0.2) { updateDebug(el('debug'), token, camera.position.x, camera.position.z, identity.seed, [...world.parcels.keys()].sort((a,b) => a-b), frames / elapsed); camera.getWorldDirection(direction); const degrees = (Math.atan2(direction.x, -direction.z) * 180 / Math.PI + 360) % 360; el('heading').textContent = `${['N', 'E', 'S', 'W'][Math.round(degrees / 90) % 4]} ${degrees.toFixed(0)}°`; hudTime = 0; frames = 0; elapsed = 0; }

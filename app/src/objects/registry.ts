@@ -1,3 +1,4 @@
+import { buildingTemplates } from './buildingGeometry.ts';
 import * as THREE from 'three';
 import type { WorldObjectType } from './model.ts';
 import { pineGeometry, rockGeometry } from '../world/sceneryGeometry.ts';
@@ -10,6 +11,7 @@ export class ObjectRegistry {
   private definitions = new Map<WorldObjectType, { geometry: THREE.BufferGeometry; material: THREE.Material; y: number }[]>();
   readonly validPreview = new THREE.MeshBasicMaterial({ color: 0x92efbc, transparent: true, opacity: 0.48, depthWrite: false });
   readonly invalidPreview = new THREE.MeshBasicMaterial({ color: 0xff6868, transparent: true, opacity: 0.48, depthWrite: false });
+  private buildings = buildingTemplates();
   constructor() {
     const material = (color: number) => { const value = new THREE.MeshStandardMaterial({ color, roughness: 0.85 }); this.materials.push(value); return value; };
     const stone = material(0x9bafc0), wood = material(0xa58b69), leaf = material(0x4d8162);
@@ -22,10 +24,12 @@ export class ObjectRegistry {
     this.definitions.set(5, [part(rockGeometry(1.2), rock, .87)]);
   }
   create(type: WorldObjectType, preview = false) {
-    const group = new THREE.Group();
-    for (const part of this.definitions.get(type)!) { const mesh = new THREE.Mesh(part.geometry, preview ? this.validPreview : part.material); mesh.position.y = part.y; group.add(mesh); }
+    const template=this.buildings.get(type);
+    const group = template ? template.clone(true) : new THREE.Group();
+    if(template && preview) this.setPreviewValid(group,true);
+    for (const part of this.definitions.get(type) ?? []) { const mesh = new THREE.Mesh(part.geometry, preview ? this.validPreview : part.material); mesh.position.y = part.y; group.add(mesh); }
     group.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=!preview;o.receiveShadow=true;}});return group;
   }
   setPreviewValid(group: THREE.Group, valid: boolean) { group.traverse(object => { if (object instanceof THREE.Mesh) object.material = valid ? this.validPreview : this.invalidPreview; }); }
-  dispose() { this.geometries.forEach(g => g.dispose()); this.materials.forEach(m => m.dispose()); this.validPreview.dispose(); this.invalidPreview.dispose(); }
+  dispose() { const gs=new Set<THREE.BufferGeometry>(),ms=new Set<THREE.Material>();for(const g of this.buildings.values())g.traverse(o=>{if(o instanceof THREE.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose()); this.geometries.forEach(g => g.dispose()); this.materials.forEach(m => m.dispose()); this.validPreview.dispose(); this.invalidPreview.dispose(); }
 }

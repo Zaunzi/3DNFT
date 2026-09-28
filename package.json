@@ -21,7 +21,8 @@
     "legacy:test": "node --test tests/*.test.mjs",
     "legacy:preview": "vite preview --host 127.0.0.1",
     "world:integration": "forge build --root contracts && node --experimental-strip-types app/test/onchain.integration.ts && node --experimental-strip-types app/test/nfts.integration.ts",
-    "world:nfts:integration": "forge build --root contracts && node --experimental-strip-types app/test/nfts.integration.ts"
+    "world:nfts:integration": "forge build --root contracts && node --experimental-strip-types app/test/nfts.integration.ts",
+    "dev:mock": "node scripts/dev-atlas-mock.mjs"
   },
   "dependencies": {
     "@lucide/svelte": "0.562.0",

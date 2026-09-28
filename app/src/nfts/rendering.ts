@@ -70,10 +70,11 @@ export class NFTLayer {
                 return;
             group = new THREE.Group();
             const place = (mesh: THREE.Group, t: {
+                y?: number;
                 x: number;
                 z: number;
                 rotation: number;
-            }) => { const p = objectToWorldPosition(id, t); mesh.position.set(p.x, getGroundHeight(p.x, p.z, this.seed), p.z); mesh.rotation.y = t.rotation / 100 * Math.PI / 180; group!.add(mesh); };
+            }) => { const p = objectToWorldPosition(id, t); mesh.position.set(p.x, t.y===undefined?getGroundHeight(p.x, p.z, this.seed):t.y/100, p.z); mesh.rotation.y = t.rotation / 100 * Math.PI / 180; group!.add(mesh); };
             for (const container of snapshot.containers) {
                 const mesh = this.registry.container();
                 mesh.userData = { kind: 'container', entity: container };
