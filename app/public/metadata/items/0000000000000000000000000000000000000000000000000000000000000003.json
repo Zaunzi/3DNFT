@@ -1,7 +1,7 @@
 {
   "name": "Crystal",
   "description": "A luminous crystal.",
-  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000003.svg",
+  "image": "https://atlas-mu-lime.vercel.app/art/v1/crystal.png",
   "attributes": [
     {
       "trait_type": "Item ID",

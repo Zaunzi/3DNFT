@@ -1,7 +1,7 @@
 {
   "name": "Ancient Key",
   "description": "Opens doors configured to check this wallet-held key. CHECK_ONLY locks do not consume it.",
-  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000004.svg",
+  "image": "https://atlas-mu-lime.vercel.app/art/v1/ancient-key.png",
   "attributes": [
     {
       "trait_type": "Item ID",

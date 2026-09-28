@@ -1,7 +1,7 @@
 {
   "name": "Portal Core",
   "description": "A dormant artifact. Portal building does not consume it in this phase.",
-  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000006.svg",
+  "image": "https://atlas-mu-lime.vercel.app/art/v1/portal-core.png",
   "attributes": [
     {
       "trait_type": "Item ID",

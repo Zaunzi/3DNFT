@@ -1,7 +1,7 @@
 {
   "name": "Stone",
   "description": "A stack of stone.",
-  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000001.svg",
+  "image": "https://atlas-mu-lime.vercel.app/art/v1/stone.png",
   "attributes": [
     {
       "trait_type": "Item ID",

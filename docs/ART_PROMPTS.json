@@ -1,0 +1,31 @@
+{
+  "tool": "Built-in image_gen",
+  "character": "Use case: stylized-concept. Asset type: square NFT collectible artwork for Atlas Characters. Create a polished low-poly 3D fantasy diorama portrait of a solitary friendly hooded explorer, full body, moss-green cloak, tan leather satchel, warm brass compass, simple wooden walking staff, standing on a small beveled stone plinth with a few grass tufts. Face visible in shadow, stylized adult human with neutral features. Centered three-quarter view, entire silhouette visible with generous margins, no text, no logos, no watermark. Matte faceted geometry, intentional broad polygons, artful ambient occlusion, soft warm light from upper left, subtle teal rim. Dark forest-green seamless studio background. Restrained palette: sage, pine, ochre, warm brass. Premium miniature collectible, not photoreal, no detailed scenery. Square image.",
+  "itemBase": "Use case: stylized-concept. Asset type: square NFT collectible art for Atlas Items. Polished low-poly 3D miniature, matte faceted geometry, broad intentional polygons, premium game item render. Centered complete object in three-quarter view on a small beveled stone plinth with sparse moss. Dark forest-green seamless studio background, soft warm upper-left light, subtle teal rim, ambient occlusion. Sage, pine, ochre and brass palette. Generous margins. No text, labels, UI, logo or watermark. Square image. Subject: ",
+  "items": [
+    [
+      "stone",
+      "A carefully composed cluster of three chunky weathered gray stone blocks with angular facets and tiny moss accents. Humble resource, recognizable rock silhouettes, no gems."
+    ],
+    [
+      "wood",
+      "Three short cut timber logs tied with a simple coarse rope, visible warm honey-colored end grain and angular dark bark. Resource bundle, not a tree."
+    ],
+    [
+      "crystal",
+      "A luminous turquoise quartz cluster, one tall asymmetric faceted crystal and three small shards, embedded in gray rock. Restrained cyan inner glow, crisp geometric silhouette."
+    ],
+    [
+      "ancient-key",
+      "One ancient warm brass key, large open diamond-shaped bow with a tiny inset teal gem, long shaft and clearly recognizable stepped teeth. Resting diagonally on its stone plinth, entire key visible. Weathered but elegant, not a weapon."
+    ],
+    [
+      "lantern",
+      "One compact antique brass camping lantern with polygonal glass panes, sturdy arched carry handle and a softly glowing amber flame. Warm inviting glow on moss and stone, simple readable silhouette."
+    ],
+    [
+      "portal-core",
+      "A mysterious levitating violet faceted crystal sphere held between two incomplete bronze gyroscope rings above a small stone plinth. A restrained purple inner glow with faint luminous arcs, ancient magical machinery, compact item rather than a full portal doorway."
+    ]
+  ]
+}

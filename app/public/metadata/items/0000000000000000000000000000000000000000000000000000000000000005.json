@@ -1,7 +1,7 @@
 {
   "name": "Lantern",
   "description": "Use to toggle your local exploration light.",
-  "image": "https://atlas-mu-lime.vercel.app/metadata/items/0000000000000000000000000000000000000000000000000000000000000005.svg",
+  "image": "https://atlas-mu-lime.vercel.app/art/v1/lantern.png",
   "attributes": [
     {
       "trait_type": "Item ID",
