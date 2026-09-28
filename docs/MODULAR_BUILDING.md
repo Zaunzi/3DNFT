@@ -42,7 +42,7 @@ uses short substeps to prevent sprinting through thin walls. Up to four nearest 
 cast warm, unshadowed point light; all lanterns remain emissive. Streaming releases lights
 and uses shared geometry/materials for structure templates.
 
-This is a single-storey prototype: no stairs, jumping, stacking, structural-support rules,
+This is a single-storey prototype: no stairs or stacking, structural-support rules,
 resource costs, or automatic terrain clearing. Choose a reasonably level patch and adjust
 the shared base height; terrain can intrude on steep slopes. Doors enforce client movement,
 not protection of secrets or onchain assets; custody authorization remains contract/provider

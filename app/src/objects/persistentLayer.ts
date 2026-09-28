@@ -60,6 +60,15 @@ export class PersistentObjectLayer {
     }
     return height;
   }
+  ceilingHeight(x:number,z:number,feet:number) {
+    let ceiling=Infinity;
+    for(const [id,entry] of this.parcels)for(const o of entry.objects){
+      const p=objectToWorldPosition(id,o),q=localPoint(x,z,p.x,p.z,o.rotation),base=objectBaseY(id,o,this.seed);
+      const bottom=o.objectType===11?base+3.7:o.objectType===7?base-.5:o.objectType===9?base+3.4:Infinity;
+      const inside=o.objectType===9?Math.abs(q.x)<2.28&&Math.abs(q.z)<.43:Math.abs(q.x)<2.28&&Math.abs(q.z)<2.28;
+      if(inside&&bottom>=feet+1.65)ceiling=Math.min(ceiling,bottom);
+    }return ceiling;
+  }
   blocks(x:number,z:number,feet:number) {
     for(const [id,entry] of this.parcels)for(const o of entry.objects){
       const p=objectToWorldPosition(id,o),local=localPoint(x,z,p.x,p.z,o.rotation),base=objectBaseY(id,o,this.seed);
