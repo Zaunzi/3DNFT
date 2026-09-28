@@ -1,4 +1,4 @@
-import { parseAbi, type Abi, type Address } from 'viem';
+import { BaseError, ContractFunctionRevertedError, parseAbi, type Abi, type Address } from 'viem';
 import type { OnchainParcelStateProvider } from '../blockchain/client.ts';
 import type { InjectedWallet } from '../blockchain/wallet.ts';
 import { ITEM_DEFINITIONS, itemDefinition } from './definitions.ts';
@@ -24,6 +24,7 @@ export const portalsAbi = parseAbi([
   'function getPortals(uint256) view returns((uint32 id,uint16 destinationTokenId,uint16 x,uint16 z,uint16 rotation)[])',
   'function placePortal(uint256,uint16,uint16,uint16,uint16) returns(uint32)', 'function removePortal(uint256,uint32)',
   'error Unauthorized()', 'error InvalidPortal()', 'error UnknownPortal()',
+  'error ERC721NonexistentToken(uint256 tokenId)',
 ]);
 export class OnchainInventoryProvider implements ExperienceStore {
   readonly enabled: boolean;
@@ -46,7 +47,17 @@ export class OnchainInventoryProvider implements ExperienceStore {
   private async write(address:Address|undefined,abi:Abi,functionName:string,args:readonly unknown[]) {
     if(!this.enabled||!address)throw new Error('Configure item and portal contract addresses first.');
     const wallet=await this.wallet.forChain(this.client.chain.id);
-    const {request}=await this.client.simulateContract({address,abi,functionName,args,account:wallet.account});
+    let simulation;
+    try { simulation=await this.client.simulateContract({address,abi,functionName,args,account:wallet.account}); }
+    catch(error) {
+      const revert=error instanceof BaseError?error.walk(e=>e instanceof ContractFunctionRevertedError):undefined;
+      if(revert instanceof ContractFunctionRevertedError&&revert.data?.errorName==='ERC721NonexistentToken') {
+        const missing=String(revert.data.args?.[0]);
+        throw new Error(`Parcel #${missing} has not been minted. Choose a minted destination or mint that parcel first. Portal Cores are not required or consumed in this version.`);
+      }
+      throw error;
+    }
+    const {request}=simulation;
     const fresh=await this.wallet.forChain(this.client.chain.id);
     if(fresh.account.address!==wallet.account.address)throw new Error('Wallet changed. Retry the action.');
     const hash=await fresh.writeContract({...request,chain:this.client.chain});

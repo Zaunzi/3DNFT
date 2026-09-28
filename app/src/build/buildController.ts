@@ -36,7 +36,7 @@ export class BuildController {
     this.panel = document.createElement('section'); this.panel.className = 'build-panel'; this.panel.hidden = true;
     this.panel.innerHTML = `<div class="eyebrow">BUILD MODE · TERRAIN ANCHORED</div><div class="object-types">${Object.entries(OBJECT_TYPES).map(([id, def]) => `<button data-object="${id}">[${id}] ${def.name}</button>`).join('')}</div><p class="build-help">R rotate · Click terrain to place · Click object to select<br>Delete remove · B exit · Esc clear selection</p><p id="build-status" role="status"></p><button id="remove-object" disabled>Remove selected object</button>`;
     document.getElementById('app')!.append(this.panel);
-    if(options.portals){this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="6">[6] Portal</button>');const label=document.createElement('label');label.id='portal-destination-label';label.hidden=true;label.innerHTML='Destination token ID <input id="portal-destination" type="number" min="0" max="4999" value="1934">';this.panel.append(label);}
+    if(options.portals){this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="6">[6] Portal</button>');const label=document.createElement('label');label.id='portal-destination-label';label.hidden=true;label.innerHTML='Destination token ID <input id="portal-destination" type="number" min="0" max="4999" placeholder="Minted parcel ID">';this.panel.append(label);const hint=document.createElement('small');hint.textContent='Destination must be minted. Portal Cores are not required or consumed.';label.append(hint);}
     const signal = this.abort.signal;
     this.panel.querySelectorAll<HTMLButtonElement>('[data-object]').forEach(button => button.addEventListener('click', () => this.choose(Number(button.dataset.object) as WorldObjectType|6), { signal }));
     this.panel.querySelector('#remove-object')!.addEventListener('click', () => { void this.remove(); }, { signal });
@@ -140,3 +140,4 @@ export class BuildController {
   }
   dispose() { this.abort.abort(); this.preview.removeFromParent(); this.highlight.removeFromParent(); this.highlight.geometry.dispose(); (this.highlight.material as THREE.Material).dispose(); this.panel.remove(); }
 }
+
