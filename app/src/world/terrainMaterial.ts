@@ -1,7 +1,7 @@
 import { MeshStandardMaterial } from 'three';
 /** World-space surface detail, shared at parcel seams; never changes collision heights. */
 export function terrainMaterial() {
-  const material=new MeshStandardMaterial({vertexColors:true,roughness:1});
+  const material=new MeshStandardMaterial({color:0xe0e8dd,vertexColors:true,roughness:1});
   material.onBeforeCompile=shader=>{
     shader.vertexShader='varying vec3 atlasWorld;\n'+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\natlasWorld=(modelMatrix*vec4(position,1.0)).xyz;');
@@ -17,4 +17,5 @@ export function terrainMaterial() {
   };
   material.customProgramCacheKey=()=> 'atlas-terrain-detail-v1';return material;
 }
+
 
