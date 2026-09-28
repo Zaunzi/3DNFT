@@ -25,7 +25,7 @@ Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership
 
 ## Embedded NFT viewer
 
-Inside an iframe (including OpenSea), Atlas uses a compact parcel label and an **Open in Atlas** link. Borders and diagnostics default off; wallet, build, inventory and debugging controls live in the **Controls** drawer. Movement and the terrain runtime are unchanged. Opening the drawer pauses movement. Full-window visits keep the desktop UI. Use `/?tokenId=742&embed=1` to preview the compact layout without a marketplace; the external link removes that preview flag and keeps the currently occupied parcel.
+Atlas has two lazy-loaded presentation modes. Iframes (including OpenSea), `?mode=showcase`, and the legacy `?embed=1` preview use a living parcel diorama: one globally generated parcel, persistent objects/items/portals/NFTs, a slow orbit camera and a cutaway base. No player, WASD, wallet UI or gameplay interactions are created. The orbit respects reduced-motion preferences, can be paused, pauses rendering while hidden, and is capped at 30 FPS. Persistent state refreshes every minute while visible. **Open in Atlas** preserves the parcel ID and opens `?mode=world` in a new tab. Ordinary full-window visits and explicit `?mode=world` use the unchanged first-person world. Metadata/contracts require no update.
 
 ## Mint on Base
 
@@ -87,3 +87,4 @@ Phase 4 modules live under `app/src/nfts/`. New contracts are `WorldNFTState`, `
 `npm run legacy:dev` opens the prior Cloudacre application on port 3000. `legacy:build`, `legacy:preview`, `legacy:test` and `check` retain the original workflows. Existing contracts, routes, assets and uncommitted user files are preserved. The new runtime reads only environment files under `app/`.
 
 Attached item ownership: selling or transferring land transfers the claim to items still attached to it. See [attached item ownership](docs/ATTACHED_ITEM_OWNERSHIP.md).
+
