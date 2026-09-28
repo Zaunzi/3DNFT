@@ -3,6 +3,7 @@ import { objectToWorldPosition } from '../objects/model.ts';
 import { getGroundHeight } from '../world/terrain.ts';
 import { assetKey, type NFTAsset, type NFTSnapshot, type NFTStateProvider } from './model.ts';
 import { MetadataCache, loadSafeImage, type SafeMetadata } from './metadata.ts';
+import { createChest } from '../objects/chest.ts';
 export interface NFTRepresentation {
     supports(asset: NFTAsset, metadata: SafeMetadata): boolean;
     createObject(asset: NFTAsset, metadata: SafeMetadata): THREE.Group;
@@ -29,7 +30,7 @@ export class NFTRepresentationRegistry {
     register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
         return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); return group; }
-    container() { const g = new THREE.Group(); g.add(box(2, 1.2, 1.2, 0x826142, .6)); g.add(box(2.1, .15, 1.3, 0xc3a45e, 1.2)); return g; }
+    container() { return createChest(); }
     door() { const g = new THREE.Group(); const frame = box(.2, 3, .3, 0x71624c, 1.5); frame.position.x = -.95; g.add(frame); const panel = box(1.8, 2.8, .2, 0x976948, 1.4); panel.name = 'door-panel'; g.add(panel); return g; }
 }
 interface Entry {

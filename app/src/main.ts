@@ -35,9 +35,11 @@ async function start() {
   el('mode').textContent = state.mode;
   const canvas = document.querySelector('canvas')!, renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0xb8c9c6); scene.fog = new THREE.Fog(0xb8c9c6, 55, 122);
-  scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 2));
+  scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 1.4));
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
+  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.12;sun.shadow.bias=-.00015;scene.add(sun.target);
   const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 260);
   const spawn = parcelToWorld(tokenIdToCoordinate(token), PARCEL_SIZE / 2, PARCEL_SIZE / 2); camera.position.set(spawn.x, 0, spawn.z); camera.rotation.set(-0.09, -Math.PI / 2, 0);
   const world = new WorldManager(scene, identity.seed); world.update(token);
@@ -128,6 +130,7 @@ async function start() {
     frames++; elapsed += dt; hudTime += dt;
     if (hudTime > 0.2) { updateDebug(el('debug'), token, camera.position.x, camera.position.z, identity.seed, [...world.parcels.keys()].sort((a,b) => a-b), frames / elapsed); camera.getWorldDirection(direction); const degrees = (Math.atan2(direction.x, -direction.z) * 180 / Math.PI + 360) % 360; el('heading').textContent = `${['N', 'E', 'S', 'W'][Math.round(degrees / 90) % 4]} ${degrees.toFixed(0)}°`; hudTime = 0; frames = 0; elapsed = 0; }
     if(el('debug').textContent&&!el('debug').textContent!.includes('ATTACHED721'))el('debug').textContent+=experience.debug()+assets?.debug();
+    sun.position.set(camera.position.x-40,camera.position.y+70,camera.position.z+25);sun.target.position.set(camera.position.x,camera.position.y-2,camera.position.z);
     renderer.render(scene, camera);
   });
   import.meta.hot?.dispose(() => { renderer.setAnimationLoop(null); stopWallet(); stopEvents?.();experience.dispose();assets?.dispose(); backend.wallet.dispose(); builder.dispose(); layer.dispose(); registry.dispose(); player.dispose(); world.dispose(); renderer.dispose(); window.removeEventListener('resize', resize); window.removeEventListener('focus', reconcile); clearTimeout(toastTimer); clearInterval(reconciliationTimer); });
