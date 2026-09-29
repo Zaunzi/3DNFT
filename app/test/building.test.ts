@@ -5,7 +5,7 @@ import {MockParcelStateProvider} from '../src/blockchain/mockParcelState.ts';
 import {ObjectRegistry} from '../src/objects/registry.ts';
 import {PersistentObjectLayer} from '../src/objects/persistentLayer.ts';
 import {objectToWorldPosition,validatePlacement,type WorldObjectType} from '../src/objects/model.ts';
-import {localPoint,snapBuildCoordinate,structureBlocks} from '../src/objects/building.ts';
+import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure} from '../src/objects/building.ts';
 import {MockInventoryProvider} from '../src/items/mockInventory.ts';
 import {MockNFTProvider,MOCK_ITEMS} from '../src/nfts/mock.ts';
 const alice='0x1111111111111111111111111111111111111111' as const;
@@ -45,4 +45,15 @@ test('elevated locked door persists; key is checked without consumption',async()
  const door=(await new MockNFTProvider(ledger,31337,alice,()=>true).snapshot(742)).doors[0];assert.equal(door.y,1250);
  assert.equal(await nfts.canOpen(door,alice),false);await ledger.grantDevItem(4,1n);
  assert.equal(await nfts.canOpen(door,alice),true);assert.equal(await ledger.getBalance(alice,4n),1n);
+});
+
+test('walls snap to foundation edges with inherited elevation; roofs align to supporting walls',()=>{
+ const foundation={id:1,objectType:7 as const,x:3200,z:3200,y:150,rotation:0};
+ const wall=snapStructure(8,3200,3005,[foundation])!;
+ assert.equal(wall.x,3200);assert.equal(wall.z,3000);assert.equal(wall.y,150);assert.equal(wall.rotation,0);
+ const side=snapStructure(9,3402,3200,[foundation])!;assert.equal(side.x,3400);assert.equal(side.rotation,9000);
+ assert.equal(snapStructure(11,3200,3200,[foundation]),null);
+ const roof=snapStructure(11,3250,3150,[foundation,{id:2,objectType:8,...wall}])!;
+ assert.equal(roof.x,3200);assert.equal(roof.z,3200);assert.equal(roof.y,150);
+ assert.equal(snapStructure(8,5000,5000,[foundation]),null);
 });

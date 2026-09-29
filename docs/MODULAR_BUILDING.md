@@ -13,6 +13,7 @@ No new contracts, asset minting, crafting costs, or escrow changes are introduce
 ## Assemble a base
 
 - Foundations and roofs are 4 x 4 meters; walls are 4 meters long.
+- Walls, doorways, and window walls snap to the nearest foundation edge, inheriting its elevation and orientation. Roofs snap over a foundation with a supporting edge wall, or to either side of a standalone wall. The preview announces a snap. Entering manual X/Z coordinates bypasses structural snapping.
 - Positions snap to a 0.5-meter parcel-local grid; R turns modular pieces by 90 degrees.
 - The first structural placement fills the shared **Building base height**. All following
   pieces use that elevation. Clear it for a separate building; adjust it for uneven terrain.
@@ -21,7 +22,7 @@ No new contracts, asset minting, crafting costs, or escrow changes are introduce
   90 degrees, window wall at (32,34), doorway at (32,30), and roof at (32,32).
   Put the locked door at the doorway's same coordinates and rotation. Use the same base height.
 - Choosing a piece makes clicks place it even over existing structures. Use **Select / Remove**
-  to select saved objects; Delete removes them. A terrain hit is still required to confirm placement.
+  to select saved objects; Delete removes them. **Remove object...** opens a list of saved objects and portals with IDs and coordinates. Choose one to highlight it, then click **Remove chosen object**. A terrain hit is still required to confirm placement.
 - Floor top is base + 0.5m. Walls extend from there to base + 3.7m; roofs sit above them.
   Lanterns stand at their base height: use floor height (base + 0.5) to put one indoors.
 - Exit build mode, approach the door, and press E. Inventory's development grant can give

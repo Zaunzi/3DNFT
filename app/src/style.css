@@ -17,3 +17,5 @@
 .build-panel{max-height:65vh;overflow:auto;z-index:6}
 aside{max-height:42vh;overflow:auto}
 
+
+#object-removal{margin-top:12px;padding:12px;border:1px solid #bed4c366;border-radius:4px}#object-removal select{display:block;width:100%;margin:8px 0;padding:8px}#object-removal p{font-size:11px;line-height:1.5}#object-removal button{margin:5px 0;padding:10px;font-size:12px}
