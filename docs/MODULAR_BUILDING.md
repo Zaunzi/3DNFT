@@ -44,7 +44,7 @@ uses short substeps to prevent sprinting through thin walls. Up to four nearest 
 cast warm, unshadowed point light; all lanterns remain emissive. Streaming releases lights
 and uses shared geometry/materials for structure templates.
 
-This is a single-storey prototype: no multi-storey stacking, structural-support rules,
+This prototype has no structural-support rules,
 resource costs, or automatic terrain clearing. Choose a reasonably level patch and adjust
 the shared base height; terrain can intrude on steep slopes. Doors enforce client movement,
 not protection of secrets or onchain assets; custody authorization remains contract/provider
@@ -57,3 +57,18 @@ intentionally does not prepare or deploy that upgrade.
 ## Entrance stairs
 
 Choose **Entrance stairs** in mock build mode. Four 25cm steps span a 2m-wide, 2m-long flight. Near a foundation edge they rotate toward it and match its floor height automatically. Walk up normally with WASD. Manual X/Z overrides snapping; the base height then sets the bottom of the stairs. Steps persist and can be removed like other building pieces. These are entrance steps, not a full-storey staircase.
+
+## Multiple stories
+
+Aim at the **upper part of an existing wall** while placing a wall, doorway, or window
+wall to stack a story above it. Aim lower and toward an end to extend that wall sideways.
+The new piece inherits its rotation and elevation. Aim at a wall with Roof selected to
+place the floor/roof on that wall's side. Storeys repeat every 3.4m, including the floor
+slab. Roof tiles are walkable and continue to block jumping from underneath.
+
+Choose **Storey staircase** to connect the level below to a roof/floor edge. Its fourteen
+steps rise 3.4m over a 4m run. Snapping places the staircase outside the floor footprint,
+so you can ascend without a ceiling in the way. Leave its route clear of walls and upper
+floor tiles. Entrance stairs remain the short 1m flight. This is still mock-only; there
+is no structural stability simulation or automatic stairwell cutting. Manual coordinates
+bypass snapping, and parcel bounds and the 128-object limit still apply.

@@ -20,13 +20,29 @@ export function structureBlocks(type:number,x:number,z:number,feet:number,base:n
 }
 
 /** Structural snapping uses saved transforms, so every client derives the same joints. */
-export function snapStructure(type:number,x:number,z:number,objects: readonly import('./model.ts').PersistentWorldObject[]) {
-  if(![7,8,9,10,11,14].includes(type))return null;
+export function snapStructure(type:number,x:number,z:number,objects: readonly import('./model.ts').PersistentWorldObject[], target?: {id:number;hitY:number}) {
+  if(![7,8,9,10,11,14,15].includes(type))return null;
+  const wall=objects.find(o=>o.id===target?.id&&[8,9,10].includes(o.objectType)&&o.y!==undefined);
+  if(wall&&[8,9,10,11].includes(type)){
+    const a=wall.rotation/100*Math.PI/180,q=localPoint(x,z,wall.x,wall.z,wall.rotation);
+    let px=wall.x,pz=wall.z,y=wall.y!;
+    if(type===11){const side=q.z<0?-1:1;px+=side*200*Math.sin(a);pz+=side*200*Math.cos(a);}
+    else if(target!.hitY>=wall.y!+280){y+=340;} // Wall + 20cm floor slab: 3.4m storeys.
+    else {const side=q.x<0?-1:1;px+=side*400*Math.cos(a);pz-=side*400*Math.sin(a);}
+    return {x:Math.round(px),z:Math.round(pz),y,rotation:wall.rotation,distance:0};
+  }
   let best: {x:number;z:number;y:number;rotation:number;distance:number}|null=null;
   const offer=(px:number,pz:number,y:number,rotation:number,limit:number)=>{
     const distance=Math.hypot(x-px,z-pz);
     if(distance<=limit && (!best||distance<best.distance))best={x:Math.round(px),z:Math.round(pz),y,rotation:rotation%36000,distance};
   };
+  if(type===15){
+    for(const roof of objects.filter(o=>o.objectType===11&&o.y!==undefined)){
+      const a=roof.rotation/100*Math.PI/180;
+      for(const [dx,dz,r] of [[0,400,0],[0,-400,18000],[400,0,9000],[-400,0,27000]])offer(roof.x+dx*Math.cos(a)+dz*Math.sin(a),roof.z-dx*Math.sin(a)+dz*Math.cos(a),roof.y!+50,roof.rotation+r,250);
+    }
+    return best;
+  }
   for(const foundation of objects.filter(o=>o.objectType===7&&o.y!==undefined)){
     if(type===14){
       const a=foundation.rotation/100*Math.PI/180;
@@ -65,4 +81,9 @@ export function snapStructure(type:number,x:number,z:number,objects: readonly im
 export function stairTop(x:number,z:number,base:number):number|null {
   if(Math.abs(x)>1||Math.abs(z)>1)return null;
   return base+Math.min(4,Math.floor((1-z)/.5)+1)*.25;
+}
+
+export function storeyStairTop(x:number,z:number,base:number):number|null {
+  if(Math.abs(x)>1||Math.abs(z)>2)return null;
+  return base+Math.min(14,Math.floor((2-z)/(4/14))+1)*(3.4/14);
 }

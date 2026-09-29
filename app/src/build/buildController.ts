@@ -126,7 +126,10 @@ export class BuildController {
     const placement = { objectType: this.type, ...worldToObjectPosition(token, hit.point.x, hit.point.z), rotation: this.rotation };
     if(this.type>=7){for(const axis of ['x','z'] as const){const input=this.panel.querySelector<HTMLInputElement>(`#build-${axis}`);placement[axis]=snapBuildCoordinate(input?.value.trim()?Number(input.value)*100:placement[axis]);}}
     const manualXZ=['x','z'].some(axis=>this.panel.querySelector<HTMLInputElement>(`#build-${axis}`)?.value.trim());
-    const snapped=manualXZ?null:snapStructure(this.type,placement.x,placement.z,entry.objects);
+    let hitRoot:THREE.Object3D|null=hit.object;
+    while(hitRoot&&hitRoot.userData.kind!=='persistent')hitRoot=hitRoot.parent;
+    const target=hitRoot?.userData.tokenId===token?{id:hitRoot.userData.objectId as number,hitY:Math.round(hit.point.y*100)}:undefined;
+    const snapped=manualXZ?null:snapStructure(this.type,placement.x,placement.z,entry.objects,target);
     if(snapped){placement.x=snapped.x;placement.z=snapped.z;placement.rotation=snapped.rotation;}
     const world = objectToWorldPosition(token, placement);
     const heightInput=this.panel.querySelector<HTMLInputElement>('#build-height');
@@ -136,7 +139,7 @@ export class BuildController {
     let valid = this.type===6?o.portals!.count(token)<16:entry.objects.length < MAX_OBJECTS;
     try { if(this.type===6)validatePortal({...placement,destinationTokenId:this.destination()});else if(this.type===13){validatePortal({...placement,destinationTokenId:token});if(!Number.isInteger(modularPlacement.y)||modularPlacement.y! < -32000||modularPlacement.y!>32000)throw new Error('Invalid door height');}else validatePlacement({...modularPlacement,objectType:this.type}); } catch { valid = false; }
     o.registry.setPreviewValid(this.preview, valid);
-    if (valid) {this.candidate = modularPlacement;if(snapped)this.status(`${this.type===14?'Stairs snapped to foundation entrance':this.type===7?'Foundation snapped flush':this.type===11?'Roof snapped to wall layout':'Snapped to foundation edge'} - click to place`);}
+    if (valid) {this.candidate = modularPlacement;if(snapped)this.status(`${this.type===15?'Staircase snapped to upper floor':this.type===14?'Stairs snapped to foundation entrance':this.type===7?'Foundation snapped flush':this.type===11?'Roof snapped to wall layout':'Wall snapped to structure'} - click to place`);}
     else this.status('Invalid placement: keep the full object inside this parcel (maximum 128 objects).');
   }
   private async click() {

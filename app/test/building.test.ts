@@ -5,7 +5,7 @@ import {MockParcelStateProvider} from '../src/blockchain/mockParcelState.ts';
 import {ObjectRegistry} from '../src/objects/registry.ts';
 import {PersistentObjectLayer} from '../src/objects/persistentLayer.ts';
 import {objectToWorldPosition,validatePlacement,type WorldObjectType} from '../src/objects/model.ts';
-import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure,stairTop} from '../src/objects/building.ts';
+import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure,stairTop,storeyStairTop} from '../src/objects/building.ts';
 import {MockInventoryProvider} from '../src/items/mockInventory.ts';
 import {MockNFTProvider,MOCK_ITEMS} from '../src/nfts/mock.ts';
 const alice='0x1111111111111111111111111111111111111111' as const;
@@ -80,4 +80,25 @@ test('entrance stairs snap high end flush to all four foundation edges and have 
  assert.deepEqual([.99,.49,-.01,-.51].map(z=>stairTop(0,z,1)),[1.25,1.5,1.75,2]);
  assert.equal(stairTop(1.01,0,1),null);
  validatePlacement({objectType:14,x:3200,z:3200,y:100,rotation:9000});
+});
+
+test('wall stacking and lateral extensions preserve orientation and storey heights',()=>{
+ const wall={id:9,objectType:8 as const,x:3200,z:3000,y:150,rotation:9000};
+ const upper=snapStructure(10,3200,3000,[wall],{id:9,hitY:490})!;
+ assert.equal(upper.y,490);assert.equal(upper.x,3200);assert.equal(upper.z,3000);assert.equal(upper.rotation,9000);
+ const side=snapStructure(8,3200,2900,[wall],{id:9,hitY:250})!;
+ assert.equal(side.y,150);assert.equal(Math.hypot(side.x-wall.x,side.z-wall.z),400);
+ const roof=snapStructure(11,3100,3000,[{...wall,y:490}],{id:9,hitY:700})!;
+ assert.equal(roof.y,490);assert.equal(Math.hypot(roof.x-wall.x,roof.z-wall.z),200);
+});
+test('full-height stairs meet upper floor and roofs provide elevated walking surfaces',async()=>{
+ const roof={id:1,objectType:11 as const,x:3200,z:3200,y:12000,rotation:0};
+ const stairs=snapStructure(15,3200,3600,[roof])!;assert.equal(stairs.y,12050);
+ assert.equal(storeyStairTop(0,-1.999,stairs.y/100),123.9);
+ const registry=new ObjectRegistry(),provider=new MockParcelStateProvider(storage(),()=>true);
+ await provider.addObject(742n,roof);await provider.addObject(742n,{objectType:15,...stairs});
+ const layer=new PersistentObjectLayer(new Scene(),provider,registry,7422026n,()=>{});layer.sync([742]);await layer.refresh(742);
+ const p=objectToWorldPosition(742,roof);assert.equal(layer.floorHeight(p.x,p.z,123.9),123.9);
+ assert.ok(layer.floorHeight(p.x,p.z,120)<123);assert.equal(layer.ceilingHeight(p.x,p.z,120.5),123.7);
+ layer.dispose();registry.dispose();
 });
