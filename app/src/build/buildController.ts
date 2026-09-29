@@ -139,7 +139,7 @@ export class BuildController {
     let valid = this.type===6?o.portals!.count(token)<16:entry.objects.length < MAX_OBJECTS;
     try { if(this.type===6)validatePortal({...placement,destinationTokenId:this.destination()});else if(this.type===13){validatePortal({...placement,destinationTokenId:token});if(!Number.isInteger(modularPlacement.y)||modularPlacement.y! < -32000||modularPlacement.y!>32000)throw new Error('Invalid door height');}else validatePlacement({...modularPlacement,objectType:this.type}); } catch { valid = false; }
     o.registry.setPreviewValid(this.preview, valid);
-    if (valid) {this.candidate = modularPlacement;if(snapped)this.status(`${this.type===15?'Staircase snapped to upper floor':this.type===14?'Stairs snapped to foundation entrance':this.type===7?'Foundation snapped flush':this.type===11?'Roof snapped to wall layout':'Wall snapped to structure'} - click to place`);}
+    if (valid) {this.candidate = modularPlacement;if(snapped)this.status(`${this.type===15?'Staircase snapped to upper floor':this.type===14?'Stairs snapped to foundation entrance':this.type===7?'Foundation snapped flush':this.type===11?'Roof snapped to structure':'Wall snapped to structure'} - click to place`);}
     else this.status('Invalid placement: keep the full object inside this parcel (maximum 128 objects).');
   }
   private async click() {

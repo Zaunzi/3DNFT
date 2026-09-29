@@ -102,3 +102,16 @@ test('full-height stairs meet upper floor and roofs provide elevated walking sur
  assert.ok(layer.floorHeight(p.x,p.z,120)<123);assert.equal(layer.ceilingHeight(p.x,p.z,120.5),123.7);
  layer.dispose();registry.dispose();
 });
+
+test('roof tiles snap flush, preserve the selected storey, and skip occupied roof slots',()=>{
+ const roof={id:1,objectType:11 as const,x:3200,z:3200,y:150,rotation:9000};
+ for(const [x,z] of [[2800,3200],[3600,3200],[3200,2800],[3200,3600]]){
+  const s=snapStructure(11,x+10,z-10,[roof])!;
+  assert.equal(s.x,x);assert.equal(s.z,z);assert.equal(s.y,150);assert.equal(s.rotation,9000);
+ }
+ const upper={...roof,id:2,y:490};
+ assert.equal(snapStructure(11,3600,3200,[roof,upper],{id:2,hitY:880})!.y,490);
+ const neighbor={...roof,id:3,x:3600};
+ assert.equal(snapStructure(11,3600,3200,[roof,neighbor],{id:1,hitY:540}),null);
+ assert.equal(snapStructure(11,4000,3200,[roof,neighbor])!.x,4000);
+});

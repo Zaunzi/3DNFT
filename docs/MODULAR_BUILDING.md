@@ -72,3 +72,5 @@ so you can ascend without a ceiling in the way. Leave its route clear of walls a
 floor tiles. Entrance stairs remain the short 1m flight. This is still mock-only; there
 is no structural stability simulation or automatic stairwell cutting. Manual coordinates
 bypass snapping, and parcel bounds and the 128-object limit still apply.
+
+Roof tiles also snap edge-to-edge to other roof tiles, inheriting their height and rotation. Aim near an existing tile edge to extend it; occupied slots on that story are skipped. When stories overlap, the roof under the cursor supplies the height. Manual X/Z still bypasses snapping.

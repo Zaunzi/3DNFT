@@ -36,6 +36,20 @@ export function snapStructure(type:number,x:number,z:number,objects: readonly im
     const distance=Math.hypot(x-px,z-pz);
     if(distance<=limit && (!best||distance<best.distance))best={x:Math.round(px),z:Math.round(pz),y,rotation:rotation%36000,distance};
   };
+  if(type===11){
+    // Prefer the roof under the cursor when several storeys overlap in X/Z.
+    const roofs=objects.filter(o=>o.objectType===11&&o.y!==undefined);
+    const targeted=roofs.find(o=>o.id===target?.id);
+    for(const roof of targeted?[targeted]:roofs){
+      const a=roof.rotation/100*Math.PI/180;
+      for(const [dx,dz] of [[0,-400],[0,400],[-400,0],[400,0]]){
+        const px=Math.round(roof.x+dx*Math.cos(a)+dz*Math.sin(a)),pz=Math.round(roof.z-dx*Math.sin(a)+dz*Math.cos(a));
+        const occupied=roofs.some(o=>o.y===roof.y&&Math.abs(o.x-px)<400&&Math.abs(o.z-pz)<400);
+        if(!occupied)offer(px,pz,roof.y!,roof.rotation,250);
+      }
+    }
+    if(best)return best;
+  }
   if(type===15){
     for(const roof of objects.filter(o=>o.objectType===11&&o.y!==undefined)){
       const a=roof.rotation/100*Math.PI/180;
