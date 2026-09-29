@@ -21,14 +21,23 @@ export function structureBlocks(type:number,x:number,z:number,feet:number,base:n
 
 /** Structural snapping uses saved transforms, so every client derives the same joints. */
 export function snapStructure(type:number,x:number,z:number,objects: readonly import('./model.ts').PersistentWorldObject[]) {
-  if(![8,9,10,11].includes(type))return null;
+  if(![7,8,9,10,11].includes(type))return null;
   let best: {x:number;z:number;y:number;rotation:number;distance:number}|null=null;
   const offer=(px:number,pz:number,y:number,rotation:number,limit:number)=>{
     const distance=Math.hypot(x-px,z-pz);
     if(distance<=limit && (!best||distance<best.distance))best={x:Math.round(px),z:Math.round(pz),y,rotation:rotation%36000,distance};
   };
   for(const foundation of objects.filter(o=>o.objectType===7&&o.y!==undefined)){
-    if(type===11){
+    if(type===7){
+      // 4m centers join the 4m square footprints exactly; inherit the entire floor plane.
+      const a=foundation.rotation/100*Math.PI/180;
+      for(const [dx,dz] of [[0,-400],[0,400],[-400,0],[400,0]]){
+        const px=Math.round(foundation.x+dx*Math.cos(a)+dz*Math.sin(a));
+        const pz=Math.round(foundation.z-dx*Math.sin(a)+dz*Math.cos(a));
+        const occupied=objects.some(o=>o.objectType===7&&Math.abs(o.x-px)<400&&Math.abs(o.z-pz)<400);
+        if(!occupied)offer(px,pz,foundation.y!,foundation.rotation,250);
+      }
+    }else if(type===11){
       // A roof centers over the foundation only once a wall occupies one of its edges.
       const supported=objects.some(w=>[8,9,10].includes(w.objectType)&&w.y===foundation.y&&Math.abs(Math.hypot(w.x-foundation.x,w.z-foundation.z)-200)<1);
       if(supported)offer(foundation.x,foundation.z,foundation.y!,foundation.rotation,300);

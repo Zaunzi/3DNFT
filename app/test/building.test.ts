@@ -57,3 +57,16 @@ test('walls snap to foundation edges with inherited elevation; roofs align to su
  assert.equal(roof.x,3200);assert.equal(roof.z,3200);assert.equal(roof.y,150);
  assert.equal(snapStructure(8,5000,5000,[foundation]),null);
 });
+
+test('foundations snap flush in all directions, inherit height and avoid occupied slots',()=>{
+ const base={id:1,objectType:7 as const,x:3200,z:3200,y:175,rotation:9000};
+ for(const [x,z] of [[2800,3200],[3600,3200],[3200,2800],[3200,3600]]){
+   const snapped=snapStructure(7,x+10,z-10,[base])!;
+   assert.equal(snapped.x,x);assert.equal(snapped.z,z);assert.equal(snapped.y,175);assert.equal(snapped.rotation,9000);
+   assert.equal(Math.hypot(snapped.x-base.x,snapped.z-base.z),400);
+ }
+ const neighbor={...base,id:2,x:3600};
+ assert.equal(snapStructure(7,3600,3200,[base,neighbor]),null);
+ const extension=snapStructure(7,4000,3200,[base,neighbor])!;assert.equal(extension.x,4000);assert.equal(extension.y,175);
+ assert.equal(snapStructure(7,5500,5500,[base]),null);
+});

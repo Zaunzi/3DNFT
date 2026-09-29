@@ -12,6 +12,7 @@ No new contracts, asset minting, crafting costs, or escrow changes are introduce
 
 ## Assemble a base
 
+- Foundations snap edge-to-edge to nearby foundations, inheriting height and rotation for flush floors. Occupied snap slots are skipped.
 - Foundations and roofs are 4 x 4 meters; walls are 4 meters long.
 - Walls, doorways, and window walls snap to the nearest foundation edge, inheriting its elevation and orientation. Roofs snap over a foundation with a supporting edge wall, or to either side of a standalone wall. The preview announces a snap. Entering manual X/Z coordinates bypasses structural snapping.
 - Positions snap to a 0.5-meter parcel-local grid; R turns modular pieces by 90 degrees.
