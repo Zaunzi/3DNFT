@@ -74,12 +74,15 @@ export class NFTRuntime {
                 }
                 if (kind === 'door') {
                     const d = object.userData.entity as WorldDoor;
-                    return { id: String(d.id), type: 'door', getInteractionLabel: () => this.openedDoors.has(`${d.parcelId}:${d.id}`)?`Close door #${d.id}`:`Check / open door #${d.id}`, canInteract: () => true, interact: async () => { const key=`${d.parcelId}:${d.id}`;if(this.openedDoors.delete(key)){this.restoreDoors();return;} const account = options.backend.wallet.snapshot.connectedAddress; const allowed = !!account && await options.backend.nfts.canOpen(d, account); this.accessResult = allowed ? 'Access granted (CHECK_ONLY)' : 'Access denied: required wallet asset missing'; options.report(this.accessResult); if (allowed) {
-                            this.openedDoors.add(`${d.parcelId}:${d.id}`);
-                            const panel = object.getObjectByName('door-panel');
-                            if (panel)
-                                panel.visible = false;
-                        } } };
+                    return { id: String(d.id), type: 'door', getInteractionLabel: () => this.openedDoors.has(`${d.parcelId}:${d.id}`)?`Close door #${d.id}`:`Check / open door #${d.id}`, canInteract: () => true, interact: async () => { const key=`${d.parcelId}:${d.id}`;
+                        const account=options.backend.wallet.snapshot.connectedAddress;
+                        const allowed=!!account&&await options.backend.nfts.canOpen(d,account);
+                        if(account!==options.backend.wallet.snapshot.connectedAddress)return;
+                        this.accessResult=allowed?'Access granted (CHECK_ONLY)':'Requires the key in your wallet';options.report(this.accessResult);
+                        if(!allowed)return;
+                        if(this.openedDoors.has(key))this.openedDoors.delete(key);else this.openedDoors.add(key);
+                    } };
+
                 }
                 return null;
             } });
@@ -92,7 +95,7 @@ export class NFTRuntime {
     }
     private restoreDoors() { for (const root of this.layer.roots())
         root.traverse(o => { if (o.name === 'door-panel')
-            o.visible = true; }); }
+            {o.visible = true;o.rotation.y=0;} }); }
     setOpen(open: boolean, reset = true) { if (this.busy)
         return; this.open = open; this.panel.hidden = !open; if (open && reset) {
         this.parcel = this.options.token();
@@ -237,7 +240,7 @@ export class NFTRuntime {
             const door = o.userData.entity as WorldDoor;
             const panel = o.getObjectByName('door-panel');
             if (panel)
-                panel.visible = !this.openedDoors.has(`${door.parcelId}:${door.id}`);
+                {panel.visible=true;const target=this.openedDoors.has(`${door.parcelId}:${door.id}`)?-Math.PI/2:0;panel.rotation.y+=(target-panel.rotation.y)*.18;}
         } }); }
     blocks(position: THREE.Vector3) { for (const entry of this.layer.parcels.values())
         for (const d of entry.snapshot.doors) {

@@ -21,7 +21,13 @@ export function structureBlocks(type:number,x:number,z:number,feet:number,base:n
 
 /** Structural snapping uses saved transforms, so every client derives the same joints. */
 export function snapStructure(type:number,x:number,z:number,objects: readonly import('./model.ts').PersistentWorldObject[], target?: {id:number;hitY:number}) {
-  if(![7,8,9,10,11,14,15].includes(type))return null;
+  if(![7,8,9,10,11,13,14,15].includes(type))return null;
+  if(type===13){
+    const doors=objects.filter(o=>o.objectType===9&&o.y!==undefined);
+    const direct=doors.find(o=>o.id===target?.id);
+    const nearest=direct??doors.filter(o=>Math.hypot(x-o.x,z-o.z)<=220).sort((a,b)=>Math.hypot(x-a.x,z-a.z)-Math.hypot(x-b.x,z-b.z))[0];
+    return nearest?{x:nearest.x,z:nearest.z,y:nearest.y!,rotation:nearest.rotation,distance:0}:null;
+  }
   const wall=objects.find(o=>o.id===target?.id&&[8,9,10].includes(o.objectType)&&o.y!==undefined);
   if(wall&&[8,9,10,11].includes(type)){
     const a=wall.rotation/100*Math.PI/180,q=localPoint(x,z,wall.x,wall.z,wall.rotation);

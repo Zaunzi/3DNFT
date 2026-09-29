@@ -1,3 +1,4 @@
+import { createLockedDoor } from '../objects/door.ts';
 import * as THREE from 'three';
 import { objectToWorldPosition } from '../objects/model.ts';
 import { getGroundHeight } from '../world/terrain.ts';
@@ -31,7 +32,7 @@ export class NFTRepresentationRegistry {
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
         return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); return group; }
     container() { return createChest(); }
-    door() { const g = new THREE.Group(); const frame = box(.2, 3, .3, 0x71624c, 1.5); frame.position.x = -.95; g.add(frame); const panel = box(1.8, 2.8, .2, 0x976948, 1.4); panel.name = 'door-panel'; g.add(panel); return g; }
+    door() { return createLockedDoor(); }
 }
 interface Entry {
     group: THREE.Group;

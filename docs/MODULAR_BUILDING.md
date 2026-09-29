@@ -74,3 +74,5 @@ is no structural stability simulation or automatic stairwell cutting. Manual coo
 bypass snapping, and parcel bounds and the 128-object limit still apply.
 
 Roof tiles also snap edge-to-edge to other roof tiles, inheriting their height and rotation. Aim near an existing tile edge to extend it; occupied slots on that story are skipped. When stories overlap, the roof under the cursor supplies the height. Manual X/Z still bypasses snapping.
+
+Locked doors snap to doorway modules, including upper stories, unless manual X/Z is entered. Aim at the doorway to select its story. E swings the hinged door open or closed; both actions require the configured wallet-held key and do not consume it. The brass handle and fixed frame remain interactable when open. Disconnecting or changing wallets closes local doors.

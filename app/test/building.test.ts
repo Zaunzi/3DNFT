@@ -115,3 +115,11 @@ test('roof tiles snap flush, preserve the selected storey, and skip occupied roo
  assert.equal(snapStructure(11,3600,3200,[roof,neighbor],{id:1,hitY:540}),null);
  assert.equal(snapStructure(11,4000,3200,[roof,neighbor])!.x,4000);
 });
+
+test('locked doors snap to doorway transforms, including upper-storey openings',()=>{
+ const lower={id:1,objectType:9 as const,x:3200,z:3000,y:150,rotation:9000};
+ const upper={...lower,id:2,y:490};
+ const snap=snapStructure(13,3250,3050,[lower,upper],{id:2,hitY:700})!;
+ assert.equal(snap.x,upper.x);assert.equal(snap.z,upper.z);assert.equal(snap.y+50,540);assert.equal(snap.rotation,9000);
+ assert.equal(snapStructure(13,5000,5000,[lower]),null);
+});
