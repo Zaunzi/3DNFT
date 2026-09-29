@@ -91,3 +91,7 @@ Phase 4 modules live under `app/src/nfts/`. New contracts are `WorldNFTState`, `
 `npm run legacy:dev` opens the prior Cloudacre application on port 3000. `legacy:build`, `legacy:preview`, `legacy:test` and `check` retain the original workflows. Existing contracts, routes, assets and uncommitted user files are preserved. The new runtime reads only environment files under `app/`.
 
 Attached item ownership: selling or transferring land transfers the claim to items still attached to it. See [attached item ownership](docs/ATTACHED_ITEM_OWNERSHIP.md).
+
+### Gentler terrain tuning
+
+The runtime now uses broad/rolling/detail amplitudes of 16 / 3.5 / 0.6 (previously 26 / 7 / 1.5). Global-coordinate sampling, seed, topology, and seam matching remain deterministic, but elevations differ from earlier runtime builds. Terrain-anchored scenery follows the new ground. Explicit-height mock buildings and doors keep their saved heights and may need repositioning; no saved state is silently rewritten. This is a runtime terrain tuning revision, not a contract or metadata generator-version migration. Historical runtime bundles render the previous terrain.

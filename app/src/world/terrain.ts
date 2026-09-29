@@ -1,10 +1,10 @@
-import { CELL_SIZE } from './constants.ts';
+import { CELL_SIZE, TERRAIN_AMPLITUDES } from './constants.ts';
 import { perlin, seed32 } from './noise.ts';
 const seeds = new Map<bigint, number>();
 function folded(seed: bigint) { let s = seeds.get(seed); if (s === undefined) { s = seed32(seed); seeds.set(seed, s); } return s; }
 export function getTerrainHeight(x: number, z: number, seed: bigint): number {
   const s = folded(seed);
-  return 7 + perlin(x / 190, z / 190, s) * 26 + perlin(x / 65, z / 65, s ^ 197) * 7 + perlin(x / 23, z / 23, s ^ 911) * 1.5;
+  return 7 + perlin(x / 190, z / 190, s) * TERRAIN_AMPLITUDES.broad + perlin(x / 65, z / 65, s ^ 197) * TERRAIN_AMPLITUDES.rolling + perlin(x / 23, z / 23, s ^ 911) * TERRAIN_AMPLITUDES.detail;
 }
 export function getTerrainNormal(x: number, z: number, seed: bigint): [number, number, number] {
   const dx = getTerrainHeight(x - 0.5, z, seed) - getTerrainHeight(x + 0.5, z, seed);
