@@ -5,7 +5,7 @@ import {MockParcelStateProvider} from '../src/blockchain/mockParcelState.ts';
 import {ObjectRegistry} from '../src/objects/registry.ts';
 import {PersistentObjectLayer} from '../src/objects/persistentLayer.ts';
 import {objectToWorldPosition,validatePlacement,type WorldObjectType} from '../src/objects/model.ts';
-import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure,stairTop,storeyStairTop} from '../src/objects/building.ts';
+import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure,stairTop,storeyStairTop,placementBaseHeight} from '../src/objects/building.ts';
 import {MockInventoryProvider} from '../src/items/mockInventory.ts';
 import {MockNFTProvider,MOCK_ITEMS} from '../src/nfts/mock.ts';
 const alice='0x1111111111111111111111111111111111111111' as const;
@@ -122,4 +122,12 @@ test('locked doors snap to doorway transforms, including upper-storey openings',
  const snap=snapStructure(13,3250,3050,[lower,upper],{id:2,hitY:700})!;
  assert.equal(snap.x,upper.x);assert.equal(snap.z,upper.z);assert.equal(snap.y+50,540);assert.equal(snap.rotation,9000);
  assert.equal(snapStructure(13,5000,5000,[lower]),null);
+});
+
+test('independent placements follow local ground without inheriting the previous foundation height',()=>{
+ assert.equal(placementBaseHeight(5,''),5);
+ assert.equal(placementBaseHeight(-2,''),-2);
+ assert.equal(placementBaseHeight(-2,'',500),5);
+ assert.equal(placementBaseHeight(-2,'3.25'),3.25);
+ assert.equal(placementBaseHeight(-2,'',undefined,.5),.5);
 });

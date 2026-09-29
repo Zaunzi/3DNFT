@@ -16,8 +16,9 @@ No new contracts, asset minting, crafting costs, or escrow changes are introduce
 - Foundations and roofs are 4 x 4 meters; walls are 4 meters long.
 - Walls, doorways, and window walls snap to the nearest foundation edge, inheriting its elevation and orientation. Roofs snap over a foundation with a supporting edge wall, or to either side of a standalone wall. The preview announces a snap. Entering manual X/Z coordinates bypasses structural snapping.
 - Positions snap to a 0.5-meter parcel-local grid; R turns modular pieces by 90 degrees.
-- The first structural placement fills the shared **Building base height**. All following
-  pieces use that elevation. Clear it for a separate building; adjust it for uneven terrain.
+- Leave **Manual base height** blank for automatic grounding at each placement. It is
+  never filled automatically. Snapped pieces inherit the supporting structure's elevation;
+  an explicit manual height controls unsnapped placements. Lanterns also rest on saved floors.
 - Optional Local X/Z fields provide exact meter coordinates. Blank fields follow the cursor.
 - For a one-room example: foundation at (32,32), walls at (30,32) and (34,32) rotated
   90 degrees, window wall at (32,34), doorway at (32,30), and roof at (32,32).

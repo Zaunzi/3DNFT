@@ -107,3 +107,10 @@ export function storeyStairTop(x:number,z:number,base:number):number|null {
   if(Math.abs(x)>1||Math.abs(z)>2)return null;
   return base+Math.min(14,Math.floor((2-z)/(4/14))+1)*(3.4/14);
 }
+
+/** Automatic heights are local to each placement; only snaps/manual input lock a floor plane. */
+export function placementBaseHeight(ground:number,manual:string,snappedY?:number,support?:number){
+  if(snappedY!==undefined)return snappedY/100;
+  if(manual.trim())return Number(manual);
+  return support??ground;
+}

@@ -1,4 +1,4 @@
-import { snapBuildCoordinate, snapStructure } from '../objects/building.ts';
+import { snapBuildCoordinate, snapStructure, placementBaseHeight } from '../objects/building.ts';
 import * as THREE from 'three';
 import type { WorldManager } from '../world/worldManager.ts';
 import type { ParcelStateWriter } from '../blockchain/parcelState.ts';
@@ -44,9 +44,9 @@ export class BuildController {
     if(options.portals){this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="6">[6] Portal</button>');const label=document.createElement('label');label.id='portal-destination-label';label.hidden=true;label.innerHTML='Destination token ID <input id="portal-destination" type="number" min="0" max="4999" placeholder="Minted parcel ID">';this.panel.append(label);const hint=document.createElement('small');hint.textContent='Destination must be minted. Portal Cores are not required or consumed.';label.append(hint);}
     if(options.modular){
       this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="13">Locked door · Ancient Key</button>');
-      const label=document.createElement('label');label.innerHTML='Building base height (world units) <input id="build-height" type="number" step="0.1" min="-320" max="320" placeholder="Auto on first placement">';this.panel.append(label);
+      const label=document.createElement('label');label.innerHTML='Manual base height (optional) <input id="build-height" type="number" step="0.1" min="-320" max="320" placeholder="Auto: local ground">';this.panel.append(label);
       for(const axis of ['x','z']){const row=document.createElement('label');row.innerHTML=`Local ${axis.toUpperCase()} (meters, blank = cursor) <input id="build-${axis}" type="number" min="0" max="64" step="0.5">`;this.panel.append(row);}
-      const note=document.createElement('p');note.className='build-help';note.textContent='4m modules · 0.5m grid · 90° turns. Walls snap to foundation edges; roofs snap to wall layouts. Manual X/Z disables snapping. All pieces share the base height. Place walls at foundation edges; doorway and locked door at the same point. Placement takes priority over existing pieces. Clear height to start a new base. Lanterns are scenery, not ERC-1155 items.';this.panel.append(note);
+      const note=document.createElement('p');note.className='build-help';note.textContent='4m modules · 0.5m grid · 90° turns. Walls snap to foundation edges; roofs snap to wall layouts. Manual X/Z disables snapping. Unsnapped pieces follow local ground; only manual height overrides this. Place walls at foundation edges; doorway and locked door at the same point. Placement takes priority over existing pieces. Leave manual height blank for automatic grounding. Lanterns are scenery, not ERC-1155 items.';this.panel.append(note);
     }
     const signal = this.abort.signal;
     this.panel.querySelector('#select-build-object')!.addEventListener('click',()=>this.openRemoval(),{signal});
@@ -133,9 +133,11 @@ export class BuildController {
     if(snapped){placement.x=snapped.x;placement.z=snapped.z;placement.rotation=snapped.rotation;}
     const world = objectToWorldPosition(token, placement);
     const heightInput=this.panel.querySelector<HTMLInputElement>('#build-height');
-    const baseY=snapped?snapped.y/100:heightInput?.value.trim()?Number(heightInput.value):Math.round(getGroundHeight(world.x,world.z,o.world.seed)*10)/10;
-    const modularPlacement={...placement,...(this.type>=7?{y:Math.round((baseY+(this.type===13?.5:0))*100)}:{})};
-    this.preview.position.set(world.x, this.type===13?baseY+.5:this.type>=7?baseY:getGroundHeight(world.x, world.z, o.world.seed), world.z); this.preview.rotation.y = placement.rotation / 100 * Math.PI / 180; this.preview.visible = true;
+    const ground=getGroundHeight(world.x,world.z,o.world.seed);
+    const baseY=placementBaseHeight(ground,heightInput?.value??'',snapped?.y,this.type===12?o.layer.floorHeight(world.x,world.z,hit.point.y):undefined);
+    const doorOffset=this.type===13&&(snapped||heightInput?.value.trim())?.5:0;
+    const modularPlacement={...placement,...(this.type>=7?{y:Math.round((baseY+doorOffset)*100)}:{})};
+    this.preview.position.set(world.x, this.type===13?baseY+doorOffset:this.type>=7?baseY:getGroundHeight(world.x, world.z, o.world.seed), world.z); this.preview.rotation.y = placement.rotation / 100 * Math.PI / 180; this.preview.visible = true;
     let valid = this.type===6?o.portals!.count(token)<16:entry.objects.length < MAX_OBJECTS;
     try { if(this.type===6)validatePortal({...placement,destinationTokenId:this.destination()});else if(this.type===13){validatePortal({...placement,destinationTokenId:token});if(!Number.isInteger(modularPlacement.y)||modularPlacement.y! < -32000||modularPlacement.y!>32000)throw new Error('Invalid door height');}else validatePlacement({...modularPlacement,objectType:this.type}); } catch { valid = false; }
     o.registry.setPreviewValid(this.preview, valid);
@@ -160,7 +162,6 @@ export class BuildController {
     if (this.selecting) { this.selected = null; return; }
     if (!this.candidate) return;
     const token = o.currentToken(), placement = { ...this.candidate };
-    if(this.type>=7&&this.type!==13){const input=this.panel.querySelector<HTMLInputElement>('#build-height')!;if(!input.value)input.value=String(placement.y!/100);}
     if(this.type===13){await this.save(token,()=>o.lockedDoor!.place(token,placement));}
     else if(this.type===6){const destinationTokenId=this.destination();await this.save(token,()=>o.portals!.place(token,{...placement,destinationTokenId}));}
     else {const objectType=this.type;await this.save(token, () => o.writer.addObject(BigInt(token), {...placement,objectType}));}
