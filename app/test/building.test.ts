@@ -5,7 +5,7 @@ import {MockParcelStateProvider} from '../src/blockchain/mockParcelState.ts';
 import {ObjectRegistry} from '../src/objects/registry.ts';
 import {PersistentObjectLayer} from '../src/objects/persistentLayer.ts';
 import {objectToWorldPosition,validatePlacement,type WorldObjectType} from '../src/objects/model.ts';
-import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure} from '../src/objects/building.ts';
+import {localPoint,snapBuildCoordinate,structureBlocks,snapStructure,stairTop} from '../src/objects/building.ts';
 import {MockInventoryProvider} from '../src/items/mockInventory.ts';
 import {MockNFTProvider,MOCK_ITEMS} from '../src/nfts/mock.ts';
 const alice='0x1111111111111111111111111111111111111111' as const;
@@ -69,4 +69,15 @@ test('foundations snap flush in all directions, inherit height and avoid occupie
  assert.equal(snapStructure(7,3600,3200,[base,neighbor]),null);
  const extension=snapStructure(7,4000,3200,[base,neighbor])!;assert.equal(extension.x,4000);assert.equal(extension.y,175);
  assert.equal(snapStructure(7,5500,5500,[base]),null);
+});
+
+test('entrance stairs snap high end flush to all four foundation edges and have walkable treads',()=>{
+ const base={id:1,objectType:7 as const,x:3200,z:3200,y:150,rotation:0};
+ for(const [x,z,r] of [[3200,3500,0],[3200,2900,18000],[3500,3200,9000],[2900,3200,27000]]){
+  const s=snapStructure(14,x,z,[base])!;assert.equal(s.x,x);assert.equal(s.z,z);assert.equal(s.rotation,r);assert.equal(s.y,100);
+  assert.equal(stairTop(0,-.99,s.y/100),base.y/100+.5);
+ }
+ assert.deepEqual([.99,.49,-.01,-.51].map(z=>stairTop(0,z,1)),[1.25,1.5,1.75,2]);
+ assert.equal(stairTop(1.01,0,1),null);
+ validatePlacement({objectType:14,x:3200,z:3200,y:100,rotation:9000});
 });

@@ -1,4 +1,4 @@
-import { objectBaseY, localPoint, structureBlocks } from './building.ts';
+import { objectBaseY, localPoint, structureBlocks, stairTop } from './building.ts';
 import { Group, PointLight, type Vector3, type Scene } from 'three';
 import type { ParcelStateProvider } from '../blockchain/parcelState.ts';
 import { objectToWorldPosition, type PersistentWorldObject } from './model.ts';
@@ -54,9 +54,10 @@ export class PersistentObjectLayer {
   }
   floorHeight(x:number,z:number,feet=Infinity) {
     let height=getGroundHeight(x,z,this.seed);
-    for(const [id,entry] of this.parcels)for(const o of entry.objects)if(o.objectType===7){
-      const p=objectToWorldPosition(id,o),local=localPoint(x,z,p.x,p.z,o.rotation),top=objectBaseY(id,o,this.seed)+.5;
-      if(Math.abs(local.x)<=2 && Math.abs(local.z)<=2 && top<=feet+.65)height=Math.max(height,top);
+    for(const [id,entry] of this.parcels)for(const o of entry.objects)if(o.objectType===7||o.objectType===14){
+      const p=objectToWorldPosition(id,o),local=localPoint(x,z,p.x,p.z,o.rotation),base=objectBaseY(id,o,this.seed);
+      const top=o.objectType===14?stairTop(local.x,local.z,base):Math.abs(local.x)<=2&&Math.abs(local.z)<=2?base+.5:null;
+      if(top!==null && top<=feet+.65)height=Math.max(height,top);
     }
     return height;
   }
@@ -72,6 +73,8 @@ export class PersistentObjectLayer {
   blocks(x:number,z:number,feet:number) {
     for(const [id,entry] of this.parcels)for(const o of entry.objects){
       const p=objectToWorldPosition(id,o),local=localPoint(x,z,p.x,p.z,o.rotation),base=objectBaseY(id,o,this.seed);
+      const tread=o.objectType===14?stairTop(local.x,local.z,base):null;
+      if(tread!==null&&tread>feet+.65&&feet+1.65>base)return true;
       if(structureBlocks(o.objectType,local.x,local.z,feet,base))return true;
       if(o.objectType===7 && Math.abs(local.x)<2.28 && Math.abs(local.z)<2.28 && base+.5>feet+.65 && feet+1.65>base-.5)return true;
     }return false;

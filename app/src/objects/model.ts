@@ -16,6 +16,7 @@ export const OBJECT_TYPES = {
   10: { name: 'Window wall', radius: 201 },
   11: { name: 'Roof 4×4', radius: 283 },
   12: { name: 'Standing lantern', radius: 45 },
+  14: { name: 'Entrance stairs', radius: 142 },
 } as const;
 export type WorldObjectType = keyof typeof OBJECT_TYPES;
 export interface ObjectPlacement { objectType: WorldObjectType; x: number; z: number; rotation: number; y?: number }

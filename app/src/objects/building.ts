@@ -21,14 +21,19 @@ export function structureBlocks(type:number,x:number,z:number,feet:number,base:n
 
 /** Structural snapping uses saved transforms, so every client derives the same joints. */
 export function snapStructure(type:number,x:number,z:number,objects: readonly import('./model.ts').PersistentWorldObject[]) {
-  if(![7,8,9,10,11].includes(type))return null;
+  if(![7,8,9,10,11,14].includes(type))return null;
   let best: {x:number;z:number;y:number;rotation:number;distance:number}|null=null;
   const offer=(px:number,pz:number,y:number,rotation:number,limit:number)=>{
     const distance=Math.hypot(x-px,z-pz);
     if(distance<=limit && (!best||distance<best.distance))best={x:Math.round(px),z:Math.round(pz),y,rotation:rotation%36000,distance};
   };
   for(const foundation of objects.filter(o=>o.objectType===7&&o.y!==undefined)){
-    if(type===7){
+    if(type===14){
+      const a=foundation.rotation/100*Math.PI/180;
+      for(const [dx,dz,r] of [[0,300,0],[0,-300,18000],[300,0,9000],[-300,0,27000]]){
+        offer(foundation.x+dx*Math.cos(a)+dz*Math.sin(a),foundation.z-dx*Math.sin(a)+dz*Math.cos(a),foundation.y!-50,foundation.rotation+r,200);
+      }
+    }else if(type===7){
       // 4m centers join the 4m square footprints exactly; inherit the entire floor plane.
       const a=foundation.rotation/100*Math.PI/180;
       for(const [dx,dz] of [[0,-400],[0,400],[-400,0],[400,0]]){
@@ -54,4 +59,10 @@ export function snapStructure(type:number,x:number,z:number,objects: readonly im
     for(const side of [-1,1])offer(wall.x+side*200*Math.sin(a),wall.z+side*200*Math.cos(a),wall.y!,wall.rotation,250);
   }
   return best as {x:number;z:number;y:number;rotation:number;distance:number}|null;
+}
+
+/** Four 25cm steps; local -Z is the high end. Matches the rendered solid treads. */
+export function stairTop(x:number,z:number,base:number):number|null {
+  if(Math.abs(x)>1||Math.abs(z)>1)return null;
+  return base+Math.min(4,Math.floor((1-z)/.5)+1)*.25;
 }

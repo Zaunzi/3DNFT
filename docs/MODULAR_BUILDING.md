@@ -44,7 +44,7 @@ uses short substeps to prevent sprinting through thin walls. Up to four nearest 
 cast warm, unshadowed point light; all lanterns remain emissive. Streaming releases lights
 and uses shared geometry/materials for structure templates.
 
-This is a single-storey prototype: no stairs or stacking, structural-support rules,
+This is a single-storey prototype: no multi-storey stacking, structural-support rules,
 resource costs, or automatic terrain clearing. Choose a reasonably level patch and adjust
 the shared base height; terrain can intrude on steep slopes. Doors enforce client movement,
 not protection of secrets or onchain assets; custody authorization remains contract/provider
@@ -53,3 +53,7 @@ controlled. New builds inherit mock parcel ownership and survive refresh.
 A future Base expansion must add versioned storage and read old and new deployments together,
 not relabel old type IDs. Explicit elevation also needs contract validation. This change
 intentionally does not prepare or deploy that upgrade.
+
+## Entrance stairs
+
+Choose **Entrance stairs** in mock build mode. Four 25cm steps span a 2m-wide, 2m-long flight. Near a foundation edge they rotate toward it and match its floor height automatically. Walk up normally with WASD. Manual X/Z overrides snapping; the base height then sets the bottom of the stairs. Steps persist and can be removed like other building pieces. These are entrance steps, not a full-storey staircase.
