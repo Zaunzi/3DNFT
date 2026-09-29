@@ -26,7 +26,7 @@ export class BuildController {
   private ray = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private hasPointer = false;
-  private type: WorldObjectType | 6 | 13 = 1;
+  private type: WorldObjectType | 6 | 13 = 4;
   private rotation = 0;
   private selecting = false;
   private removalKey = "";
@@ -36,10 +36,10 @@ export class BuildController {
   private highlight = new THREE.BoxHelper(new THREE.Object3D(), 0xffe7a0);
   constructor(options: BuildOptions) {
     this.options = options;
-    this.preview = options.registry.create(1, true); this.preview.visible = false; options.scene.add(this.preview);
+    this.preview = options.registry.create(4, true); this.preview.visible = false; options.scene.add(this.preview);
     this.highlight.visible = false; options.scene.add(this.highlight);
     this.panel = document.createElement('section'); this.panel.className = 'build-panel'; this.panel.hidden = true;
-    this.panel.innerHTML = `<div class="eyebrow">BUILD MODE</div><div class="object-types"><button id="select-build-object">Select / Remove</button>${Object.entries(OBJECT_TYPES).filter(([id])=>options.modular||Number(id)<7).map(([id, def]) => `<button data-object="${id}">${Number(id)<6?'['+id+'] ':''}${def.name}</button>`).join('')}</div><p class="build-help">R rotate · Click to place · Select / Remove to edit<br>Delete remove · B exit · Esc clear selection</p><p id="build-status" role="status"></p><button id="remove-object">Remove object...</button><section id="object-removal" hidden><label>Saved object <select id="removal-choice"></select></label><p>Choose from the list or click an object in the world. The chosen object is highlighted.</p><button id="confirm-removal" disabled>Remove chosen object</button><button id="cancel-removal">Back to placement</button></section>`;
+    this.panel.innerHTML = `<div class="eyebrow">BUILD MODE</div><div class="object-types"><button id="select-build-object">Select / Remove</button>${Object.entries(OBJECT_TYPES).filter(([id])=>Number(id)>=4&&(options.modular||Number(id)<7)).map(([id, def]) => `<button data-object="${id}">${Number(id)<6?'['+id+'] ':''}${def.name}</button>`).join('')}</div><p class="build-help">R rotate · Click to place · Select / Remove to edit<br>Delete remove · B exit · Esc clear selection</p><p id="build-status" role="status"></p><button id="remove-object">Remove object...</button><section id="object-removal" hidden><label>Saved object <select id="removal-choice"></select></label><p>Choose from the list or click an object in the world. The chosen object is highlighted.</p><button id="confirm-removal" disabled>Remove chosen object</button><button id="cancel-removal">Back to placement</button></section>`;
     document.getElementById('app')!.append(this.panel);
     if(options.portals){this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="6">[6] Portal</button>');const label=document.createElement('label');label.id='portal-destination-label';label.hidden=true;label.innerHTML='Destination token ID <input id="portal-destination" type="number" min="0" max="4999" placeholder="Minted parcel ID">';this.panel.append(label);const hint=document.createElement('small');hint.textContent='Destination must be minted. Portal Cores are not required or consumed.';label.append(hint);}
     if(options.modular){
@@ -63,7 +63,7 @@ export class BuildController {
       if (event.code === 'KeyB') { event.preventDefault(); this.toggle(); return; }
       if (!this.active) return;
       if (event.code === 'KeyR') this.rotation = (this.rotation + (this.type>=7?9000:1500)) % 36000;
-      if (/^Digit[1-6]$/.test(event.code)) this.choose(Number(event.code.slice(-1)) as WorldObjectType|6|13);
+      if (/^Digit[4-6]$/.test(event.code)) this.choose(Number(event.code.slice(-1)) as WorldObjectType|6|13);
       if (event.code === 'Delete') { event.preventDefault(); void this.remove(); }
       if (event.code === 'Escape') this.selected = null;
     }, { signal });
@@ -73,7 +73,7 @@ export class BuildController {
     }, { signal });
     options.canvas.addEventListener('pointerleave', () => { this.hasPointer = false; }, { signal });
     options.canvas.addEventListener('click', event => { if (event.button === 0) void this.click(); }, { signal });
-    this.choose(1);
+    this.choose(options.modular ? 7 : 4);
   }
   private status(message: string) { this.panel.querySelector('#build-status')!.textContent = message; }
   toggle() {
@@ -86,7 +86,7 @@ export class BuildController {
     this.options.canvas.style.cursor = active ? 'crosshair' : ''; this.options.onMode(active);
   }
   private choose(type: WorldObjectType | 6 | 13) {
-    if (this.pending) return;
+    if (this.pending || type < 4) return;
     if(type===6&&!this.options.portals)return;
     if(type>=7&&!this.options.modular)return;
     if(type===13&&!this.options.lockedDoor)return;

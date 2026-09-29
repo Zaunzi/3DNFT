@@ -15,7 +15,7 @@ Open **http://localhost:5173/?tokenId=742**. Click **Enter world**, then use WAS
 
 You spawn in parcel #742 at grid (42, 7), facing east toward #743. Walk about 32 world units (four seconds at walking speed) to cross its border. The token label, ownership notice, coordinates and URL update without reloading. A radius-two neighborhood is generated in advance. World edges stop movement. Trees and rocks are decorative; terrain has collision.
 
-The default is **MOCK STATE** with seed 7422026. Click **Use mock owner**, then **B** to build on parcels 742, 743 or 744. Use **1–5** to choose an object, **R** to rotate, and click terrain to place. Choose **Select / Remove**, click a saved object, then press **Delete** to remove it. **Esc** clears selection; **B** exits build mode. Objects survive refresh in localStorage and render in neighboring loaded parcels. No deployment or wallet extension is required.
+The default is **MOCK STATE** with seed 7422026. Click **Use mock owner**, then **B** to build on parcels 742, 743 or 744. Choose a piece from the toolbar (**4** Tree, **5** Rock, **6** Portal), **R** to rotate, and click terrain to place. Choose **Select / Remove**, click a saved object, then press **Delete** to remove it. **Esc** clears selection; **B** exits build mode. Objects survive refresh in localStorage and render in neighboring loaded parcels. No deployment or wallet extension is required.
 
 For real ownership and writes, copy `app/env.example` to `app/.env.local`, choose `onchain` mode, and set chain ID, RPC, NFT and ParcelState addresses. Connect MetaMask/Rabby; only the current parcel owner can modify state. Anonymous exploration remains available. Restart Vite after environment changes. Never put private keys into frontend variables.
 
@@ -95,3 +95,5 @@ Attached item ownership: selling or transferring land transfers the claim to ite
 ### Gentler terrain tuning
 
 The runtime now uses broad/rolling/detail amplitudes of 16 / 3.5 / 0.6 (previously 26 / 7 / 1.5). Global-coordinate sampling, seed, topology, and seam matching remain deterministic, but elevations differ from earlier runtime builds. Terrain-anchored scenery follows the new ground. Explicit-height mock buildings and doors keep their saved heights and may need repositioning; no saved state is silently rewritten. This is a runtime terrain tuning revision, not a contract or metadata generator-version migration. Historical runtime bundles render the previous terrain.
+
+Cube, Platform and Pillar are retired from the build toolbar and keyboard shortcuts. Existing saved instances still render and remain removable. New mock build sessions start with Foundation selected.
