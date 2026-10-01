@@ -3,6 +3,7 @@ import { GENERATOR_VERSION, PARCEL_SIZE } from './world/constants.ts';
 import { coordinateToTokenId, parseTokenId, parcelToWorld, tokenIdToCoordinate, worldToParcel } from './world/coordinates.ts';
 import { WorldManager } from './world/worldManager.ts';
 import { Player } from './player/player.ts';
+import { createPlayerCamera } from './player/camera.ts';
 import { createBackend } from './blockchain/backend.ts';
 import { isParcelOwner } from './blockchain/ownership.ts';
 import { ObjectRegistry } from './objects/registry.ts';
@@ -41,8 +42,8 @@ async function start() {
   scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 1.4));
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
   sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.12;sun.shadow.bias=-.00015;scene.add(sun.target);
-  const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 260);
-  const spawn = parcelToWorld(tokenIdToCoordinate(token), PARCEL_SIZE / 2, PARCEL_SIZE / 2); camera.position.set(spawn.x, 0, spawn.z); camera.rotation.set(-0.09, -Math.PI / 2, 0);
+  const camera = createPlayerCamera(innerWidth / innerHeight);
+  const spawn = parcelToWorld(tokenIdToCoordinate(token), PARCEL_SIZE / 2, PARCEL_SIZE / 2); camera.position.set(spawn.x, 0, spawn.z);
   const world = new WorldManager(scene, identity.seed); world.update(token);
   const player = new Player(camera, canvas, identity.seed); player.update(0);
   let ownershipRequest = 0, toastTimer = 0;
