@@ -1,0 +1,8 @@
+{
+  "revision": "r10",
+  "supply": 1000,
+  "contract": "0x9dad3BD66684206B2f2243B20E40699aCAbce53c",
+  "chainId": 8453,
+  "baseTokenURI": "https://3dnft.vercel.app/cryptodoodz/metadata/",
+  "packageSHA256": "507996fcc893d613425209a02b6c823e5bf501ce6c591622d72370f0fdf6f4ea"
+}
