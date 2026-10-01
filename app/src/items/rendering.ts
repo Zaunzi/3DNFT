@@ -28,6 +28,7 @@ export class ExperienceRegistry {
     // Shared material clock changes presentation only; custody/state stay deterministic.
     inner.userData.portalGlow=true;
   }
+  validateItem(item:AttachedWorldItem){validateItemPlacement(item);}
   item(type:number){const group=new THREE.Group(),mesh=this.templates.get(type)?.clone();if(!mesh)throw new Error('Unsupported item visual');mesh.position.y=.7;group.add(mesh);return group;}
   portal(){
     const group=this.portalTemplate.clone(true);
@@ -49,14 +50,15 @@ export class ExperienceRegistry {
 interface Entry {group:THREE.Group;items:AttachedWorldItem[];portals:Portal[];ready:boolean;request:number}
 export class ExperienceLayer {
   readonly parcels=new Map<number,Entry>();
+  private itemKind:string;
   private scene:THREE.Scene;private store:ExperienceStore;readonly registry:ExperienceRegistry;private seed:bigint;private report:(message:string)=>void;
-  constructor(scene:THREE.Scene,store:ExperienceStore,registry:ExperienceRegistry,seed:bigint,report:(message:string)=>void){this.scene=scene;this.store=store;this.registry=registry;this.seed=seed;this.report=report;}
+  constructor(scene:THREE.Scene,store:ExperienceStore,registry:ExperienceRegistry,seed:bigint,report:(message:string)=>void,itemKind='item'){this.scene=scene;this.store=store;this.registry=registry;this.seed=seed;this.report=report;this.itemKind=itemKind;}
   sync(ids:Iterable<number>){const wanted=new Set(ids);for(const [id,entry]of this.parcels)if(!wanted.has(id)){entry.group.removeFromParent();entry.group.clear();this.parcels.delete(id);}for(const id of wanted)if(!this.parcels.has(id)){const group=new THREE.Group();this.scene.add(group);this.parcels.set(id,{group,items:[],portals:[],ready:false,request:0});void this.refresh(id);}}
   async refresh(id:number){const entry=this.parcels.get(id);if(!entry)return;const request=++entry.request;entry.ready=false;
     try{const [items,portals]=await Promise.all([this.store.getItems(id),this.store.getPortals(id)]);if(this.parcels.get(id)!==entry||request!==entry.request)return;
-      items.forEach(validateItemPlacement);portals.forEach(validatePortal);
+      items.forEach(item=>this.registry.validateItem(item));portals.forEach(validatePortal);
       const replacement=new THREE.Group();
-      for(const value of [...items,...portals]){const kind='itemType'in value?'item':'portal';const mesh=kind==='item'?this.registry.item((value as AttachedWorldItem).itemType):this.registry.portal();const p=objectToWorldPosition(id,value);mesh.position.set(p.x,getGroundHeight(p.x,p.z,this.seed),p.z);mesh.rotation.y=value.rotation/100*Math.PI/180;mesh.userData={kind,entity:value};replacement.add(mesh);}
+      for(const value of [...items,...portals]){const kind='itemType'in value?'item':'portal';const mesh=kind==='item'?this.registry.item((value as AttachedWorldItem).itemType):this.registry.portal();const p=objectToWorldPosition(id,value);mesh.position.set(p.x,getGroundHeight(p.x,p.z,this.seed),p.z);mesh.rotation.y=value.rotation/100*Math.PI/180;mesh.userData={kind:kind==='item'?this.itemKind:kind,entity:value};replacement.add(mesh);}
       entry.group.clear();entry.group.add(replacement);entry.items=items;entry.portals=portals;entry.ready=true;
     }catch(error){if(this.parcels.get(id)===entry&&entry.request===request)this.report(`Parcel #${id} item/portal state unavailable: ${error instanceof Error?error.message:String(error)}`);}
   }

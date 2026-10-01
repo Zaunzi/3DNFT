@@ -1,4 +1,4 @@
-import { BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, http, type Address, type Hex } from 'viem';
+import { BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, fallback, http, type Address, type Hex } from 'viem';
 import { base } from 'viem/chains';
 import { landAbi, stateAbi, stateV2Abi } from './contracts.ts';
 import type { WorldStateProvider } from './state.ts';
@@ -21,7 +21,7 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
     // A streamed neighborhood reads several contracts per parcel. Aggregate Base
     // reads through its known Multicall3 deployment instead of bursting RPC calls.
     // Other chains keep the existing behavior and do not assume Multicall exists.
-    this.client = createPublicClient({ chain, transport: http(rpc), batch: { multicall: chainId === base.id ? { wait: 40, batchSize: 16384 } : false }, pollingInterval: 4000 });
+    this.client = createPublicClient({ chain, transport: chainId === base.id && rpc === 'https://base-rpc.publicnode.com' ? fallback([http(rpc),http('https://mainnet.base.org')]) : http(rpc), batch: { multicall: chainId === base.id ? { wait: 40, batchSize: 16384 } : false }, pollingInterval: 4000 });
     this.land = land; this.state = state; this.chainId = chainId; this.wallet = wallet;
   }
   async getWorld() {

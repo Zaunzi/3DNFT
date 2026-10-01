@@ -1,0 +1,12 @@
+{
+  "chainId": 8453,
+  "contract": "WorldTrinketState",
+  "address": "0x502c6B27dB570Fb2D6ed2670b00457cc3CD58f61",
+  "land": "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+  "items": "0x32CEb50081fD7e986cd32231b01157b45FD20B51",
+  "transactionHash": "0x4d604b3a1093eb5d5b4a00bed328e8a646edddc455b575406acd4e6896434071",
+  "blockNumber": 52048619,
+  "executionFeeETH": "0.000007085862",
+  "verified": true,
+  "explorer": "https://basescan.org/address/0x502c6B27dB570Fb2D6ed2670b00457cc3CD58f61#code"
+}

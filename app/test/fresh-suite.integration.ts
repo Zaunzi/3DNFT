@@ -1,3 +1,4 @@
+import {OnchainTrinketProvider} from '../src/trinkets/onchain.ts';
 // Ephemeral local-chain integration. No public network or real funds.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -44,6 +45,11 @@ try {
     await base.addObject(0n, {objectType:7,x:3200,z:3200,rotation:9000,y:190});
     assert.equal((await base.getObjects(0n))[0].y,190);
     await assert.rejects(base.addObject(0n,{objectType:8,x:3200,z:3200,rotation:1,y:190}));
+    const trinketState=await deploy('WorldTrinketState',[land,trinkets]);
+    const trinketProvider=new OnchainTrinketProvider(base.client,injected,{land,items:trinkets,worldItems:trinketState});
+    await trinketProvider.validateDeployment();await trinketProvider.approveEscrow();
+    await trinketProvider.placeItem(0,{itemType:4,quantity:1n,x:3200,z:3200,rotation:9000});
+    assert.equal(await trinketProvider.getBalance(alice,4n),1n);assert.equal((await trinketProvider.getItems(0)).length,1);
     const provider = new OnchainNFTProvider(base.client, injected, { land, world, containers, items, characters });
     await provider.validateDeployment();
     await provider.createDoor(0,{x:3200,z:3200,rotation:0,y:240},{kind:'erc1155',contractAddress:items,tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});
@@ -68,10 +74,12 @@ try {
     await write(land, parseAbi(['function transferFrom(address,address,uint256)']), 'transferFrom', [alice, bob, 0n]);
     assert.deepEqual(await provider.snapshot(0), before);
     await assert.rejects(provider.detach(asset));
+    await assert.rejects(trinketProvider.pickupItem(0,1));
     assert.equal(await provider.canOpen(keyed,alice),false);
     assert.equal(await provider.canOpen(keyed,bob),true);
     active = bob;
     await injected.refresh();
+    await trinketProvider.pickupItem(0,1);assert.equal(await trinketProvider.getBalance(bob,4n),1n);assert.equal((await trinketProvider.getItems(0)).length,0);
     await provider.detach(asset);
     await provider.retrieveItem(chest.id, 3, 12n);
     await provider.removeContainer(chest.id);

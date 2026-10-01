@@ -1,3 +1,4 @@
+import {TrinketRegistry} from '../trinkets/rendering.ts';
 import * as THREE from 'three';
 import { createBackend } from '../blockchain/backend.ts';
 import { parseTokenId, tokenIdToCoordinate, parcelToWorld } from '../world/coordinates.ts';
@@ -56,11 +57,13 @@ async function start() {
   const report = (label: string, failed: boolean) => { if (disposed) return; failed ? issues.add(label) : issues.delete(label); status.textContent = issues.size ? 'Some parcel assets are unavailable. Open Doodverse to retry.' : ''; };
   const objects = new ObjectRegistry(), items = new ExperienceRegistry();
   const objectLayer = new PersistentObjectLayer(scene,backend.objects,objects,identity.seed,(_,error)=>report('objects',!!error));
+  const trinkets=new TrinketRegistry();
+  const trinketLayer=new ExperienceLayer(scene,backend.trinkets,trinkets,identity.seed,()=>report('trinkets',true),'trinket');
   const itemLayer = new ExperienceLayer(scene,backend.experience,items,identity.seed,()=>report('items',true));
   const cache = new MetadataCache(a=>backend.nfts.tokenURI(a),import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/');
   const nftLayer = new NFTLayer(scene,backend.nfts,new NFTRepresentationRegistry(backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS),identity.seed,cache,()=>report('nfts',true));
-  disposers.push(()=>{objectLayer.dispose();itemLayer.dispose();nftLayer.dispose();objects.dispose();items.dispose();});
-  objectLayer.sync([id]); itemLayer.sync([id]); nftLayer.sync([id]);
+  disposers.push(()=>{objectLayer.dispose();trinketLayer.dispose();trinkets.dispose();itemLayer.dispose();nftLayer.dispose();objects.dispose();items.dispose();});
+  trinketLayer.sync([id]);objectLayer.sync([id]); itemLayer.sync([id]); nftLayer.sync([id]);
   const canvas = root.querySelector('canvas')!, renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5)); renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
   const camera = new THREE.PerspectiveCamera(38,1,0.1,1500), target = new THREE.Vector3();
@@ -78,11 +81,11 @@ async function start() {
   renderer.setAnimationLoop(now=>{
     if(document.hidden){last=now;return;} if(now-last<1000/30)return;
     const dt=Math.min((now-last)/1000,0.1);last=now;if(!paused)angle+=dt*0.055;
-    if(now-fitAt>1000){bounds.setFromObject(parcel.group);for(const group of [...objectLayer.roots(),...itemLayer.roots(),...nftLayer.roots()])bounds.expandByObject(group);bounds.min.y=Math.min(bounds.min.y,bottom);bounds.getCenter(target);bounds.getBoundingSphere(sphere);const fov=Math.min(THREE.MathUtils.degToRad(camera.fov),2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*camera.aspect));distance=sphere.radius/Math.sin(fov/2)*1.12;fitAt=now;}
+    if(now-fitAt>1000){bounds.setFromObject(parcel.group);for(const group of [...objectLayer.roots(),...itemLayer.roots(),...trinketLayer.roots(),...nftLayer.roots()])bounds.expandByObject(group);bounds.min.y=Math.min(bounds.min.y,bottom);bounds.getCenter(target);bounds.getBoundingSphere(sphere);const fov=Math.min(THREE.MathUtils.degToRad(camera.fov),2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*camera.aspect));distance=sphere.radius/Math.sin(fov/2)*1.12;fitAt=now;}
     camera.position.set(target.x+Math.cos(angle)*distance*0.78,target.y+distance*0.63,target.z+Math.sin(angle)*distance*0.78);camera.lookAt(target);objectLayer.updateLighting(camera.position);renderer.render(scene,camera);
   });
   disposers.push(()=>{renderer.setAnimationLoop(null);renderer.dispose();});
-  const timer=window.setInterval(()=>{if(!document.hidden){void objectLayer.refresh(id);void itemLayer.refresh(id);void nftLayer.refresh(id);}},60000);disposers.push(()=>clearInterval(timer));
+  const timer=window.setInterval(()=>{if(!document.hidden){void trinketLayer.refresh(id);void objectLayer.refresh(id);void itemLayer.refresh(id);void nftLayer.refresh(id);}},60000);disposers.push(()=>clearInterval(timer));
   status.textContent=issues.size?'Some parcel assets are unavailable. Open Doodverse to retry.':'';
 }
 void start().catch(()=>{if(!disposed)status.textContent='Parcel unavailable right now. Open in Doodverse to retry.';});

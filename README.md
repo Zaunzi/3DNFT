@@ -111,7 +111,7 @@ Legacy `VITE_ATLAS_*` configuration keys, script filenames, `INTERNAL_ATLAS` por
 
 The fresh ten-contract suite keeps six utilities in **Doodverse Parcel Items** (`DoodverseItems.sol`, legacy `VITE_ATLAS_ITEMS_ADDRESS` setting). **Doodverse Trinkets** is a separate ERC-1155: 1 Afterhours, 2 Nocturne 88, 3 Backbeat, 4 Prism, 5 Barrio. Configure `VITE_DOODVERSE_TRINKETS_ADDRESS` after deployment to enable its separate mint option. An absent trinket address does not disable existing collection minting.
 
-Generate instrument metadata with `node scripts/generate-trinket-metadata.mjs`; commit the output under `static/trinkets/` and deploy the legacy site before minting. Metadata uses the existing playable `/items/1/` through `/items/5/` pages, with simple SVG covers. These HTML instruments are not automatically embedded inside the world. Trinkets currently remain wallet collectibles: parcel placement and containers still accept only the utility contract. Holding Prism #4 does not satisfy a Key #4 requirement. A separate trinket custody integration is needed for world placement.
+Generate instrument metadata with `node scripts/generate-trinket-metadata.mjs`; commit the output under `static/trinkets/` and deploy the legacy site before minting. Metadata uses the existing playable `/items/1/` through `/items/5/` pages, with simple SVG covers. These HTML instruments are not automatically embedded inside the world. Trinkets now support static world placement through their own escrow. Containers still accept only the utility contract. Holding Prism #4 does not satisfy a Key #4 requirement. See [Trinket placement](docs/TRINKET_PLACEMENT.md).
 
 ## Public parcel minting (fresh deployment)
 
@@ -122,3 +122,7 @@ The mint page detects the fresh contract, shows remaining allowance, and links t
 Distinct lock keys are documented in [Keys](docs/KEYS.md). They use a separate DoodverseKeys ERC-1155 contract; utility Key #4 is retained only for legacy/shared-key requirements.
 
 The fresh ten-contract Doodverse suite is deployed on Base: [addresses and activation notes](docs/DOODVERSE_BASE_DEPLOYMENT.md). The older Atlas deployment remains separate.
+
+## Placeable Trinkets
+
+Open **Inventory [I] > Collection > Trinkets**, select an instrument, approve its separate escrow, and use **Place near player** (quantity 1). Aim at it and press **E** to pick it up. Placed instruments follow parcel ownership. See [Trinket placement](docs/TRINKET_PLACEMENT.md) for contracts, model export, mock mode, and limitations.

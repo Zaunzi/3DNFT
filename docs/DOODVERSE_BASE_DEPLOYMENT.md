@@ -19,7 +19,7 @@ Deployed October 1, 2026 on Base (8453). Owner/recovery authority: `0xdB6882db2a
 
 [Public receipts](deployments/doodverse-base-mainnet.json) contain every transaction hash. [Public frontend configuration](deployments/doodverse-base.env.example) contains only addresses and RPC settings. Existing Atlas deployment reports and production configuration remain intact.
 
-DoodverseParcels is public and free: automatic sequential IDs, up to five lifetime mints per wallet, and network gas only. Keys use the separate DoodverseKeys contract with per-lock IDs, guest copies, rekeying and ownership-epoch invalidation; see [Keys](KEYS.md). Parcel items, trinkets and characters retain owner-controlled distribution. Trinkets are still wallet collectibles and are not accepted by the utility-item escrow.
+DoodverseParcels is public and free: automatic sequential IDs, up to five lifetime mints per wallet, and network gas only. Keys use the separate DoodverseKeys contract with per-lock IDs, guest copies, rekeying and ownership-epoch invalidation; see [Keys](KEYS.md). Parcel items, trinkets and characters retain owner-controlled distribution. Trinkets now use the separately deployed [WorldTrinketState escrow](TRINKET_PLACEMENT.md) for placement; they are not accepted by the utility-item escrow.
 
 The deployer checked deployed runtime bytecode, immutable bindings, authorities, public mint configuration and the five-mint cap. Validation passed 58 Solidity tests, 42 runtime tests, local-chain integration and production build. These checks are not an independent security audit.
 
