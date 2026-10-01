@@ -18,3 +18,14 @@ test('homepage stays lightweight while direct world and NFT links preserve their
   assert.equal(presentationMode('?chain=8453&contract=0x123',false),'world');
   assert.equal(presentationMode('',true),'showcase');
 });
+
+import {parseTokenId} from '../src/world/coordinates.ts';
+import {dragOrbit} from '../src/viewer/orbit.ts';
+test('default world entry is parcel 1 without overriding explicit parcel IDs',()=>{
+  assert.equal(parseTokenId(null),1);assert.equal(parseTokenId('0'),0);assert.equal(parseTokenId('742'),742);
+});
+test('showcase dragging changes both angles and cannot flip below terrain or over the pole',()=>{
+  const moved=dragOrbit(.7,.68,100,50);assert.ok(moved.angle<.7);assert.ok(moved.elevation>.68);
+  assert.equal(dragOrbit(0,.68,0,-10000).elevation,.15);
+  assert.equal(dragOrbit(0,.68,0,10000).elevation,1.35);
+});

@@ -16,3 +16,5 @@ export const GRAVITY = 20;
 
 // Terrain tuning revision 2: gentler relief; global sampling and topology are unchanged.
 export const TERRAIN_AMPLITUDES = { broad: 16, rolling: 3.5, detail: 0.6 } as const;
+
+export const DEFAULT_TOKEN_ID = 1;

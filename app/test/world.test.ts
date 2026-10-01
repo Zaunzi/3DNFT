@@ -14,7 +14,7 @@ test('all 5000 coordinates round trip; edges never wrap', () => {
   assert.equal(getNeighbors({x:0,z:0}).north, null);
   for (const id of [-1, 5000, NaN, 1.5]) assert.throws(() => tokenIdToCoordinate(id));
   for (const text of ['', '-1', '1.5', '5000', 'Infinity']) assert.throws(() => parseTokenId(text));
-  assert.equal(parseTokenId(null), 742); assert.equal(coordinateToTokenId(-1, 0), null);
+  assert.equal(parseTokenId(null), 1); assert.equal(coordinateToTokenId(-1, 0), null);
 });
 test('global boundary crossing and bounded neighborhood', () => {
   const c = worldToParcel(43 * 64, 7 * 64); assert.equal(coordinateToTokenId(c.x, c.z), 743);

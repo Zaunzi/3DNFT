@@ -1,4 +1,4 @@
-import { MAX_SUPPLY, PARCEL_SIZE, WORLD_DEPTH, WORLD_WIDTH } from './constants.ts';
+import { DEFAULT_TOKEN_ID, MAX_SUPPLY, PARCEL_SIZE, WORLD_DEPTH, WORLD_WIDTH } from './constants.ts';
 export interface ParcelCoordinate { x: number; z: number }
 export function tokenIdToCoordinate(tokenId: number): ParcelCoordinate {
   if (!Number.isInteger(tokenId) || tokenId < 0 || tokenId >= MAX_SUPPLY) throw new RangeError('Token must be an integer from 0 to 4999');
@@ -16,7 +16,7 @@ export function nearbyTokenIds(c: ParcelCoordinate, radius: number): number[] {
   return ids;
 }
 export function parseTokenId(value: string | null): number {
-  if (value === null) return 742;
+  if (value === null) return DEFAULT_TOKEN_ID;
   if (!/^\d+$/.test(value)) throw new RangeError('Invalid tokenId; use an integer from 0 to 4999.');
   const id = Number(value); tokenIdToCoordinate(id); return id;
 }
