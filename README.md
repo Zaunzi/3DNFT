@@ -111,7 +111,7 @@ Legacy `VITE_ATLAS_*` configuration keys, script filenames, `INTERNAL_ATLAS` por
 
 The fresh ten-contract suite keeps six utilities in **Doodverse Parcel Items** (`DoodverseItems.sol`, legacy `VITE_ATLAS_ITEMS_ADDRESS` setting). **Doodverse Trinkets** is a separate ERC-1155: 1 Afterhours, 2 Nocturne 88, 3 Backbeat, 4 Prism, 5 Barrio. Configure `VITE_DOODVERSE_TRINKETS_ADDRESS` after deployment to enable its separate mint option. An absent trinket address does not disable existing collection minting.
 
-Generate instrument metadata with `node scripts/generate-trinket-metadata.mjs`; commit the output under `static/trinkets/` and deploy the legacy site before minting. Metadata uses the existing playable `/items/1/` through `/items/5/` pages, with simple SVG covers. These HTML instruments are not automatically embedded inside the world. Trinkets now support static world placement through their own escrow. Containers still accept only the utility contract. Holding Prism #4 does not satisfy a Key #4 requirement. See [Trinket placement](docs/TRINKET_PLACEMENT.md).
+Generate instrument metadata with `node scripts/generate-trinket-metadata.mjs`; commit the output under `static/trinkets/` and deploy the legacy site before minting. Metadata uses the existing playable `/items/1/` through `/items/5/` pages, with simple SVG covers. These HTML instruments are not automatically embedded inside the world. Trinkets support world placement through their own escrow. Left-click a nearby instrument to open its sandboxed playable controls. Containers still accept only the utility contract. Holding Prism #4 does not satisfy a Key #4 requirement. See [Trinket placement](docs/TRINKET_PLACEMENT.md).
 
 ## Public parcel minting (fresh deployment)
 
@@ -125,4 +125,4 @@ The fresh ten-contract Doodverse suite is deployed on Base: [addresses and activ
 
 ## Placeable Trinkets
 
-Open **Inventory [I] > Collection > Trinkets**, select an instrument, approve its separate escrow, and use **Place near player** (quantity 1). Aim at it and press **E** to pick it up. Placed instruments follow parcel ownership. See [Trinket placement](docs/TRINKET_PLACEMENT.md) for contracts, model export, mock mode, and limitations.
+Open **Inventory [I] > Collection > Trinkets**, select an instrument, approve its separate escrow, and use **Place near player** (quantity 1). Aim at it and **left-click** to play, or press **E** to pick it up as the parcel owner. Closing the playable panel stops its audio. Placed instruments follow parcel ownership. See [Trinket placement](docs/TRINKET_PLACEMENT.md) for contracts, model export, mock mode, and limitations.

@@ -6,7 +6,7 @@ Doodverse Trinkets are a separate ERC-1155 collection. Their IDs never refer to 
 
 Open Inventory [I], choose **Trinkets**, select an instrument, and approve the **Trinket escrow**. Set quantity to 1 and choose **Place near player** while standing on a parcel you own. Instruments are placed four meters ahead, within that parcel, with their base on deterministic terrain. Aim at the instrument and press **E** to collect it. Move it by collecting and placing it again. The UI also supports wallet transfers and refreshing balances.
 
-The five models are Afterhours (DJ board), Nocturne 88 (keyboard), Backbeat (drums), Prism (xylophone), and Barrio (bongos). They are static in-world instruments in this release; audio/play controls remain on the legacy instrument pages. Placement inside NFT containers and elevated building-floor placement are not implemented yet.
+The five models are Afterhours (DJ board), Nocturne 88 (keyboard), Backbeat (drums), Prism (xylophone), and Barrio (bongos). Aim at an instrument within interaction range and left-click to open its playable controls. Anyone nearby can play; E remains restricted to owner pickup. The panel pauses player movement and closing it unloads the instrument and stops its audio. Playback changes no custody state and requires no transaction. The five authored instrument pages are bundled as lazy-loaded assets, inside a scripts-only sandbox; arbitrary NFT animation URLs are never opened. Closing during a load prevents late content from starting. Placement inside NFT containers and elevated building-floor placement are not implemented yet.
 
 ## Custody and ownership
 

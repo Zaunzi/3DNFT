@@ -59,11 +59,11 @@ async function start() {
   let assets:NFTRuntime|undefined;
   const modalChanged=(active:boolean)=>{player.active=false;if(player.controls.isLocked)player.controls.unlock();el('entry').hidden=active;document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair',active);};
   const experience=new ItemPortalRuntime({backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);player.resetVertical();world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
-  assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.inventory.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.inventory.open)experience.inventory.setOpen(false);}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots(),...experience.trinketLayer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
+  assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.open)experience.closePanels();}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots(),...experience.trinketLayer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
   assets.sync();
   builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.supportsModular, lockedDoor:backend.supportsElevatedDoors?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{if(backend.nfts.lockKeys&&backend.nfts.createKeyedDoor)await backend.nfts.createKeyedDoor(id,t);else await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:backend.config.mode==='mock'?MOCK_ITEMS:getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS),tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
     onMode(active) {
-      if(active){if(assets?.open)assets.setOpen(false);if(experience.inventory.open)experience.inventory.setOpen(false);}
+      if(active){if(assets?.open)assets.setOpen(false);if(experience.open)experience.closePanels();}
       player.active = false;
       if (player.controls.isLocked) player.controls.unlock();
       el('entry').hidden = active;
@@ -113,14 +113,14 @@ async function start() {
   void enterParcel(token);
   el('enter').addEventListener('click', () => { player.controls.lock(); });
   document.addEventListener('pointerlockerror', () => {
-    if (builder.active||assets?.open||experience.inventory.open) return;
+    if (builder.active||assets?.open||experience.open) return;
     player.active = true; el('entry').hidden = true;
     el('toast').textContent = 'DRAG TO LOOK · WASD TO MOVE · ESC TO PAUSE'; el('toast').classList.add('visible');
     clearTimeout(toastTimer); toastTimer = window.setTimeout(() => el('toast').classList.remove('visible'), 6000);
   });
-  window.addEventListener('keydown', event => { if (event.code === 'Escape' && !builder.active&&!assets?.open&&!experience.inventory.open) { player.active = false; el('entry').hidden = false; } });
+  window.addEventListener('keydown', event => { if (event.code === 'Escape' && !builder.active&&!assets?.open&&!experience.open) { player.active = false; el('entry').hidden = false; } });
   player.controls.addEventListener('lock', () => { el('entry').hidden = true; });
-  player.controls.addEventListener('unlock', () => { el('entry').hidden = builder.active||!!assets?.open||experience.inventory.open; });
+  player.controls.addEventListener('unlock', () => { el('entry').hidden = builder.active||!!assets?.open||experience.open; });
   el('borders').addEventListener('change', e => world.setBorders((e.target as HTMLInputElement).checked));
   el('debug-toggle').addEventListener('change', e => { el('debug').hidden = !(e.target as HTMLInputElement).checked; });
   const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }; window.addEventListener('resize', resize);
