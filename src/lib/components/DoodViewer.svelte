@@ -25,7 +25,7 @@
  onMount(() => {
   if (!host) return;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#b8c7d1');
+  scene.background = new THREE.Color('#f0eee8');
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
   camera.position.set(2.5, 1.7, 5);
   const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -72,9 +72,10 @@
    const a = clipNamed(name);
    if (!a) return;
    const action = mixer.clipAction(a);
-   action.setLoop(['Idle', 'Walk', 'Run'].includes(name) ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+   action.setLoop(THREE.LoopRepeat, Infinity);
    action.clampWhenFinished = true;
    action.reset().play();
+   if (host) host.dataset.animation = name;
   };
 
   load = async (n) => {
@@ -82,7 +83,15 @@
    error = '';
    const token = Math.max(1, Math.min(1000, Math.trunc(Number(n) || 1)));
    try {
-    const g = await new GLTFLoader().loadAsync(`/cryptodoodz/models/${String(token).padStart(4, '0')}.glb`);
+    const ident = String(token).padStart(4, '0');
+    const response = await fetch(`/cryptodoodz/metadata/${ident}.json`);
+    if (!response.ok) throw new Error('Metadata unavailable');
+    const metadata = await response.json();
+    if (dead || t !== ticket) return;
+    const background = metadata.background_color;
+    if (typeof background !== 'string' || !/^[0-9a-f]{6}$/i.test(background)) throw new Error('Invalid background');
+    const model = metadata.properties?.model_url ?? `/cryptodoodz/models/${ident}.glb`;
+    const g = await new GLTFLoader().loadAsync(model);
     if (dead || t !== ticket) {
      dispose(g.scene);
      return;
@@ -91,13 +100,15 @@
      scene.remove(root);
      dispose(root);
     }
+    scene.background = new THREE.Color(`#${background}`);
+    if (host) { host.dataset.background = background; host.dataset.token = String(token); }
     root = g.scene;
     scene.add(root);
     mixer = new THREE.AnimationMixer(root);
     actions = g.animations;
     play?.(wanted);
    } catch {
-    error = 'Could not load this Dood. Try another.';
+    if (!dead && t === ticket) error = 'Could not load this Dood. Try another.';
    }
   };
 
