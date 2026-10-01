@@ -1,3 +1,4 @@
+import {WorldInputMode} from './player/inputMode.ts';
 import * as THREE from 'three';
 import { GENERATOR_VERSION, PARCEL_SIZE } from './world/constants.ts';
 import { coordinateToTokenId, parseTokenId, parcelToWorld, tokenIdToCoordinate, worldToParcel } from './world/coordinates.ts';
@@ -24,8 +25,8 @@ root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></can
 <section class="location"><div class="eyebrow">YOU ARE HERE</div><h1>Parcel <span id="token">—</span></h1><p id="coordinate"></p><p id="owner">Resolving ownership…</p></section>
 <section class="management"><button id="wallet-connect">Connect wallet</button><button id="wallet-disconnect" hidden>Disconnect</button><p id="wallet-state">Exploring anonymously</p><p id="permission">Connect wallet to manage this parcel</p><button id="build-toggle" disabled>Build [B]</button><button id="refresh-state">Refresh state</button><p id="state-message" role="status"></p></section>
 <div id="toast" role="status"></div><div class="crosshair">+</div>
-<section class="entry" id="entry"><div class="eyebrow">ONE WORLD. 5,000 PLACES.</div><h2>A place, not a picture.</h2><p>Walk beyond the border.<br>The next NFT is already here.</p><button id="enter">Enter world <span>↗</span></button><small>WASD move · Space jump · Mouse look · Shift sprint · Esc release</small><p id="notice" role="status"></p></section>
-<aside><label><input id="borders" type="checkbox" checked> Parcel borders</label><label><input id="debug-toggle" type="checkbox" checked> Diagnostics</label><pre id="debug"></pre></aside>
+<section class="entry" id="entry"><div class="eyebrow">ONE WORLD. 5,000 PLACES.</div><h2>A place, not a picture.</h2><p>Walk beyond the border.<br>The next NFT is already here.</p><button id="enter">Enter world <span>↗</span></button><small>WASD move · Space jump · Mouse look · Shift sprint · Tab mouse · Esc release</small><p id="notice" role="status"></p></section>
+<button id="resume-controls" hidden>Mouse released · Tab to resume movement</button><aside><label><input id="borders" type="checkbox" checked> Parcel borders</label><label><input id="debug-toggle" type="checkbox" checked> Diagnostics</label><pre id="debug"></pre></aside>
 <footer><span>DETERMINISTIC TERRAIN <b>/ V1</b></span><span>64 × 64 UNITS <b>·</b> N = −Z <b>·</b> E = +X</span><span id="heading">N</span></footer>`;
 const el = (id: string) => document.getElementById(id)!;
 async function start() {
@@ -57,18 +58,28 @@ async function start() {
   layer.sync(world.parcels.keys());
   let builder:BuildController;
   let assets:NFTRuntime|undefined;
-  const modalChanged=(active:boolean)=>{player.active=false;if(player.controls.isLocked)player.controls.unlock();el('entry').hidden=active;document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair',active);};
-  const experience=new ItemPortalRuntime({backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);player.resetVertical();world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
+  let experience:ItemPortalRuntime;
+  const menusOpen=()=>!!builder?.active||!!assets?.open||!!experience?.open;
+  const inputMode=new WorldInputMode({
+    render:mode=>{player.active=mode==='movement';el('entry').hidden=mode!=='welcome';el('resume-controls').hidden=mode!=='cursor';document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair',mode!=='movement');},
+    lock:()=>{
+      (document.activeElement as HTMLElement|null)?.blur();
+      try{void Promise.resolve(canvas.requestPointerLock()).catch(()=>inputMode.lockFailed());}catch{inputMode.lockFailed();}
+    },
+    unlock:()=>{if(player.controls.isLocked)player.controls.unlock();},
+  });
+  // Closing one panel can synchronously open another. Reconcile once so that
+  // switching menus never briefly captures the mouse behind the next panel.
+  const modalChanged=(active:boolean)=>{if(active)inputMode.menu(true);else queueMicrotask(()=>inputMode.menu(menusOpen()));};
+
+  experience=new ItemPortalRuntime({backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);player.resetVertical();world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
   assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.open)experience.closePanels();}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots(),...experience.trinketLayer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
   assets.sync();
   builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.supportsModular, lockedDoor:backend.supportsElevatedDoors?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{if(backend.nfts.lockKeys&&backend.nfts.createKeyedDoor)await backend.nfts.createKeyedDoor(id,t);else await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:backend.config.mode==='mock'?MOCK_ITEMS:getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS),tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
     onMode(active) {
       if(active){if(assets?.open)assets.setOpen(false);if(experience.open)experience.closePanels();}
-      player.active = false;
-      if (player.controls.isLocked) player.controls.unlock();
-      el('entry').hidden = active;
+      modalChanged(active);
       el('build-toggle').textContent = active ? 'Exit build [B]' : 'Build [B]';
-      document.querySelector('.crosshair')!.classList.toggle('hidden-crosshair', active);
     },
   });
   player.ceiling=(x,z,feet)=>layer.ceilingHeight(x,z,feet);
@@ -111,16 +122,17 @@ async function start() {
     await refreshOwnership();
   }
   void enterParcel(token);
-  el('enter').addEventListener('click', () => { player.controls.lock(); });
-  document.addEventListener('pointerlockerror', () => {
-    if (builder.active||assets?.open||experience.open) return;
-    player.active = true; el('entry').hidden = true;
-    el('toast').textContent = 'DRAG TO LOOK · WASD TO MOVE · ESC TO PAUSE'; el('toast').classList.add('visible');
-    clearTimeout(toastTimer); toastTimer = window.setTimeout(() => el('toast').classList.remove('visible'), 6000);
-  });
-  window.addEventListener('keydown', event => { if (event.code === 'Escape' && !builder.active&&!assets?.open&&!experience.open) { player.active = false; el('entry').hidden = false; } });
-  player.controls.addEventListener('lock', () => { el('entry').hidden = true; });
-  player.controls.addEventListener('unlock', () => { el('entry').hidden = builder.active||!!assets?.open||experience.open; });
+  el('enter').addEventListener('click',()=>inputMode.resume());
+  el('resume-controls').addEventListener('click',()=>inputMode.resume());
+  const inputEvents=new AbortController();
+  document.addEventListener('pointerlockerror',()=>inputMode.lockFailed(),{signal:inputEvents.signal});
+  window.addEventListener('keydown',event=>{
+    if(event.repeat||menusOpen()||event.target instanceof Element&&event.target.matches('input,textarea,select,[contenteditable="true"]'))return;
+    if(event.code==='Tab'&&inputMode.mode!=='welcome'){event.preventDefault();inputMode.toggleCursor();}
+    if(event.code==='Escape')inputMode.release();
+  },{capture:true,signal:inputEvents.signal});
+  player.controls.addEventListener('lock',()=>inputMode.locked());
+  player.controls.addEventListener('unlock',()=>inputMode.unlocked());
   el('borders').addEventListener('change', e => world.setBorders((e.target as HTMLInputElement).checked));
   el('debug-toggle').addEventListener('change', e => { el('debug').hidden = !(e.target as HTMLInputElement).checked; });
   const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }; window.addEventListener('resize', resize);
@@ -139,6 +151,6 @@ async function start() {
     sun.position.set(camera.position.x-40,camera.position.y+70,camera.position.z+25);sun.target.position.set(camera.position.x,camera.position.y-2,camera.position.z);
     renderer.render(scene, camera);
   });
-  import.meta.hot?.dispose(() => { renderer.setAnimationLoop(null); stopWallet(); stopEvents?.();experience.dispose();assets?.dispose(); backend.wallet.dispose(); builder.dispose(); layer.dispose(); registry.dispose(); player.dispose(); world.dispose(); renderer.dispose(); window.removeEventListener('resize', resize); window.removeEventListener('focus', reconcile); clearTimeout(toastTimer); clearInterval(reconciliationTimer); });
+  import.meta.hot?.dispose(() => { inputEvents.abort();renderer.setAnimationLoop(null); stopWallet(); stopEvents?.();experience.dispose();assets?.dispose(); backend.wallet.dispose(); builder.dispose(); layer.dispose(); registry.dispose(); player.dispose(); world.dispose(); renderer.dispose(); window.removeEventListener('resize', resize); window.removeEventListener('focus', reconcile); clearTimeout(toastTimer); clearInterval(reconciliationTimer); });
 }
 void start().catch(error => { el('notice').textContent = error instanceof Error ? error.message : String(error); el('mode').textContent = 'UNAVAILABLE'; (el('enter') as HTMLButtonElement).disabled = true; });

@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-The root URL opens the Doodverse landing page with a live parcel #1 preview, world entry, minting and a parcel lookup. Entering without a token ID defaults to parcel #1. Direct links such as **http://localhost:5173/?tokenId=742** still open their specified parcel. Click **Enter world**, then use WASD, Space to jump, mouse look and Shift to sprint. Esc releases/pauses. If pointer lock is unavailable in an embedded viewer, hold and drag the terrain to look. Use the checkboxes to toggle parcel borders and diagnostics.
+The root URL opens the Doodverse landing page with a live parcel #1 preview, world entry, minting and a parcel lookup. Entering without a token ID defaults to parcel #1. Direct links such as **http://localhost:5173/?tokenId=742** still open their specified parcel. Click **Enter world**, then use WASD, Space to jump, mouse look and Shift to sprint. Tab toggles between movement and a free mouse cursor; Esc also releases the cursor. Closing build, inventory or asset panels resumes movement without reopening the welcome screen. If the browser refuses pointer lock, WASD and drag-to-look remain available. If pointer lock is unavailable in an embedded viewer, hold and drag the terrain to look. Use the checkboxes to toggle parcel borders and diagnostics.
 
 You spawn in parcel #742 at grid (42, 7), facing east toward #743. Walk about 32 world units (four seconds at walking speed) to cross its border. The token label, ownership notice, coordinates and URL update without reloading. A radius-two neighborhood is generated in advance. World edges stop movement. Trees and rocks are decorative; terrain has collision.
 
