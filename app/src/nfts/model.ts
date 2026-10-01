@@ -68,6 +68,10 @@ else if (location.kind !== 'container' || !Number.isInteger(location.containerId
     throw new Error('Invalid container location'); }
 export interface NFTStateProvider {
     readonly enabled: boolean;
+    readonly lockKeys?: Address;
+    createKeyedDoor?(parcelId:number,transform:LocalTransform & {y?:number}):Promise<void>;
+    rekeyDoor?(parcelId:number,id:number):Promise<void>;
+    issueKeyCopies?(keyId:bigint,recipient:Address,quantity:bigint):Promise<void>;
     snapshot(parcelId: number): Promise<NFTSnapshot>;
     ownerOf(asset: NFTAsset): Promise<Address>;
     tokenURI(asset: NFTAsset): Promise<string>;

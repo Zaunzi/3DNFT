@@ -1,4 +1,4 @@
-# Atlas collection art, version 1
+# Doodverse collection art, version 1
 
 Seven original raster illustrations generated with the built-in image_gen tool. Full prompts are preserved in [ART_PROMPTS.json](ART_PROMPTS.json). Files live in `app/public/art/v1/`; the public gallery is `/art/`. The style uses faceted fantasy miniatures, dark green backgrounds, stone plinths and warm brass accents.
 

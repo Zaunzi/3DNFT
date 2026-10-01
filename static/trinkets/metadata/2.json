@@ -1,0 +1,17 @@
+{
+  "name": "Nocturne 88",
+  "description": "Nocturne 88, a collectible instrument from Doodverse Trinkets. Open the interactive edition to play.",
+  "image": "https://3dnft.vercel.app/trinkets/images/2.svg",
+  "animation_url": "https://3dnft.vercel.app/items/2/",
+  "external_url": "https://3dnft.vercel.app/items/2/",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Doodverse Trinkets"
+    },
+    {
+      "trait_type": "Instrument ID",
+      "value": 2
+    }
+  ]
+}

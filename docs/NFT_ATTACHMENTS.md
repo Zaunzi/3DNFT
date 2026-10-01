@@ -1,6 +1,6 @@
 # NFT attachments — Phase 4
 
-An ERC-721 is identified by `NFTAsset = (chainId, contractAddress, tokenId)`. Keys normalize addresses and preserve token IDs as uint256-sized bigints. Runtime providers bind to a particular Atlas land collection. Thus an attachment's compact parcel ID is interpreted in that provider's world; it is not a universal land identifier. Onchain records omit chain ID because custody exists only on the executing chain. Cross-chain custody and bridges are not implemented.
+An ERC-721 is identified by `NFTAsset = (chainId, contractAddress, tokenId)`. Keys normalize addresses and preserve token IDs as uint256-sized bigints. Runtime providers bind to a particular Doodverse land collection. Thus an attachment's compact parcel ID is interpreted in that provider's world; it is not a universal land identifier. Onchain records omit chain ID because custody exists only on the executing chain. Cross-chain custody and bridges are not implemented.
 
 ## Custody and authority
 
@@ -21,7 +21,7 @@ ERC1155 -> ContainerItemState escrow -----------> Container #55
 
 Invariants:
 
-- Wallet-held NFTs have no Atlas attachment. Registered NFTs are owned by WorldNFTState and have exactly one location.
+- Wallet-held NFTs have no Doodverse attachment. Registered NFTs are owned by WorldNFTState and have exactly one location.
 - A location is either a parcel floor or one container in that parcel. A contained NFT is not also rendered on the floor.
 - Land transfer preserves the complete attachment record, container, contents, existing objects, portals and ERC-1155 attachments. Only the current `land.ownerOf(parcel)` can move or withdraw assets. Approved land operators gain no edit rights.
 - Moving between owned parcels, between floor and container, or between containers is one atomic location change. Escrow ownership does not change. Both source and destination require the caller to own the land.
@@ -29,7 +29,7 @@ Invariants:
 
 `WorldNFTState` uses non-reentrant entry points and a one-use expected-deposit hash. Only the ERC-721 contract, expected token/from address and expected operator can satisfy its receiver callback. Custody is checked after transfer; destination ownership is rechecked after the external callback. Malicious contracts cannot reenter a location mutation during transfers. These guarantees assume the external collection honors ERC-721 ownership/transfer semantics; an upgradeable or dishonest collection can violate its own ownership promises.
 
-Atlas land itself is rejected as an attachment: otherwise escrow could become the landowner of a parcel that recursively controls escrowed assets. Other external land collections are opaque NFTs; Atlas does not infer their internal attachment rules. Containers are not NFTs and cannot be nested or transferred independently of their parcel.
+Doodverse land itself is rejected as an attachment: otherwise escrow could become the landowner of a parcel that recursively controls escrowed assets. Other external land collections are opaque NFTs; Doodverse does not infer their internal attachment rules. Containers are not NFTs and cannot be nested or transferred independently of their parcel.
 
 ## Container storage
 
@@ -51,7 +51,7 @@ External images are restricted to PNG and JPEG, with MIME/signature checks, boun
 
 Metadata promises/results are cached by full asset identity (256 entries maximum), five minutes for success and 30 seconds for failures. The cache survives parcel streaming, not a reload. Images are owned by streamed entities; texture, bitmap, geometry and material resources are disposed on replacement/unload. Stale async results cannot resurrect unloaded parcels. Metadata is presentation only and never grants custody or access rights.
 
-`NFTRepresentationRegistry` accepts custom `supports/createObject` renderers. The configured AtlasCharacters collection's token #1 gets a simple static geometric character. Other NFTs get a pedestal/card, optional safe image and text label. Mock fixtures include Character #1, Pet #2, External Art #77 and Vehicle #12. Pet/vehicle behavior, AI, combat, equipment and specialized motion are deferred.
+`NFTRepresentationRegistry` accepts custom `supports/createObject` renderers. The configured AtlasCharacters collection's token #1 gets a simple static geometric character. Other NFTs get a pedestal/card, optional safe image and text label. Mock fixtures use CryptoDoodz characters #1, #2, #77 and #12. There is no vehicle collection or vehicle deployment. AI, combat, equipment and specialized motion are deferred.
 
 ## Access requirements
 
@@ -97,6 +97,6 @@ Receiver semantics follow the [OpenZeppelin ERC-721 interfaces](https://docs.ope
 
 ### Verified implementation
 
-The final runtime suite passes 23 tests; Foundry passes 26 tests, including 256-run attachment-coordinate and movement/transfer fuzz cases. Both local-chain integration scripts pass. Atlas and legacy production builds pass; 54 legacy tests pass. On this host Node is 22.12, so legacy tests required `node --experimental-strip-types --test tests/*.test.mjs`; the documented supported Node 22.14+/24 environment enables that behavior by default. Vite reports the existing large-runtime-chunk advisory; the Atlas entry is approximately 213 KiB gzip.
+The final runtime suite passes 23 tests; Foundry passes 26 tests, including 256-run attachment-coordinate and movement/transfer fuzz cases. Both local-chain integration scripts pass. Doodverse and legacy production builds pass; 54 legacy tests pass. On this host Node is 22.12, so legacy tests required `node --experimental-strip-types --test tests/*.test.mjs`; the documented supported Node 22.14+/24 environment enables that behavior by default. Vite reports the existing large-runtime-chunk advisory; the Doodverse entry is approximately 213 KiB gzip.
 
 Browser checks exercised floor attachment, NFT container storage, refresh persistence, non-empty deletion rejection, Alice-to-Bob inheritance, Bob withdrawal, and key denial/grant without consumption. Temporary NFT/chest/door test placements were removed and parcel #742 plus its four development NFTs returned to Alice. A development key remains in Bob's unrelated wallet, demonstrating that land transfer does not move wallet inventory.

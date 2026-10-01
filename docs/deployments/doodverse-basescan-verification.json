@@ -1,0 +1,62 @@
+{
+  "DoodverseParcels": {
+    "address": "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:21:14.445Z",
+    "url": "https://basescan.org/address/0x383891F3537627Fb9E235f0242D874fe00Ca6443#code"
+  },
+  "DoodverseParcelState": {
+    "address": "0xe5F118e3edB6d22263e93809f0E89b13cebC2CDE",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:23:44.269Z",
+    "url": "https://basescan.org/address/0xe5F118e3edB6d22263e93809f0E89b13cebC2CDE#code"
+  },
+  "DoodverseItems": {
+    "address": "0x702752974Bbc11CA323E373Ab70a4AF1dcB4982D",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:21:31.667Z",
+    "url": "https://basescan.org/address/0x702752974Bbc11CA323E373Ab70a4AF1dcB4982D#code"
+  },
+  "WorldItemState": {
+    "address": "0x2581c828A63BbDD8245D62313eFBacB68ce615f1",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:21:47.923Z",
+    "url": "https://basescan.org/address/0x2581c828A63BbDD8245D62313eFBacB68ce615f1#code"
+  },
+  "PortalState": {
+    "address": "0x199221143428Ba0895f222E63bF6db0b92c2fb89",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:23:46.882Z",
+    "url": "https://basescan.org/address/0x199221143428Ba0895f222E63bF6db0b92c2fb89#code"
+  },
+  "DoodverseNFTState": {
+    "address": "0xA04562e822D0DA48804A4A1F395BeC4E0fF7C2aE",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:22:05.117Z",
+    "url": "https://basescan.org/address/0xA04562e822D0DA48804A4A1F395BeC4E0fF7C2aE#code"
+  },
+  "ContainerItemState": {
+    "address": "0x5AE294C6F2632088592a59bb1c0fD01939aA638a",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:22:21.394Z",
+    "url": "https://basescan.org/address/0x5AE294C6F2632088592a59bb1c0fD01939aA638a#code"
+  },
+  "DoodverseCharacters": {
+    "address": "0x03847D61A017731A843109F0b6BC637AF8a3f7e0",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:22:37.717Z",
+    "url": "https://basescan.org/address/0x03847D61A017731A843109F0b6BC637AF8a3f7e0#code"
+  },
+  "DoodverseTrinkets": {
+    "address": "0x32CEb50081fD7e986cd32231b01157b45FD20B51",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:22:54.018Z",
+    "url": "https://basescan.org/address/0x32CEb50081fD7e986cd32231b01157b45FD20B51#code"
+  },
+  "DoodverseKeys": {
+    "address": "0x81e9A62B167f88A546D996F151b59fcEB9c97D72",
+    "verified": true,
+    "checkedAt": "2026-10-01T19:23:10.541Z",
+    "url": "https://basescan.org/address/0x81e9A62B167f88A546D996F151b59fcEB9c97D72#code"
+  }
+}

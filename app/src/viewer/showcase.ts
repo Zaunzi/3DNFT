@@ -13,7 +13,7 @@ import { MOCK_NFT_COLLECTION } from '../nfts/mock.ts';
 import './showcase.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
-root.innerHTML = '<canvas aria-label="Animated diorama of an Atlas parcel"></canvas><header><span>◈ ATLAS</span><a target="_blank" rel="noopener noreferrer">Open in Atlas ↗</a></header><footer><div><h1></h1><p class="sector"></p></div><button type="button" aria-label="Pause camera orbit">Pause orbit</button></footer><p class="status" role="status">Loading parcel…</p>';
+root.innerHTML = '<canvas aria-label="Animated diorama of a Doodverse parcel"></canvas><header><span>◈ DOODVERSE</span><a target="_blank" rel="noopener noreferrer">Open in Doodverse ↗</a></header><footer><div><h1></h1><p class="sector"></p></div><button type="button" aria-label="Pause camera orbit">Pause orbit</button></footer><p class="status" role="status">Loading parcel…</p>';
 const status = root.querySelector<HTMLElement>('.status')!;
 const disposers: (() => void)[] = [];
 let disposed = false;
@@ -33,7 +33,7 @@ async function start() {
   disposers.push(() => backend.wallet.dispose());
   const identity = await backend.world.getWorld();
   if (disposed) return;
-  if (identity.generatorVersion !== GENERATOR_VERSION) throw new Error('Unsupported world generator.');
+  if (![1,2].includes(identity.generatorVersion)) throw new Error('Unsupported world generator.');
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x182d2c);
   scene.add(new THREE.HemisphereLight(0xe8f1dc, 0x635143, 2.4));
   const sun = new THREE.DirectionalLight(0xffe5b9, 3); sun.position.set(origin.x + 40, 100, origin.z + 20); scene.add(sun);
@@ -53,7 +53,7 @@ async function start() {
   const skirt = new THREE.Mesh(skirtGeometry, skirtMaterial); skirt.position.set(origin.x,0,origin.z); scene.add(skirt);
   disposers.push(() => { skirtGeometry.dispose(); skirtMaterial.dispose(); });
   const issues = new Set<string>();
-  const report = (label: string, failed: boolean) => { if (disposed) return; failed ? issues.add(label) : issues.delete(label); status.textContent = issues.size ? 'Some parcel assets are unavailable. Open Atlas to retry.' : ''; };
+  const report = (label: string, failed: boolean) => { if (disposed) return; failed ? issues.add(label) : issues.delete(label); status.textContent = issues.size ? 'Some parcel assets are unavailable. Open Doodverse to retry.' : ''; };
   const objects = new ObjectRegistry(), items = new ExperienceRegistry();
   const objectLayer = new PersistentObjectLayer(scene,backend.objects,objects,identity.seed,(_,error)=>report('objects',!!error));
   const itemLayer = new ExperienceLayer(scene,backend.experience,items,identity.seed,()=>report('items',true));
@@ -83,6 +83,6 @@ async function start() {
   });
   disposers.push(()=>{renderer.setAnimationLoop(null);renderer.dispose();});
   const timer=window.setInterval(()=>{if(!document.hidden){void objectLayer.refresh(id);void itemLayer.refresh(id);void nftLayer.refresh(id);}},60000);disposers.push(()=>clearInterval(timer));
-  status.textContent=issues.size?'Some parcel assets are unavailable. Open Atlas to retry.':'';
+  status.textContent=issues.size?'Some parcel assets are unavailable. Open Doodverse to retry.':'';
 }
-void start().catch(()=>{if(!disposed)status.textContent='Parcel unavailable right now. Open in Atlas to retry.';});
+void start().catch(()=>{if(!disposed)status.textContent='Parcel unavailable right now. Open in Doodverse to retry.';});

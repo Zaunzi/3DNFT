@@ -19,7 +19,7 @@ import { locationFromURL } from './portals/location.ts';
 import './style.css';
 const root = document.querySelector<HTMLDivElement>('#app')!;
 root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></canvas>
-<header><div class="brand">◈ ATLAS <span>WORLD PARCELS / EXPERIMENT 001</span> <a href="./mint.html" style="color:inherit;pointer-events:auto">Mint assets ↗</a></div><div id="mode" class="badge">LOADING STATE</div></header>
+<header><div class="brand">◈ DOODVERSE <span>WORLD PARCELS / EXPERIMENT 001</span> <a href="./mint.html" style="color:inherit;pointer-events:auto">Mint assets ↗</a></div><div id="mode" class="badge">LOADING STATE</div></header>
 <section class="location"><div class="eyebrow">YOU ARE HERE</div><h1>Parcel <span id="token">—</span></h1><p id="coordinate"></p><p id="owner">Resolving ownership…</p></section>
 <section class="management"><button id="wallet-connect">Connect wallet</button><button id="wallet-disconnect" hidden>Disconnect</button><p id="wallet-state">Exploring anonymously</p><p id="permission">Connect wallet to manage this parcel</p><button id="build-toggle" disabled>Build [B]</button><button id="refresh-state">Refresh state</button><p id="state-message" role="status"></p></section>
 <div id="toast" role="status"></div><div class="crosshair">+</div>
@@ -32,7 +32,7 @@ async function start() {
   const backend = await createBackend(import.meta.env), state = backend.world;
   locationFromURL(new URL(location.href), {chainId:backend.config.chainId,contractAddress:backend.config.land??'0x0000000000000000000000000000000000000000'});
   const identity = await state.getWorld();
-  if (identity.generatorVersion !== GENERATOR_VERSION) throw new Error('Unsupported generator version');
+  if (![1,2].includes(identity.generatorVersion)) throw new Error('Unsupported generator version');
   el('mode').textContent = state.mode;
   const canvas = document.querySelector('canvas')!, renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -60,7 +60,7 @@ async function start() {
   const experience=new ItemPortalRuntime({backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);player.resetVertical();world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
   assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.inventory.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.inventory.open)experience.inventory.setOpen(false);}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
   assets.sync();
-  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.config.mode==='mock', lockedDoor:backend.config.mode==='mock'?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:MOCK_ITEMS,tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
+  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.supportsModular, lockedDoor:backend.supportsElevatedDoors?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{if(backend.nfts.lockKeys&&backend.nfts.createKeyedDoor)await backend.nfts.createKeyedDoor(id,t);else await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:backend.config.mode==='mock'?MOCK_ITEMS:getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS),tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
     onMode(active) {
       if(active){if(assets?.open)assets.setOpen(false);if(experience.inventory.open)experience.inventory.setOpen(false);}
       player.active = false;

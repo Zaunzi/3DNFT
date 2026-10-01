@@ -19,3 +19,17 @@ test('metadata cache deduplicates, expires success and failure and falls back sa
 test('ERC1155 and exact ERC721 doors check wallet custody without consuming keys', async () => { const s = setup(), p = s.create(), asset = p.knownAssets()[0]; await p.createDoor(742, floor, { kind: 'erc1155', contractAddress: MOCK_ITEMS, tokenId: 4n, minimum: 1n, mode: 'CHECK_ONLY' }); const [door] = (await p.snapshot(742)).doors; assert.equal(await p.canOpen(door, alice), false); await s.ledger.grantDevItem(4, 1n); assert.equal(await p.canOpen(door, alice), true); assert.equal(await s.ledger.getBalance(alice, 4n), 1n); await p.createDoor(742, floor, { kind: 'erc721', contractAddress: asset.contractAddress, tokenId: asset.tokenId, mode: 'CHECK_ONLY' }); const d = (await p.snapshot(742)).doors[1]; assert.equal(await p.canOpen(d, alice), true); await p.attach(asset, floor); assert.equal(await p.canOpen(d, alice), false); assert.equal(await evaluateAccess(d.requirement, alice, { balance: async () => 0n, owner: async () => { throw Error('RPC'); } }), false); });
 test('streaming renders neighboring NFTs, rejects stale reads and disposes geometry', async () => { const s = setup(), p = s.create(), asset = p.knownAssets()[0]; await p.attach(asset, floor); const scene = new THREE.Scene(), cache = new MetadataCache(a => p.tokenURI(a), 'https://ipfs.io/ipfs/'), layer = new NFTLayer(scene, p, new NFTRepresentationRegistry(), 7422026n, cache, () => { }); layer.sync([742, 743]); await layer.refresh(742); assert.equal(layer.count(), 1); let disposed = 0; layer.roots()[0].traverse(o => { if (o instanceof THREE.Mesh)
     o.geometry.addEventListener('dispose', () => disposed++); }); layer.sync([743]); assert.equal(layer.count(), 0); assert.ok(disposed > 0); let resolve!: (v: Awaited<ReturnType<NFTStateProvider['snapshot']>>) => void; const stale = new NFTLayer(scene, { ...p, snapshot: () => new Promise(r => { resolve = r; }) } as NFTStateProvider, new NFTRepresentationRegistry(), 7422026n, cache, () => { }); stale.sync([742]); stale.sync([]); resolve(await p.snapshot(742)); await new Promise(r => setTimeout(r, 0)); assert.equal(stale.parcels.size, 0); layer.dispose(); stale.dispose(); assert.equal(scene.children.length, 0); });
+
+test('distinct lock keys survive refresh, rekey and parcel ownership epochs',async()=>{
+ let account:typeof alice|typeof bob=alice,owner:typeof alice|typeof bob=alice,epoch=0;
+ const saved=new Map<string,string>();const ledger=new MockInventoryProvider({getItem:k=>saved.get(k)??null,setItem:(k,v)=>{saved.set(k,v);}},()=>account,()=>account===owner);
+ const provider=()=>new MockNFTProvider(ledger,31337,alice,()=>account===owner,()=>owner,()=>epoch);
+ const p=provider();await p.createKeyedDoor(742,floor);await p.createKeyedDoor(742,floor);
+ await p.issueKeyCopies(1n,bob,1n);let [a,b]=(await provider().snapshot(742)).doors;
+ assert.equal(await p.canOpen(a,bob),true);assert.equal(await p.canOpen(b,bob),false);
+ await p.rekeyDoor(742,a.id);assert.equal(await provider().canOpen(a,bob),false);
+ owner=bob;epoch++;account=bob;assert.equal(await p.canOpen(a,bob),true);assert.equal(await p.canOpen(a,alice),false);
+ await p.rekeyDoor(742,a.id);await p.issueKeyCopies(4n,alice,1n);assert.equal(await p.canOpen(a,alice),true);
+ owner=alice;epoch++;account=alice;assert.equal(await p.canOpen(a,bob),false);
+ await p.removeDoor(742,a.id);assert.equal(await p.canOpen(a,alice),false);
+});

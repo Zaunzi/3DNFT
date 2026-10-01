@@ -1,4 +1,4 @@
-# Atlas: world parcels, generator v1
+# Doodverse: world parcels, generator v1
 
 > This document records the Phase 1 terrain/runtime architecture. For implemented wallet connection, ownership-controlled edits, state contracts and current hosting/storage behavior, see [Phase 2](PERSISTENT_WORLD.md), which supersedes the future-state sections below. Terrain invariants remain unchanged.
 

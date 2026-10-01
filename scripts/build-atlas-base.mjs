@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const configuration = fs.readFileSync(new URL('../docs/deployments/atlas-base.env.example', import.meta.url), 'utf8');
+const configuration = fs.readFileSync(new URL('../docs/deployments/doodverse-base.env.example', import.meta.url), 'utf8');
 for (const line of configuration.split(/\r?\n/)) {
   if (!line.trim() || line.startsWith('#')) continue;
   const match = /^(VITE_[A-Z0-9_]+)=(.*)$/.exec(line);

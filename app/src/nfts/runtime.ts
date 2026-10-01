@@ -215,9 +215,16 @@ export class NFTRuntime {
                 kind.append(new Option('ERC-1155 balance', 'erc1155'), new Option('Exact ERC-721 ownership', 'erc721'));
                 this.content.append(kind);
                 const collection = this.input(this.content, 'Requirement contract', o.items ?? MOCK_ITEMS), id = this.input(this.content, 'Required token / item ID', '4');
-                this.action(this.content, 'Place locked door ahead', () => { const r: AccessRequirement = kind.value === 'erc1155' ? { kind: 'erc1155', contractAddress: getAddress(collection.value), tokenId: BigInt(id.value), minimum: 1n, mode: 'CHECK_ONLY' } : { kind: 'erc721', contractAddress: getAddress(collection.value), tokenId: BigInt(id.value), mode: 'CHECK_ONLY' }; return o.backend.nfts.createDoor(o.token(), this.ahead(), r); });
-                for (const d of snapshot.doors)
+                this.action(this.content, 'Place custom requirement door ahead', () => { const r: AccessRequirement = kind.value === 'erc1155' ? { kind: 'erc1155', contractAddress: getAddress(collection.value), tokenId: BigInt(id.value), minimum: 1n, mode: 'CHECK_ONLY' } : { kind: 'erc721', contractAddress: getAddress(collection.value), tokenId: BigInt(id.value), mode: 'CHECK_ONLY' }; return o.backend.nfts.createDoor(o.token(), this.ahead(), r); });
+                for (const d of snapshot.doors) {
                     this.action(this.content, `Remove door #${d.id}`, () => o.backend.nfts.removeDoor(d.parcelId, d.id));
+                    if(o.backend.nfts.lockKeys?.toLowerCase()===d.requirement.contractAddress.toLowerCase()) {
+                        this.text(this.content,`Door #${d.id} · Key #${d.requirement.tokenId}. Keys expire on rekey or parcel transfer.`);
+                        this.action(this.content,'Rekey this door',()=>o.backend.nfts.rekeyDoor!(d.parcelId,d.id));
+                        const to=this.input(this.content,'Give a key copy to','');
+                        this.action(this.content,'Issue key copy',()=>o.backend.nfts.issueKeyCopies!(d.requirement.tokenId,getAddress(to.value),1n));
+                    }
+                }
             }
             if (o.backend.transferMockParcel) {
                 this.text(this.content, 'Development ownership controls', 'h3');
@@ -233,7 +240,7 @@ export class NFTRuntime {
             this.status.textContent = String(error).slice(0, 300);
         }
     }
-    async refreshWorld() { await Promise.all([...this.options.ids()].map(id => this.layer.refresh(id))); }
+    async refreshWorld() { this.openedDoors.clear(); this.restoreDoors(); await Promise.all([...this.options.ids()].map(id => this.layer.refresh(id))); }
     sync() { this.layer.sync(this.options.ids()); }
     update() { this.interactions.update(); for (const root of this.layer.roots())
         root.traverse(o => { if (o.userData.kind === 'door') {

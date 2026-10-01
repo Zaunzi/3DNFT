@@ -1,4 +1,4 @@
-# Atlas — shared procedural NFT world
+# Doodverse — shared procedural NFT world
 
 Each parcel ERC-721 represents a place in one continuous, deterministic world. Owners can place objects, attach ERC-1155 items and ERC-721 NFTs, use containers, and create portals and key-gated doors. Attached assets follow the land when it transfers. This runtime uses TypeScript, Vite, Three.js, viem, Solidity and Foundry; ethers remains for compatibility. The existing Cloudacre application remains available through `legacy:*` commands; its documentation is in [docs/CLOUDACRE_LEGACY.md](docs/CLOUDACRE_LEGACY.md).
 
@@ -25,17 +25,17 @@ Read [Persistent world architecture](docs/PERSISTENT_WORLD.md) for the ownership
 
 ## Modular building prototype
 
-Run `npm run dev:mock` for the expanded local build catalog: foundations, walls, doorways, window walls, roofs, lanterns and key-checked doors. This expansion is mock-only; Base contracts and existing builds are unchanged. See [Modular building](docs/MODULAR_BUILDING.md) for snapping, elevation and a room layout.
+Run `npm run dev:mock` for the expanded local build catalog: foundations, walls, doorways, window walls, roofs, lanterns and key-checked doors. The new Base Doodverse deployment supports these modular buildings onchain; see [deployment addresses](docs/DOODVERSE_BASE_DEPLOYMENT.md). The older Atlas collection remains separate. See [Modular building](docs/MODULAR_BUILDING.md) for snapping, elevation and a room layout.
 
 ## Embedded NFT viewer
 
-Atlas has two lazy-loaded presentation modes. Iframes (including OpenSea), `?mode=showcase`, and the legacy `?embed=1` preview use a living parcel diorama: one globally generated parcel, persistent objects/items/portals/NFTs, a slow orbit camera and a cutaway base. No player, WASD, wallet UI or gameplay interactions are created. The orbit respects reduced-motion preferences, can be paused, pauses rendering while hidden, and is capped at 30 FPS. Persistent state refreshes every minute while visible. **Open in Atlas** preserves the parcel ID and opens `?mode=world` in a new tab. Ordinary full-window visits and explicit `?mode=world` use the unchanged first-person world. Metadata/contracts require no update.
+Doodverse has two lazy-loaded presentation modes. Iframes (including OpenSea), `?mode=showcase`, and the legacy `?embed=1` preview use a living parcel diorama: one globally generated parcel, persistent objects/items/portals/NFTs, a slow orbit camera and a cutaway base. No player, WASD, wallet UI or gameplay interactions are created. The orbit respects reduced-motion preferences, can be paused, pauses rendering while hidden, and is capped at 30 FPS. Persistent state refreshes every minute while visible. **Open in Doodverse** preserves the parcel ID and opens `?mode=world` in a new tab. Ordinary full-window visits and explicit `?mode=world` use the unchanged first-person world. Metadata/contracts require no update.
 
 ## Mint on Base
 
-Open [Mint assets](https://atlas-mu-lime.vercel.app/mint.html), connect the contract-owner wallet and switch to Base. Mint a parcel (0–4999), a character (start with #1), or one of the six Atlas items to your chosen recipient. Each action simulates first and requires a separate wallet-confirmed transaction. Duplicate ERC-721 IDs and unauthorized mints revert. No minting occurs automatically. Open the minted parcel, connect its owner, and use Inventory or NFTs / Containers to attach assets.
+Open [Mint assets](https://atlas-mu-lime.vercel.app/mint.html), connect the contract-owner wallet and switch to Base. Mint a parcel (0–4999), a character (start with #1), or one of the six Doodverse items to your chosen recipient. Each action simulates first and requires a separate wallet-confirmed transaction. Duplicate ERC-721 IDs and unauthorized mints revert. No minting occurs automatically. Open the minted parcel, connect its owner, and use Inventory or NFTs / Containers to attach assets.
 
-Vercel needs no additional environment variables: `scripts/build-atlas-base.mjs` loads the public configuration in `docs/deployments/atlas-base.env.example`. Never add private keys to Vercel or `VITE_*` variables. Local mock mode remains unchanged; the mint page requires the Base production build or equivalent local onchain configuration.
+Vercel needs no additional environment variables: `scripts/build-atlas-base.mjs` loads the public configuration in `docs/deployments/doodverse-base.env.example`. Never add private keys to Vercel or `VITE_*` variables. Local mock mode remains unchanged; the mint page requires the Base production build or equivalent local onchain configuration.
 
 ## Verify and build
 
@@ -67,7 +67,7 @@ Tests cover the original NFT behavior plus owner-only placement/removal, transfe
 forge script contracts/script/DeployWorld.s.sol:DeployWorld --root contracts --rpc-url YOUR_RPC
 ```
 
-The eight Atlas contracts are deployed on **Base mainnet (8453)**. No parcels, items or characters were minted during deployment. See [Base deployment](docs/BASE_DEPLOYMENT.md) for addresses, receipts, owner roles and optional runtime configuration. The seed/topology/version and runtime URL have no setters. This is an experimental contract, not an audited production sale.
+The eight original Atlas contracts are deployed on **Base mainnet (8453)**. No parcels, items or characters were minted during deployment. See [Base deployment](docs/BASE_DEPLOYMENT.md) for addresses, receipts, owner roles and optional runtime configuration. The seed/topology/version and runtime URL have no setters. This is an experimental contract, not an audited production sale.
 
 ## Layout and architecture
 
@@ -97,3 +97,28 @@ Attached item ownership: selling or transferring land transfers the claim to ite
 The runtime now uses broad/rolling/detail amplitudes of 16 / 3.5 / 0.6 (previously 26 / 7 / 1.5). Global-coordinate sampling, seed, topology, and seam matching remain deterministic, but elevations differ from earlier runtime builds. Terrain-anchored scenery follows the new ground. Explicit-height mock buildings and doors keep their saved heights and may need repositioning; no saved state is silently rewritten. This is a runtime terrain tuning revision, not a contract or metadata generator-version migration. Historical runtime bundles render the previous terrain.
 
 Cube, Platform and Pillar are retired from the build toolbar and keyboard shortcuts. Existing saved instances still render and remain removable. New mock build sessions start with Foundation selected.
+
+## Doodverse branding
+
+The runtime and fresh collection now use Doodverse. The existing `atlas-mu-lime.vercel.app` address remains active; no new domain is assumed. Existing deployed contracts retain their immutable collection names. Fresh deployment uses Doodverse Parcels (`DOODLAND`), Doodverse Characters (`DOODCHAR`) and Doodverse Parcel Items (`DOODPARCELITEM`) and Doodverse Trinkets (`DOODTRINKET`).
+
+Legacy `VITE_ATLAS_*` configuration keys, script filenames, `INTERNAL_ATLAS` portal tags and `atlas:` localStorage keys remain compatible so this rebrand does not orphan saved builds, inventory or deployments. Historical deployment reports retain their original names and addresses.
+
+## Two sites and separate item collections
+
+- Legacy SvelteKit: `pnpm run legacy:build`, output `build`, hosted at `https://3dnft.vercel.app/`. CryptoDoodz metadata and instrument experiences remain here.
+- Doodverse: `node scripts/build-atlas-base.mjs`, output `app/dist`. No vercel.json is required or added.
+
+The fresh ten-contract suite keeps six utilities in **Doodverse Parcel Items** (`DoodverseItems.sol`, legacy `VITE_ATLAS_ITEMS_ADDRESS` setting). **Doodverse Trinkets** is a separate ERC-1155: 1 Afterhours, 2 Nocturne 88, 3 Backbeat, 4 Prism, 5 Barrio. Configure `VITE_DOODVERSE_TRINKETS_ADDRESS` after deployment to enable its separate mint option. An absent trinket address does not disable existing collection minting.
+
+Generate instrument metadata with `node scripts/generate-trinket-metadata.mjs`; commit the output under `static/trinkets/` and deploy the legacy site before minting. Metadata uses the existing playable `/items/1/` through `/items/5/` pages, with simple SVG covers. These HTML instruments are not automatically embedded inside the world. Trinkets currently remain wallet collectibles: parcel placement and containers still accept only the utility contract. Holding Prism #4 does not satisfy a Key #4 requirement. A separate trinket custody integration is needed for world placement.
+
+## Public parcel minting (fresh deployment)
+
+DoodverseParcels opens free public minting immediately on deployment. Call `mint(quantity)` with 1–5; the contract assigns consecutive IDs from 0 to 4999 to the caller. No ID selection, recipient selection, allowlist or owner bypass. Each wallet may mint at most five over its lifetime, across all transactions. Transfers do not reset this allowance or prevent receiving additional parcels. Minting is nonpayable; users pay network gas only. Failed receiver callbacks revert the entire batch and counters. Multiple wallets have separate limits; this is not a per-person limit.
+
+The mint page detects the fresh contract, shows remaining allowance, and links to assigned parcels from confirmed mint events. The production website now uses the public-mint Doodverse collection. Character, utility and trinket minting retain their existing authority rules.
+
+Distinct lock keys are documented in [Keys](docs/KEYS.md). They use a separate DoodverseKeys ERC-1155 contract; utility Key #4 is retained only for legacy/shared-key requirements.
+
+The fresh ten-contract Doodverse suite is deployed on Base: [addresses and activation notes](docs/DOODVERSE_BASE_DEPLOYMENT.md). The older Atlas deployment remains separate.

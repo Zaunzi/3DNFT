@@ -1,15 +1,16 @@
 import { BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, http, type Address, type Hex } from 'viem';
 import { base } from 'viem/chains';
-import { landAbi, stateAbi } from './contracts.ts';
+import { landAbi, stateAbi, stateV2Abi } from './contracts.ts';
 import type { WorldStateProvider } from './state.ts';
 import type { InjectedWallet } from './wallet.ts';
 import type { ParcelStateStore } from './parcelState.ts';
-import { MAX_OBJECTS, STATE_SCHEMA, validatePlacement, type ObjectPlacement, type PersistentWorldObject } from '../objects/model.ts';
+import { MAX_OBJECTS, validatePlacement, type ObjectPlacement, type PersistentWorldObject } from '../objects/model.ts';
 import { WORLD_WIDTH, WORLD_DEPTH, PARCEL_SIZE } from '../world/constants.ts';
 import { tokenIdToCoordinate } from '../world/coordinates.ts';
 
 export class OnchainParcelStateProvider implements WorldStateProvider, ParcelStateStore {
   readonly mode = 'ONCHAIN STATE';
+  schemaVersion = 1;
   readonly client;
   private land: Address;
   private state: Address | undefined;
@@ -33,7 +34,8 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
         this.client.readContract({ address: this.state, abi: stateAbi, functionName: 'land' }),
         this.client.readContract({ address: this.state, abi: stateAbi, functionName: 'SCHEMA_VERSION' }),
       ]);
-      if (land.toLowerCase() !== this.land.toLowerCase() || schema !== STATE_SCHEMA) throw new Error('ParcelState collection or schema mismatch');
+      if (land.toLowerCase() !== this.land.toLowerCase() || ![1,2].includes(schema)) throw new Error('ParcelState collection or schema mismatch');
+      this.schemaVersion=schema;
     }
     return { seed: BigInt(seed), generatorVersion: Number(version) };
   }
@@ -59,15 +61,29 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
   async getObjects(tokenId: bigint): Promise<PersistentWorldObject[]> {
     tokenIdToCoordinate(Number(tokenId));
     if (!this.state) return []; // Preserve the original read-only NFT runtime configuration.
-    const objects = await this.client.readContract({ address: this.state, abi: stateAbi, functionName: 'getObjects', args: [tokenId] });
+    const objects = this.schemaVersion===2?await this.client.readContract({address:this.state,abi:stateV2Abi,functionName:'getObjects',args:[tokenId]}):await this.client.readContract({ address: this.state, abi: stateAbi, functionName: 'getObjects', args: [tokenId] });
     if (objects.length > MAX_OBJECTS) throw new Error('Unsupported object count');
-    const result = objects.map(object => ({ ...object, objectType: object.objectType as ObjectPlacement['objectType'] }));
+    const result = objects.map(object => ({
+      id: object.id, x: object.x, z: object.z, rotation: object.rotation,
+      objectType: object.objectType as ObjectPlacement['objectType'],
+      ...(object.objectType >= 7 && 'y' in object ? { y: Number(object.y) } : {}),
+    }));
     result.forEach(validatePlacement); return result;
   }
   private async write(tokenId: bigint, placementOrId: ObjectPlacement | number) {
     if (!this.state) throw new Error('Configure VITE_PARCEL_STATE_ADDRESS to enable building.');
     const wallet = await this.wallet.forChain(this.chainId);
     const common = { address: this.state, abi: stateAbi, account: wallet.account } as const;
+    if(this.schemaVersion===2){
+      const simulation=typeof placementOrId==='number'
+        ?await this.client.simulateContract({address:this.state,abi:stateV2Abi,account:wallet.account,functionName:'removeObject',args:[tokenId,placementOrId]})
+        :await this.client.simulateContract({address:this.state,abi:stateV2Abi,account:wallet.account,functionName:'placeObject',args:[tokenId,placementOrId.objectType,placementOrId.x,placementOrId.z,placementOrId.rotation,placementOrId.y??0]});
+      const fresh=await this.wallet.forChain(this.chainId);if(fresh.account.address!==wallet.account.address)throw new Error('Wallet changed');
+      const hash=simulation.request.functionName==='placeObject'
+        ?await fresh.writeContract({...simulation.request,chain:this.client.chain})
+        :await fresh.writeContract({...simulation.request,chain:this.client.chain});
+      if((await this.client.waitForTransactionReceipt({hash})).status!=='success')throw new Error('Transaction reverted');return;
+    }
     const simulation = typeof placementOrId === 'number'
       ? await this.client.simulateContract({ ...common, functionName: 'removeObject', args: [tokenId, placementOrId] })
       : await this.client.simulateContract({ ...common, functionName: 'placeObject', args: [tokenId, placementOrId.objectType, placementOrId.x, placementOrId.z, placementOrId.rotation] });
@@ -80,7 +96,7 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
     const receipt = await this.client.waitForTransactionReceipt({ hash, confirmations: 1 });
     if (receipt.status !== 'success') throw new Error(`Transaction reverted: ${hash}`);
   }
-  async addObject(tokenId: bigint, placement: ObjectPlacement) { validatePlacement(placement); if(placement.objectType>=7)throw new Error('Modular building is currently mock-only.'); await this.write(tokenId, placement); }
+  async addObject(tokenId: bigint, placement: ObjectPlacement) { validatePlacement(placement); if(placement.objectType>=7&&this.schemaVersion!==2)throw new Error('Modular building requires ParcelState schema 2.'); await this.write(tokenId, placement); }
   async removeObject(tokenId: bigint, objectId: number) { await this.write(tokenId, objectId); }
   subscribe(onChange: (tokenId: bigint) => void, onError?: (error: unknown) => void) {
     let active = true;
@@ -97,7 +113,7 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
         if (cursor !== latest) {
           const [transfers, modifications] = await Promise.all([
             this.client.getContractEvents({ address: this.land, abi: landAbi, eventName: 'Transfer', fromBlock, toBlock: latest }),
-            this.state ? this.client.getContractEvents({ address: this.state, abi: stateAbi, fromBlock, toBlock: latest }) : Promise.resolve([]),
+            this.state ? this.client.getContractEvents({ address: this.state, abi: this.schemaVersion===2?stateV2Abi:stateAbi, fromBlock, toBlock: latest }) : Promise.resolve([]),
           ]);
           if (!active) return;
           const changed = new Set<bigint>();

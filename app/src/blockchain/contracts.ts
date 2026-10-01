@@ -15,3 +15,13 @@ export const stateAbi = parseAbi([
   'event ObjectRemoved(uint256 indexed tokenId,uint32 indexed objectId,uint32 revision)',
   'error NotParcelOwner()', 'error InvalidPlacement()', 'error ParcelFull()', 'error UnknownObject()',
 ]);
+
+export const stateV2Abi = parseAbi([
+ 'function land() view returns(address)', 'function SCHEMA_VERSION() view returns(uint8)',
+ 'function getObjects(uint256) view returns((uint32 id,uint8 objectType,uint16 x,uint16 z,uint16 rotation,int16 y)[])',
+ 'function placeObject(uint256,uint8,uint16,uint16,uint16,int16) returns(uint32)',
+ 'function removeObject(uint256,uint32)',
+ 'event ObjectPlaced(uint256 indexed tokenId,uint32 indexed objectId,uint8 objectType,uint16 x,uint16 z,uint16 rotation,int16 y,uint32 revision)',
+ 'event ObjectRemoved(uint256 indexed tokenId,uint32 indexed objectId,uint32 revision)',
+ 'error NotParcelOwner()', 'error InvalidPlacement()', 'error ParcelFull()', 'error UnknownObject()',
+]);

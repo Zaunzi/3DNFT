@@ -1,14 +1,14 @@
-# Modular building prototype (mock only)
+# Modular building
 
 Run `npm run dev:mock` and open the printed localhost URL with `/?tokenId=742`.
 This overrides only state mode; it does not edit your Base environment or deploy contracts.
 Connect the mock owner, enter the world, then press B.
 
 The toolbar adds foundation, wall, doorway, window wall, roof tile, standing lantern,
-and an Ancient Key locked door. New structures are **mock-only**. Base retains its
+and a Key locked door. New structures work in mock mode and the prepared schema-2 suite. The existing Base deployment retains its
 original five primitive types and portals. The deployed ParcelState contract rejects
 additional types, so the onchain writer explicitly refuses these before simulation.
-No new contracts, asset minting, crafting costs, or escrow changes are introduced.
+See [Fresh deployment](FRESH_DEPLOYMENT.md) for the new suite. This catalog adds no crafting costs or escrow changes.
 
 ## Assemble a base
 
@@ -28,7 +28,7 @@ No new contracts, asset minting, crafting costs, or escrow changes are introduce
 - Floor top is base + 0.5m. Walls extend from there to base + 3.7m; roofs sit above them.
   Lanterns stand at their base height: use floor height (base + 0.5) to put one indoors.
 - Exit build mode, approach the door, and press E. Inventory's development grant can give
-  you Ancient Key (item 4). The key must be wallet-held; the check does not consume it.
+  you Key (item 4). The key must be wallet-held; the check does not consume it.
   E closes an open door. Delete locked doors from NFTs / Containers.
 
 ## State, collision, and limitations

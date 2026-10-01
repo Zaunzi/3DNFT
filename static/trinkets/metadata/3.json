@@ -1,0 +1,17 @@
+{
+  "name": "Backbeat",
+  "description": "Backbeat, a collectible instrument from Doodverse Trinkets. Open the interactive edition to play.",
+  "image": "https://3dnft.vercel.app/trinkets/images/3.svg",
+  "animation_url": "https://3dnft.vercel.app/items/3/",
+  "external_url": "https://3dnft.vercel.app/items/3/",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Doodverse Trinkets"
+    },
+    {
+      "trait_type": "Instrument ID",
+      "value": 3
+    }
+  ]
+}

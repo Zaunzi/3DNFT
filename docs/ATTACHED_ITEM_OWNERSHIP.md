@@ -30,7 +30,7 @@ The mock implements the equivalent accounting in a single storage commit. `app/t
 
 ## ERC-721 attachments
 
-Phase 4 implements ERC-721 attachments in a separate WorldNFTState contract, with unique identity `(chainId, contractAddress, tokenId)`, escrow custody, guarded receiver callbacks, current parcel-owner withdrawal, and conservation tests. One-level containers can hold NFTs and ERC-1155 stacks. Atlas land attachment is prohibited to avoid ownership cycles. WorldItemState remains the ERC-1155 floor-item contract and exposes no ERC-721 deposit endpoint. See [NFT attachments](NFT_ATTACHMENTS.md) for the recovery model, metadata restrictions and container rules.
+Phase 4 implements ERC-721 attachments in a separate WorldNFTState contract, with unique identity `(chainId, contractAddress, tokenId)`, escrow custody, guarded receiver callbacks, current parcel-owner withdrawal, and conservation tests. One-level containers can hold NFTs and ERC-1155 stacks. Doodverse land attachment is prohibited to avoid ownership cycles. WorldItemState remains the ERC-1155 floor-item contract and exposes no ERC-721 deposit endpoint. See [NFT attachments](NFT_ATTACHMENTS.md) for the recovery model, metadata restrictions and container rules.
 
 ## Sale behavior
 

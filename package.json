@@ -22,7 +22,9 @@
     "legacy:preview": "vite preview --host 127.0.0.1",
     "world:integration": "forge build --root contracts && node --experimental-strip-types app/test/onchain.integration.ts && node --experimental-strip-types app/test/nfts.integration.ts",
     "world:nfts:integration": "forge build --root contracts && node --experimental-strip-types app/test/nfts.integration.ts",
-    "dev:mock": "node scripts/dev-atlas-mock.mjs"
+    "dev:mock": "node scripts/dev-atlas-mock.mjs",
+    "world:fresh:compile": "node scripts/compile-atlas-v2.mjs",
+    "world:fresh:integration": "npm run world:fresh:compile && node --experimental-strip-types app/test/fresh-suite.integration.ts"
   },
   "dependencies": {
     "@lucide/svelte": "0.562.0",
