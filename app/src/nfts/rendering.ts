@@ -1,3 +1,4 @@
+import {CharacterModels} from './characters.ts';
 import { createLockedDoor } from '../objects/door.ts';
 import * as THREE from 'three';
 import { objectToWorldPosition } from '../objects/model.ts';
@@ -9,7 +10,7 @@ export interface NFTRepresentation {
     supports(asset: NFTAsset, metadata: SafeMetadata): boolean;
     createObject(asset: NFTAsset, metadata: SafeMetadata): THREE.Group;
 }
-export function disposeEntity(group: THREE.Object3D) { group.traverse(o => { if (o instanceof THREE.Mesh || o instanceof THREE.Sprite) {
+export function disposeEntity(group: THREE.Object3D) { group.traverse(o => { if(o instanceof THREE.SkinnedMesh)o.skeleton.dispose(); if (o instanceof THREE.Mesh || o instanceof THREE.Sprite) {
     if (o instanceof THREE.Mesh)
         o.geometry.dispose();
     for (const material of Array.isArray(o.material) ? o.material : [o.material]) {
@@ -26,7 +27,12 @@ export function disposeEntity(group: THREE.Object3D) { group.traverse(o => { if 
 const box = (w: number, h: number, d: number, color: number, y: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color })); m.position.y = y; return m; };
 export class NFTRepresentationRegistry {
     private renderers: NFTRepresentation[] = [];
-    constructor(nativeCollection?: string) { if (nativeCollection)
+    private characters=new CharacterModels();
+    private nativeCollection?:string;
+    character(asset:NFTAsset){return !!this.nativeCollection&&asset.contractAddress.toLowerCase()===this.nativeCollection.toLowerCase()&&asset.tokenId>=1n&&asset.tokenId<=1000n;}
+    async loadCharacter(asset:NFTAsset){return this.character(asset)?this.characters.load(asset.tokenId).catch(()=>null):null;}
+    dispose(){this.characters.clear();}
+    constructor(nativeCollection?: string) { this.nativeCollection=nativeCollection; if (nativeCollection)
         this.register({ supports: (a, metadata) => !metadata.image && a.contractAddress.toLowerCase() === nativeCollection.toLowerCase() && a.tokenId === 1n, createObject: () => { const g = new THREE.Group(); g.add(box(.8, 1.2, .5, 0x517d98, .8)); const head = new THREE.Mesh(new THREE.SphereGeometry(.35, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd8b48a })); head.position.y = 1.75; g.add(head); return g; } }); }
     register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
@@ -95,8 +101,10 @@ export class NFTLayer {
                     disposeEntity(group);
                     return;
                 }
-                const mesh = this.registry.create(a.asset, metadata);
-                mesh.userData = { kind: 'nft', entity: a, metadata };
+                const character=await this.registry.loadCharacter(a.asset);
+                if(this.parcels.get(id)!==entry||request!==entry.request){if(character)disposeEntity(character);disposeEntity(group);return;}
+                const mesh = character ?? this.registry.create(a.asset, metadata);
+                mesh.userData = { ...mesh.userData, kind: 'nft', entity: a, metadata };
                 place(mesh, a.location);
                 if (typeof document !== 'undefined') {
                     const canvas = document.createElement('canvas');
@@ -112,7 +120,7 @@ export class NFTLayer {
                     label.position.y = 2.5;
                     mesh.add(label);
                 }
-                if (metadata.image) {
+                if (metadata.image && !mesh.userData.characterModel) {
                     const ownedGroup = group;
                     void loadSafeImage(metadata.image).then(bitmap => { if (this.parcels.get(id) !== entry || request !== entry.request) {
                         bitmap.close();
@@ -146,5 +154,5 @@ export class NFTLayer {
     count() { return [...this.parcels.values()].reduce((n, e) => n + e.snapshot.attachments.length, 0); }
     focusedIdentity(object: THREE.Object3D) { return object.userData.kind === 'nft' ? assetKey(object.userData.entity.asset) : ''; }
     dispose() { for (const entry of this.parcels.values())
-        disposeEntity(entry.group); this.parcels.clear(); }
+        disposeEntity(entry.group); this.parcels.clear();this.registry.dispose(); }
 }

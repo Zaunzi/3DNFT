@@ -1,3 +1,4 @@
+import {characterAsset} from './characters.ts';
 import { localPoint } from '../objects/building.ts';
 import { getGroundHeight } from '../world/terrain.ts';
 import { EYE_HEIGHT } from '../world/constants.ts';
@@ -53,7 +54,7 @@ export class NFTRuntime {
         this.parcel = options.token();
         this.cache = new MetadataCache(a => options.backend.nfts.tokenURI(a), options.gateway);
         this.layer = new NFTLayer(options.scene, options.backend.nfts, new NFTRepresentationRegistry(options.native), options.seed, this.cache, options.report);
-        this.button.textContent = 'NFTs / Containers';
+        this.button.textContent = 'Characters / NFTs / Containers';
         this.button.className = 'assets-button';
         this.button.addEventListener('click', () => this.setOpen(!this.open));
         this.panel.className = 'asset-panel';
@@ -141,9 +142,23 @@ export class NFTRuntime {
                 this.text(this.content, 'Configure NFT custody contracts to enable attachments.');
                 return;
             }
+            if(o.native){
+                this.text(this.content,'Doodverse Characters','h3');
+                this.text(this.content,'Choose your minted character (1–1000), approve it, then place it ahead on your parcel. Attached characters transfer with the land; the current parcel owner can retrieve them.');
+                const characterId=this.input(this.content,'Character token ID',this.selected?.contractAddress.toLowerCase()===o.native.toLowerCase()?String(this.selected.tokenId):'1');
+                characterId.inputMode='numeric';
+                this.action(this.content,'Select my character',async()=>{
+                    const asset=characterAsset(o.backend.config.chainId,o.native!,characterId.value.trim());
+                    const wallet=o.backend.wallet.snapshot.connectedAddress;
+                    if(!wallet)throw new Error('Connect your wallet first.');
+                    const owner=await o.backend.nfts.ownerOf(asset);
+                    if(owner.toLowerCase()!==wallet.toLowerCase())throw new Error('This character is not in your wallet. Check its ID or inspect it under Attached NFTs.');
+                    this.selected=asset;
+                });
+            }
             this.text(this.content, 'Wallet NFTs', 'h3');
             for (const entry of holdings.filter(e => e.owner?.toLowerCase() === account?.toLowerCase()))
-                this.action(this.content, `Select development NFT #${entry.asset.tokenId}`, async () => { this.selected = entry.asset; });
+                this.action(this.content, `Select character #${entry.asset.tokenId}`, async () => { this.selected = entry.asset; });
             const contract = this.input(this.content, 'Collection address', this.selected?.contractAddress ?? ''), token = this.input(this.content, 'Token ID', this.selected ? String(this.selected.tokenId) : '');
             this.action(this.content, 'Inspect pasted NFT', async () => { if (!/^\d+$/.test(token.value))
                 throw new Error('Enter a non-negative token ID'); this.selected = { chainId: o.backend.config.chainId, contractAddress: getAddress(contract.value.trim()), tokenId: BigInt(token.value) }; assetKey(this.selected); await o.backend.nfts.ownerOf(this.selected); });
@@ -174,7 +189,10 @@ export class NFTRuntime {
                 for (const trait of metadata.attributes)
                     this.text(this.content, `${trait.trait_type}: ${trait.value}`);
                 if (custodian?.toLowerCase() === account?.toLowerCase()) {
-                    this.action(this.content, '1. Approve this NFT only', () => o.backend.nfts.approve(asset));
+                    const character=!!o.native&&asset.contractAddress.toLowerCase()===o.native.toLowerCase();
+                    this.action(this.content, character?'1. Approve character':'1. Approve this NFT only', () => o.backend.nfts.approve(asset));
+                    if(character&&controlled&&this.parcel===o.token())this.action(this.content,'2. Place character near me',()=>o.backend.nfts.attach(asset,{kind:'parcel',parcelId:o.token(),...this.ahead()}));
+                    if(character&&!controlled)this.text(this.content,'Visit a parcel you own to place this character.');
                     if (controlled)
                         this.action(this.content, '2. Attach NFT at destination', () => o.backend.nfts.attach(asset, target()));
                 }

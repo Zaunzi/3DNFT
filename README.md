@@ -126,3 +126,7 @@ The fresh ten-contract Doodverse suite is deployed on Base: [addresses and activ
 ## Placeable Trinkets
 
 Open **Inventory [I] > Collection > Trinkets**, select an instrument, approve its separate escrow, and use **Place near player** (quantity 1). Aim at it and **left-click** to play, or press **E** to pick it up as the parcel owner. Closing the playable panel stops its audio. Placed instruments follow parcel ownership. See [Trinket placement](docs/TRINKET_PLACEMENT.md) for contracts, model export, mock mode, and limitations.
+
+## Place Doodverse Characters
+
+Open **Inventory → Place Doodverse Characters**, enter your character token ID, select it, approve it, and choose **Place character near me** on a parcel you own. Its actual CryptoDoodz model appears on the terrain. E inspects it; the current parcel owner can move, store, or detach it. Characters stay attached when land transfers. See [character placement and custody](docs/NFT_ATTACHMENTS.md#place-doodverse-characters).

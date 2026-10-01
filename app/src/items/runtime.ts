@@ -22,6 +22,7 @@ import { resolveInternalDestination, type NFTWorldLocation } from '../portals/lo
 
 interface RuntimeOptions {
   backend:Awaited<ReturnType<typeof createBackend>>;scene:THREE.Scene;camera:THREE.PerspectiveCamera;world:WorldManager;objects:PersistentObjectLayer;player:Player;
+  openCharacters?():void;
   token():number;canEdit(tokenId:number):boolean;builder():BuildController|undefined;
   commit(location:NFTWorldLocation,position:{x:number;y:number;z:number},url:string):void;
   report(message:string):void;modalChanged(active:boolean):void; blocked?():boolean;extraOccluders?():THREE.Object3D[];extraObstacles?(tokenId:number):Promise<{x:number;z:number;radius:number}[]>;
@@ -44,7 +45,7 @@ export class ItemPortalRuntime {
     this.toolbar=document.createElement('div');this.toolbar.className='experience-toolbar';this.toolbar.innerHTML='<button id="open-inventory">Inventory [I]</button><button id="portal-back" disabled>Return through portal</button>';
     document.getElementById('app')!.append(this.toolbar);this.label=document.createElement('div');this.label.className='interaction-label';this.label.setAttribute('role','status');document.getElementById('app')!.append(this.label);
     this.navigation=new PortalNavigator({current:()=>this.location(),currentURL:()=>new URL(location.href),prepare:id=>this.prepare(id),commit:(location,spawn,url)=>{o.commit(location,spawn,url);this.sync();}},o.world.seed);
-    this.inventory=new InventoryUI({store,trinkets:{store:o.backend.trinkets,definitions:TRINKET_DEFINITIONS,drop:async(itemType,quantity)=>{
+    this.inventory=new InventoryUI({characters:o.openCharacters,store,trinkets:{store:o.backend.trinkets,definitions:TRINKET_DEFINITIONS,drop:async(itemType,quantity)=>{
       if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach trinkets.');
       const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.camera.position.clone().addScaledVector(direction,4);
       const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateTrinket(item);await o.backend.trinkets.placeItem(o.token(),item);
