@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173/?tokenId=742**. Click **Enter world**, then use WASD, Space to jump, mouse look and Shift to sprint. Esc releases/pauses. If pointer lock is unavailable in an embedded viewer, hold and drag the terrain to look. Use the checkboxes to toggle parcel borders and diagnostics.
+The root URL opens the lightweight Doodverse landing page with world entry, minting and a parcel lookup. Direct links such as **http://localhost:5173/?tokenId=742** still open the world. Click **Enter world**, then use WASD, Space to jump, mouse look and Shift to sprint. Esc releases/pauses. If pointer lock is unavailable in an embedded viewer, hold and drag the terrain to look. Use the checkboxes to toggle parcel borders and diagnostics.
 
 You spawn in parcel #742 at grid (42, 7), facing east toward #743. Walk about 32 world units (four seconds at walking speed) to cross its border. The token label, ownership notice, coordinates and URL update without reloading. A radius-two neighborhood is generated in advance. World edges stop movement. Trees and rocks are decorative; terrain has collision.
 
@@ -29,7 +29,7 @@ Run `npm run dev:mock` for the expanded local build catalog: foundations, walls,
 
 ## Embedded NFT viewer
 
-Doodverse has two lazy-loaded presentation modes. Iframes (including OpenSea), `?mode=showcase`, and the legacy `?embed=1` preview use a living parcel diorama: one globally generated parcel, persistent objects/items/portals/NFTs, a slow orbit camera and a cutaway base. No player, WASD, wallet UI or gameplay interactions are created. The orbit respects reduced-motion preferences, can be paused, pauses rendering while hidden, and is capped at 30 FPS. Persistent state refreshes every minute while visible. **Open in Doodverse** preserves the parcel ID and opens `?mode=world` in a new tab. Ordinary full-window visits and explicit `?mode=world` use the unchanged first-person world. Metadata/contracts require no update.
+Doodverse has three lazy-loaded presentation modes: landing, world and showcase. Iframes (including OpenSea), `?mode=showcase`, and the legacy `?embed=1` preview use a living parcel diorama: one globally generated parcel, persistent objects/items/portals/NFTs, a slow orbit camera and a cutaway base. No player, WASD, wallet UI or gameplay interactions are created. The orbit respects reduced-motion preferences, can be paused, pauses rendering while hidden, and is capped at 30 FPS. Persistent state refreshes every minute while visible. **Open in Doodverse** preserves the parcel ID and opens `?mode=world` in a new tab. Full-window visits without parcel parameters show the landing page without initializing WebGL or blockchain providers. Direct `?tokenId=…` links and explicit `?mode=world` use the first-person world. Metadata/contracts require no update.
 
 ## Mint on Base
 
