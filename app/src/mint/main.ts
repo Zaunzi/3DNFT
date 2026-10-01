@@ -9,7 +9,13 @@ import './style.css';
 document.querySelector('#app')!.innerHTML = `<nav><a href="/">◈ DOODVERSE / WORLD PARCELS</a><span>BASE MAINNET</span></nav>
 <header><p class="eyebrow">MINT DOODVERSE</p><h1>Mint your world.</h1><p>Create parcels, characters and items, then bring them into Doodverse.</p></header>
 <section class="wallet"><button id="connect">Connect wallet</button><button id="switch" hidden>Switch to Base</button><p id="wallet">Not connected</p><p id="setup" role="status">Checking deployment…</p></section>
-<form id="mint"><label>Asset<select id="kind"><option value="parcel">Parcel · ERC-721</option><option value="character">Character · ERC-721</option><option value="item">Doodverse Parcel Items · ERC-1155</option><option value="trinket">Doodverse Trinkets · ERC-1155</option></select></label>
+<section aria-label="Choose a collection"><h2>What would you like to mint?</h2><div class="collection-buttons">
+<button type="button" data-kind="parcel" aria-pressed="true">Mint Parcels</button>
+<button type="button" data-kind="trinket" aria-pressed="false">Mint Trinkets</button>
+<button type="button" data-kind="item" aria-pressed="false">Mint Parcel Items</button>
+<button type="button" data-kind="character" aria-pressed="false">Mint Characters</button>
+</div><p class="muted">Choose a collection, then review the details below. Trinkets, parcel items and characters require the collection owner's wallet.</p></section>
+<form id="mint"><h2 id="form-title">Mint Parcels</h2><label hidden>Asset<select id="kind"><option value="parcel">Parcel · ERC-721</option><option value="character">Character · ERC-721</option><option value="item">Doodverse Parcel Items · ERC-1155</option><option value="trinket">Doodverse Trinkets · ERC-1155</option></select></label>
 <p id="help"></p><label>Recipient address<input id="recipient" placeholder="0x…" required autocomplete="off"></label><button id="self" type="button">Use my wallet</button>
 <label id="id-label">Token ID<input id="token-id" value="742" inputmode="numeric" required></label>
 <label id="item-label" hidden>Item<select id="item"></select></label><label id="quantity-label" hidden>Quantity<input id="quantity" value="1" inputmode="numeric"></label>
@@ -37,6 +43,12 @@ const kind = () => input('kind') as MintKind;
 const message = (error: unknown) => error instanceof Error ? ('shortMessage' in error ? String(error.shortMessage) : error.message) : 'Request failed. Please retry.';
 function render() {
   const k = kind(), account = wallet.snapshot.connectedAddress;
+  const labels: Record<MintKind, string> = {parcel:'Parcels',trinket:'Trinkets',item:'Parcel Items',character:'Characters'};
+  el('form-title').textContent = `Mint ${labels[k]}`;
+  document.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.kind === k));
+    button.disabled = busy;
+  });
   el('wallet').textContent = account ? `${account} · chain ${wallet.snapshot.chainId}` : 'Not connected';
   el('switch').hidden = !account || wallet.snapshot.chainId === base.id;
   const publicMint = k === 'parcel' && publicParcels;
@@ -53,6 +65,13 @@ function render() {
 }
 function populateItems() { el('item').replaceChildren(); for (const item of kind() === 'trinket' ? TRINKETS : ITEM_DEFINITIONS) { const option = document.createElement('option'); option.value = String(item.id); option.textContent = `${item.name} (#${item.id})`; el('item').append(option); } }
 populateItems();
+document.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach(button => {
+  button.onclick = () => {
+    if (busy) return;
+    el<HTMLSelectElement>('kind').value = button.dataset.kind!;
+    el('kind').dispatchEvent(new Event('change'));
+  };
+});
 wallet.subscribe(() => {render(); void refreshAllowance();});
 el('kind').addEventListener('change', () => { el<HTMLInputElement>('token-id').value = kind() === 'parcel' ? '742' : '1'; populateItems(); render(); });
 el('self').onclick = () => { if (wallet.snapshot.connectedAddress) el<HTMLInputElement>('recipient').value = wallet.snapshot.connectedAddress; };
