@@ -29,7 +29,21 @@ export class ExperienceRegistry {
     inner.userData.portalGlow=true;
   }
   item(type:number){const group=new THREE.Group(),mesh=this.templates.get(type)?.clone();if(!mesh)throw new Error('Unsupported item visual');mesh.position.y=.7;group.add(mesh);return group;}
-  portal(){const group=this.portalTemplate.clone(true);group.traverse(o=>{if(o instanceof THREE.Mesh && o.material instanceof THREE.ShaderMaterial)o.onBeforeRender=()=>{(o.material as THREE.ShaderMaterial).uniforms.time.value=performance.now()/1000;};});return group;}
+  portal(){
+    const group=this.portalTemplate.clone(true);
+    group.traverse(o=>{
+      if(o instanceof THREE.Mesh && o.material instanceof THREE.ShaderMaterial){
+        o.onBeforeRender=(_renderer,_scene,_camera,_geometry,material)=>{
+          // Build previews replace the shader with a validity material. Animate
+          // only the material actually being rendered, never the preview tint.
+          if(material instanceof THREE.ShaderMaterial && material.uniforms.time){
+            material.uniforms.time.value=performance.now()/1000;
+          }
+        };
+      }
+    });
+    return group;
+  }
   dispose(){this.geometries.forEach(g=>g.dispose());this.materials.forEach(m=>m.dispose());}
 }
 interface Entry {group:THREE.Group;items:AttachedWorldItem[];portals:Portal[];ready:boolean;request:number}
