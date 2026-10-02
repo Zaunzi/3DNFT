@@ -37,7 +37,7 @@ Doodverse has three lazy-loaded presentation modes: landing, world and showcase.
 
 ## Mint on Base
 
-Open [Mint assets](https://atlas-mu-lime.vercel.app/mint.html), connect the contract-owner wallet and switch to Base. Mint a parcel (0–4999), a character (start with #1), or one of the six Doodverse items to your chosen recipient. Each action simulates first and requires a separate wallet-confirmed transaction. Duplicate ERC-721 IDs and unauthorized mints revert. No minting occurs automatically. Open the minted parcel, connect its owner, and use Inventory or NFTs / Containers to attach assets.
+Open [Mint collections](https://atlas-mu-lime.vercel.app/mint.html) to preview parcels, CryptoDoodz characters and the five trinkets. All mints go directly to the connected wallet; there is no recipient field. Parcels have free public minting (network gas applies), a lifetime maximum of five per wallet, and automatically assigned IDs. Characters and trinkets still require the collection-owner wallet. Each mint simulates first and requires wallet confirmation. Parcel Items are no longer offered on this page; wood/stone harvesting currently works in mock mode only. The world HUD no longer has a mint shortcut; access minting through the landing page.
 
 Vercel needs no additional environment variables: `scripts/build-atlas-base.mjs` loads the public configuration in `docs/deployments/doodverse-base.env.example`. Never add private keys to Vercel or `VITE_*` variables. Local mock mode remains unchanged; the mint page requires the Base production build or equivalent local onchain configuration.
 
