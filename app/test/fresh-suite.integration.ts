@@ -23,7 +23,11 @@ try {
     const write = async (address: Address, abi: Abi, functionName: string, args: unknown[]) => { const hash = await wallet.writeContract({ address, abi, functionName, args, account: active, chain: null }); assert.equal((await client.waitForTransactionReceipt({ hash })).status, 'success'); };
     const land = await deploy('DoodverseParcels', [7422026n, 'https://world.example/nft/', alice]), characters = await deploy('DoodverseCharacters', [alice]), items = await deploy('DoodverseItems', [alice, 'ipfs://items/{id}']), world = await deploy('DoodverseNFTState', [land, alice]), containers = await deploy('ContainerItemState', [world, items]);
     const trinkets = await deploy('DoodverseTrinkets', [alice]);
-    await write(trinkets,parseAbi(['function mint(address,uint256,uint256)']),'mint',[alice,4n,2n]);
+    await write(trinkets,parseAbi(['function mint(address,uint256,uint256)']),'mint',[alice,4n,1n]);
+    const claimAbi=parseAbi(['function mint(uint256)','function minted(address,uint256) view returns(bool)']);
+    assert.equal(await client.readContract({address:trinkets,abi:claimAbi,functionName:'minted',args:[alice,4n]}),true);
+    await assert.rejects(client.simulateContract({address:trinkets,abi:claimAbi,functionName:'mint',args:[4n],account:alice}));
+    await assert.rejects(client.simulateContract({address:trinkets,abi:claimAbi,functionName:'mint',args:[6n],account:alice}));
     assert.equal(await client.readContract({address:items,abi:parseAbi(['function balanceOf(address,uint256) view returns(uint256)']),functionName:'balanceOf',args:[alice,4n]}),0n);
     await write(world, parseAbi(['function bindContainerItems(address)']), 'bindContainerItems', [containers]);
     const keys=await deploy('DoodverseKeys',[land,alice]);
@@ -49,7 +53,7 @@ try {
     const trinketProvider=new OnchainTrinketProvider(base.client,injected,{land,items:trinkets,worldItems:trinketState});
     await trinketProvider.validateDeployment();await trinketProvider.approveEscrow();
     await trinketProvider.placeItem(0,{itemType:4,quantity:1n,x:3200,z:3200,rotation:9000});
-    assert.equal(await trinketProvider.getBalance(alice,4n),1n);assert.equal((await trinketProvider.getItems(0)).length,1);
+    assert.equal(await trinketProvider.getBalance(alice,4n),0n);assert.equal((await trinketProvider.getItems(0)).length,1);
     const provider = new OnchainNFTProvider(base.client, injected, { land, world, containers, items, characters });
     await provider.validateDeployment();
     await provider.createDoor(0,{x:3200,z:3200,rotation:0,y:240},{kind:'erc1155',contractAddress:items,tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});
@@ -80,6 +84,11 @@ try {
     active = bob;
     await injected.refresh();
     await trinketProvider.pickupItem(0,1);assert.equal(await trinketProvider.getBalance(bob,4n),1n);assert.equal((await trinketProvider.getItems(0)).length,0);
+    await assert.rejects(client.simulateContract({address:trinkets,abi:claimAbi,functionName:'mint',args:[4n],account:alice}));
+    await write(trinkets,claimAbi,'mint',[4n]); // Bob may claim his own edition despite receiving Alice's.
+    assert.equal(await trinketProvider.getBalance(bob,4n),2n);
+    await assert.rejects(client.simulateContract({address:trinkets,abi:claimAbi,functionName:'mint',args:[4n],account:bob}));
+
     await provider.detach(asset);
     await provider.retrieveItem(chest.id, 3, 12n);
     await provider.removeContainer(chest.id);

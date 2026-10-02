@@ -25,14 +25,16 @@ const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElem
 const input = (id: string) => el<HTMLInputElement>(id).value.trim();
 const provider = (window as Window & { ethereum?: InjectedProvider }).ethereum;
 const wallet = new InjectedWallet(provider);
-const abi = parseAbi(['event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)', 'function PUBLIC_MINT() view returns(bool)', 'function mintedBy(address) view returns(uint256)', 'function mint(uint256)', 'function owner() view returns(address)', 'function mint(address,uint256)', 'function mint(address,uint256,uint256)']);
+const abi = parseAbi(['event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)', 'function PUBLIC_MINT() view returns(bool)', 'function mintedBy(address) view returns(uint256)', 'function minted(address,uint256) view returns(bool)', 'function mint(uint256)', 'function owner() view returns(address)', 'function mint(address,uint256)', 'function mint(address,uint256,uint256)']);
 let busy = false, ready = false, publicParcels = true;
+let publicTrinkets=false, trinketClaimed:boolean|undefined;
 let minted: bigint | undefined;
 async function refreshAllowance() {
-  const account = wallet.snapshot.connectedAddress; minted = undefined;
+  const account = wallet.snapshot.connectedAddress; minted = undefined;trinketClaimed=undefined;const selected=input('item');
   if (publicParcels && account && addresses?.parcel) {
     try { const value = await client.readContract({address:addresses.parcel,abi,functionName:"mintedBy",args:[account]}); if(wallet.snapshot.connectedAddress === account) minted=value; } catch { /* Simulation remains authoritative when quota reads fail. */ }
   }
+  if(publicTrinkets&&account&&addresses?.trinket){try{const claimed=await client.readContract({address:addresses.trinket,abi,functionName:'minted',args:[account,BigInt(selected)]});if(wallet.snapshot.connectedAddress===account&&input('item')===selected)trinketClaimed=claimed;}catch{/* Fail closed until allowance can be verified. */}}
   render();
 }
 let addresses: Partial<Record<MintKind, Address>>;
@@ -54,12 +56,13 @@ function render() {
   const publicMint = k === 'parcel' && publicParcels;
   el('mint-policy').textContent=publicMint?'Free public mint · Five per wallet, lifetime · Network gas still applies. IDs are assigned automatically.':'This collection uses owner-only minting.';
   el('token-id').setAttribute('aria-label',k==='character'?'Character ID':'Token ID');
-  el('id-label').hidden = publicMint || (k === 'trinket'); el('item-label').hidden = (k !== 'trinket'); el('quantity-label').hidden = !publicMint && (k !== 'trinket');
+  el('id-label').hidden = publicMint || (k === 'trinket'); el('item-label').hidden = (k !== 'trinket'); el('quantity-label').hidden = !publicMint;
   el('help').textContent = k === 'parcel' ? (publicParcels?'Parcels are assigned in sequence, starting at #0. Transferring a parcel does not restore your mint allowance.':'This is the older owner-minted parcel deployment. Choose an unused ID from 0–4999.') : k === 'character' ? 'A native character NFT you can attach to a parcel or store in a container.' : 'Collect an instrument, place it on your parcel, and click to play it in the world.';
   el('authority').textContent = publicMint ? (minted===undefined?'Public mint':`${minted}/5 minted by this wallet · ${5n-minted} remaining`) : owners.has(k) ? `Mint authority: ${owners.get(k)}${account && account.toLowerCase() !== owners.get(k)!.toLowerCase() ? ' — connected wallet is not the owner.' : ''}` : '';
+  if(k==='trinket'){el('mint-policy').textContent='Free public mint · One of each instrument per wallet, lifetime · Network gas applies.';el('authority').textContent=!publicTrinkets?'Public mint is awaiting the new contract deployment.':!account?'Connect your wallet to check your allowance.':trinketClaimed===undefined?'Checking instrument allowance…':trinketClaimed?'Already minted by this wallet.':'Available: one mint of this instrument.';}
   el('contract').textContent = addresses?.[k] ? `Contract: ${addresses[k]}` : 'This collection is not configured yet.';
   const submit = el<HTMLButtonElement>('submit'); submit.textContent = busy ? 'Transaction in progress…' : `Mint ${k}`;
-  submit.disabled = busy || !ready || wallet.snapshot.chainId !== base.id || !account || (!publicMint && account.toLowerCase() !== owners.get(k)?.toLowerCase()) || (publicMint && minted !== undefined && minted >= 5n);
+  submit.disabled = busy || !ready || wallet.snapshot.chainId !== base.id || !account || (!publicMint && k!=='trinket' && account.toLowerCase() !== owners.get(k)?.toLowerCase()) || (k==='trinket'&&(!publicTrinkets||trinketClaimed!==false)) || (publicMint && minted !== undefined && minted >= 5n);
   for (const id of ['kind','token-id','item','quantity','connect','switch']) (el(id) as HTMLInputElement).disabled = busy;
 }
 function populateItems() { el('item').replaceChildren(); for (const item of TRINKETS) { const option = document.createElement('option'); option.value = String(item.id); option.textContent = `${item.name} (#${item.id})`; el('item').append(option); } }
@@ -72,7 +75,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach(button => {
   };
 });
 wallet.subscribe(() => {render(); void refreshAllowance();});
-el('kind').addEventListener('change', () => { el<HTMLInputElement>('token-id').value = '1'; populateItems(); render(); preview(); });
+el('kind').addEventListener('change', () => { el<HTMLInputElement>('token-id').value = '1'; populateItems(); render(); preview(); void refreshAllowance(); });
 el('connect').onclick = async () => { try { await wallet.connect(); } catch (e) { el('status').textContent = message(e); } };
 el('switch').onclick = async () => { try { if (!provider) throw new Error('Connect an injected wallet.'); await createWalletClient({ transport: custom(provider) }).switchChain({ id: base.id }); await wallet.refresh(); } catch (e) { el('status').textContent = message(e); } };
 el('mint').onsubmit = async event => {
@@ -81,16 +84,17 @@ el('mint').onsubmit = async event => {
   try {
     const k = kind(), publicMint = k === 'parcel' && publicParcels;
     const quantity = publicMint ? parcelMintQuantity(input('quantity')) : 1n;
-    const value = mintInput(k, wallet.snapshot.connectedAddress??'', publicMint ? '0' : input((k === 'trinket') ? 'item' : 'token-id'), input('quantity'));
+    const value = mintInput(k, wallet.snapshot.connectedAddress??'', publicMint ? '0' : input((k === 'trinket') ? 'item' : 'token-id'), k==='trinket'?'1':input('quantity'));
     const address = addresses[k]; if (!address) throw new Error('This collection is not configured yet.');
     busy = true; render(); el('result').replaceChildren(); el('status').textContent = 'Checking mint permissions and simulating transaction…';
     const signer = await wallet.forChain(base.id);
     if(signer.account.address.toLowerCase()!==value.recipient.toLowerCase()) throw new Error('Wallet changed. Review and submit again.');
-    if (!publicMint) {
+    if(k==='trinket'&&!publicTrinkets)throw new Error('Public trinket mint requires the new contract deployment.');
+    if (!publicMint && k!=='trinket') {
     const owner = await client.readContract({ address, abi, functionName: 'owner' });
     owners.set(k, owner); if (owner.toLowerCase() !== signer.account.address.toLowerCase()) throw new Error('Only the current contract owner can mint.');
     }
-    const args = publicMint ? [quantity] as const : (k === 'trinket') ? [value.recipient, value.id, value.quantity] as const : [value.recipient, value.id] as const;
+    const args = publicMint ? [quantity] as const : (k === 'trinket') ? [value.id] as const : [value.recipient, value.id] as const;
     const simulation = await client.simulateContract({ address, abi, functionName: 'mint', args, account: signer.account });
     const fresh = await wallet.forChain(base.id); if (fresh.account.address !== signer.account.address) throw new Error('Wallet changed. Review and submit again.');
     el('status').textContent = publicMint ? `Confirm minting ${quantity} automatically assigned parcel(s). Mint price: 0 ETH, plus network gas.` : `Confirm minting ${k} #${value.id} to ${value.recipient} in your wallet.`;
@@ -121,12 +125,15 @@ async function init() {
     if (await client.getChainId() !== base.id) throw new Error('RPC is not Base mainnet.');
     await Promise.all((Object.keys(addresses) as MintKind[]).map(async k => owners.set(k, await client.readContract({ address: addresses[k]!, abi, functionName: 'owner' }))));
     try { publicParcels=await client.readContract({address:addresses.parcel!,abi,functionName:'PUBLIC_MINT'}); } catch { publicParcels=false; }
+    if(addresses.trinket){try{publicTrinkets=await client.readContract({address:addresses.trinket,abi,functionName:'PUBLIC_MINT'});}catch{publicTrinkets=false;}}
     ready = true; void refreshAllowance(); el('setup').textContent = 'Base mainnet · deployed contracts verified for mint authority';
   } catch (e) { el('setup').textContent = message(e); } render();
 }
 void init();
 
+let disposePreview:(()=>void)|undefined;let previewVersion=0;
 function preview() {
+  disposePreview?.();disposePreview=undefined;const version=++previewVersion;
   const media=el('preview-media'), k=kind(); media.replaceChildren();
   if(k==='parcel') {
     const frame=document.createElement('iframe');frame.src='/?mode=showcase&tokenId=1';frame.title='Interactive example of parcel 1';frame.loading='lazy';media.append(frame);
@@ -137,11 +144,15 @@ function preview() {
   el('preview-name').textContent=k==='character'?`Character #${id}`:TRINKETS.find(t=>String(t.id)===id)?.name??'Trinket';
   el('preview-note').textContent=k==='character'?'CryptoDoodz · Doodverse Characters':TRINKETS.find(t=>String(t.id)===id)?.kind??'';
   if(!valid){media.textContent='Choose a valid ID to preview this asset.';return;}
+  if(k==='trinket'){
+    media.textContent='Loading 3D instrument…';el('preview-note').textContent+=' · Drag to rotate';
+    void import('./trinketPreview.ts').then(module=>{if(version!==previewVersion)return;try{disposePreview=module.trinketPreview(media,Number(id));}catch{media.textContent='3D preview unavailable on this device.';}}).catch(()=>{if(version===previewVersion)media.textContent='Unable to load 3D preview.';});return;
+  }
   const image=document.createElement('img');image.alt=el('preview-name').textContent!;
   image.src=k==='character'?`https://3dnft.vercel.app/cryptodoodz/images/${String(Number(id)).padStart(4,'0')}.png`:`https://3dnft.vercel.app/trinkets/images/${Number(id)}.svg`;
   image.onerror=()=>{if(image.parentElement===media){media.replaceChildren();media.textContent='Preview unavailable. You can still review the collection details.';}};
   media.append(image);
 }
-el('item').addEventListener('change',preview);
+el('item').addEventListener('change',()=>{preview();void refreshAllowance();});
 el('token-id').addEventListener('input',preview);
 preview();
