@@ -25,7 +25,8 @@ test('default world entry is parcel 1 without overriding explicit parcel IDs',()
   assert.equal(parseTokenId(null),1);assert.equal(parseTokenId('0'),0);assert.equal(parseTokenId('742'),742);
 });
 test('showcase dragging changes both angles and cannot flip below terrain or over the pole',()=>{
-  const moved=dragOrbit(.7,.68,100,50);assert.ok(moved.angle<.7);assert.ok(moved.elevation>.68);
+  const moved=dragOrbit(.7,.68,100,50);assert.ok(moved.angle>.7);assert.ok(moved.elevation>.68);
+  const reversed=dragOrbit(.7,.68,-100,-50);assert.ok(reversed.angle<.7);assert.ok(reversed.elevation<.68);
   assert.equal(dragOrbit(0,.68,0,-10000).elevation,.15);
   assert.equal(dragOrbit(0,.68,0,10000).elevation,1.35);
 });
