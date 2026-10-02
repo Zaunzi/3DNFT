@@ -10,6 +10,15 @@ contract DoodverseKeysTest {
     DoodverseParcels land;DoodverseKeys keys;DoodverseNFTState world;
     function setUp() public {land=new DoodverseParcels(1,"https://example.com/",address(this));vm.prank(ALICE);land.mint(1);world=new DoodverseNFTState(address(land),address(this));keys=new DoodverseKeys(address(land),address(this));keys.bindWorld(address(world));world.bindLockKeys(address(keys));}
     function door() private {vm.prank(ALICE);world.createKeyedDoor(0,3200,3200,0,50);}
+    function testPausedKeysRollBackNewDoorsAndRekeys() public {
+        door();keys.setMintPaused(true);
+        vm.prank(ALICE);vm.expectRevert();world.createKeyedDoor(0,4000,4000,0,50);
+        require(world.getDoors(0).length==1&&keys.nextKey()==1);
+        vm.prank(ALICE);vm.expectRevert();world.rekeyDoor(0,1);
+        require(keys.active(1)&&keys.nextKey()==1);
+        vm.prank(ALICE);world.removeDoor(0,1);require(!keys.active(1));
+        keys.setMintPaused(false);door();require(keys.nextKey()==2);
+    }
     function testUniqueKeysCopiesRekeyAndDeletion() public {
         door();door();require(keys.balanceOf(ALICE,1)==1&&keys.balanceOf(ALICE,2)==1);
         vm.prank(ALICE);keys.issueCopies(1,GUEST,2);

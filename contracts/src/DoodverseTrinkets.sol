@@ -1,23 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {CollectionControls} from "./CollectionControls.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// @notice Instrument editions are separate from parcel utilities and their escrow.
-contract DoodverseTrinkets is ERC1155, Ownable {
+contract DoodverseTrinkets is ERC1155, CollectionControls {
     string public constant name = "Doodverse Trinkets";
     string public constant symbol = "DOODTRINKET";
     uint256 public constant ITEM_COUNT = 5;
+    string public metadataBaseURI = "https://atlas-mu-lime.vercel.app/trinkets/metadata/";
+    function setMetadataBaseURI(string calldata value) external onlyOwner {
+        _validateMetadataBaseURI(value);
+        metadataBaseURI = value;
+        emit MetadataURIUpdated(value);
+        for (uint256 id = 1; id <= ITEM_COUNT; ++id) emit URI(uri(id), id);
+    }
     bool public constant PUBLIC_MINT = true;
     mapping(address => mapping(uint256 => bool)) public minted;
     error AlreadyMinted();
     error InvalidRecipient();
     error InvalidTrinket();
     error InvalidQuantity();
-    constructor(address authority) ERC1155("") Ownable(authority) {}
-    function uri(uint256 id) public pure override returns (string memory) {
+    constructor(address authority) ERC1155("") CollectionControls(authority) {}
+    function uri(uint256 id) public view override returns (string memory) {
         if(id==0 || id>ITEM_COUNT) revert InvalidTrinket();
-        return string.concat("https://atlas-mu-lime.vercel.app/trinkets/metadata/",Strings.toString(id),".json");
+        return string.concat(metadataBaseURI,Strings.toString(id),".json");
     }
     /// @notice A lifetime mint allowance, independent of balances, transfers or escrow.
     function mint(uint256 id) external { _claim(msg.sender,id); }
@@ -27,7 +34,7 @@ contract DoodverseTrinkets is ERC1155, Ownable {
         if(quantity!=1) revert InvalidQuantity();
         _claim(recipient,id);
     }
-    function _claim(address recipient,uint256 id) private {
+    function _claim(address recipient,uint256 id) private whenMintingOpen {
         if(id==0 || id>ITEM_COUNT) revert InvalidTrinket();
         if(minted[recipient][id]) revert AlreadyMinted();
         // Commit before ERC-1155 receiver callbacks, preventing same-ID reentrant claims.

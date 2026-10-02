@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {CollectionControls} from "./CollectionControls.sol";
 
 library AtlasItemTypes {
     uint16 internal constant STONE = 1;
@@ -15,10 +15,17 @@ library AtlasItemTypes {
 }
 
 /// @notice Controlled development distribution. Only the owner can create supply.
-contract AtlasItems is ERC1155, Ownable {
+contract AtlasItems is ERC1155, CollectionControls {
     uint8 public constant REGISTRY_VERSION = 1;
-    constructor(address authority, string memory metadataURI) ERC1155(metadataURI) Ownable(authority) {}
-    function mint(address recipient, uint256 itemId, uint256 quantity) external onlyOwner {
+    /// @notice Standard ERC-1155 URI template, including optional {id} substitution.
+    function setURI(string calldata value) external onlyOwner {
+        if (bytes(value).length == 0) revert InvalidMetadataURI();
+        _setURI(value);
+        emit MetadataURIUpdated(value);
+        for (uint256 id = 1; id <= AtlasItemTypes.PORTAL_CORE; ++id) emit URI(value, id);
+    }
+    constructor(address authority, string memory metadataURI) ERC1155(metadataURI) CollectionControls(authority) {}
+    function mint(address recipient, uint256 itemId, uint256 quantity) external onlyOwner whenMintingOpen {
         require(AtlasItemTypes.valid(itemId) && quantity > 0, "Invalid item/quantity");
         _mint(recipient, itemId, quantity, "");
     }

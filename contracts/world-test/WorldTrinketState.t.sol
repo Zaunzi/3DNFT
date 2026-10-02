@@ -22,6 +22,12 @@ contract WorldTrinketStateTest {
  DoodverseParcels land;TrinketCustodyFixture items;WorldTrinketState state;
  function setUp() public {land=new DoodverseParcels(1,"https://example.com/",address(this));items=new TrinketCustodyFixture();state=new WorldTrinketState(address(land),address(items));vm.prank(ALICE);land.mint(1);items.fixtureMint(ALICE,1,70);vm.prank(ALICE);items.setApprovalForAll(address(state),true);}
  function place() private {vm.prank(ALICE);state.placeItem(0,1,1,3200,3200,0);}
+ function testMintPauseDoesNotBlockSaleOrEscrowWithdrawal() public {
+  place();items.setMintPaused(true);land.setMintPaused(true);
+  vm.prank(ALICE);land.transferFrom(ALICE,BOB,0);
+  vm.prank(BOB);state.pickupItem(0,1);
+  require(items.balanceOf(BOB,1)==1&&state.escrowed(1)==0&&state.getItems(0).length==0);
+ }
  function testSaleInheritanceAndNoDuplication() public {place();require(items.balanceOf(ALICE,1)==69&&items.balanceOf(address(state),1)==1&&state.escrowed(1)==1);vm.prank(ALICE);land.transferFrom(ALICE,BOB,0);vm.prank(ALICE);vm.expectRevert();state.pickupItem(0,1);vm.prank(BOB);state.pickupItem(0,1);require(items.balanceOf(BOB,1)==1&&items.balanceOf(ALICE,1)==69&&state.getItems(0).length==0&&state.escrowed(1)==0);vm.prank(BOB);vm.expectRevert();state.pickupItem(0,1);}
  function testAuthorizationAndUnsolicitedTransfers() public {vm.prank(BOB);vm.expectRevert();state.placeItem(0,1,1,3200,3200,0);vm.prank(ALICE);vm.expectRevert();items.safeTransferFrom(ALICE,address(state),1,1,"");require(state.getItems(0).length==0&&items.balanceOf(ALICE,1)==70);}
  function testCapacityStableIdsAndRemoval() public {for(uint i;i<64;i++)place();vm.prank(ALICE);vm.expectRevert();state.placeItem(0,1,1,3200,3200,0);vm.prank(ALICE);state.pickupItem(0,20);place();WorldTrinketState.Instance[] memory rows=state.getItems(0);require(rows.length==64&&rows[63].id==65&&rows[19].id==64);}
