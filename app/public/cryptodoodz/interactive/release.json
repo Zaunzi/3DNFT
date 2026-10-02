@@ -1,0 +1,14 @@
+{
+  "version": "a0e300c57e02",
+  "models": 5000,
+  "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Shoot",
+    "Wave"
+  ],
+  "background": "Per-token Background trait",
+  "source": "r10"
+}

@@ -144,7 +144,7 @@ export class NFTRuntime {
             }
             if(o.native){
                 this.text(this.content,'Doodverse Characters','h3');
-                this.text(this.content,'Choose your minted character (1–1000), approve it, then place it ahead on your parcel. Attached characters transfer with the land; the current parcel owner can retrieve them.');
+                this.text(this.content,'Choose your minted character (1–5000), approve it, then place it ahead on your parcel. Attached characters transfer with the land; the current parcel owner can retrieve them.');
                 const characterId=this.input(this.content,'Character token ID',this.selected?.contractAddress.toLowerCase()===o.native.toLowerCase()?String(this.selected.tokenId):'1');
                 characterId.inputMode='numeric';
                 this.action(this.content,'Select my character',async()=>{

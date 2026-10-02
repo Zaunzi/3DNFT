@@ -1,4 +1,4 @@
-// Metadata snapshots from the legacy site; mock previews also work without metadata RPC.
+// Doodverse-hosted authored fixtures; no metadata RPC required in mock mode.
 export const CRYPTODOODZ_FIXTURES: Record<string, unknown> = {
   "1": {
     "name": "CryptoDoodz #0001",
@@ -57,12 +57,12 @@ export const CRYPTODOODZ_FIXTURES: Record<string, unknown> = {
         "value": "None"
       }
     ],
-    "image": "https://3dnft.vercel.app/cryptodoodz/images/0001.png?v=f124d143acac",
-    "animation_url": "https://3dnft.vercel.app/cryptodoodz/interactive/0001.html?v=a0e300c57e02",
-    "external_url": "https://3dnft.vercel.app/cryptodoodz/?id=1",
+    "image": "https://atlas-mu-lime.vercel.app/cryptodoodz/images/0001.png",
+    "animation_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/interactive/0001.html?v=a0e300c57e02",
+    "external_url": "https://atlas-mu-lime.vercel.app/mint.html",
     "background_color": "91AC99",
     "properties": {
-      "model_url": "https://3dnft.vercel.app/cryptodoodz/models/0001.glb?v=a307ae8b26f3"
+      "model_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/models/0001.glb"
     }
   },
   "2": {
@@ -122,12 +122,12 @@ export const CRYPTODOODZ_FIXTURES: Record<string, unknown> = {
         "value": "None"
       }
     ],
-    "image": "https://3dnft.vercel.app/cryptodoodz/images/0002.png?v=91a0539f5748",
-    "animation_url": "https://3dnft.vercel.app/cryptodoodz/interactive/0002.html?v=a0e300c57e02",
-    "external_url": "https://3dnft.vercel.app/cryptodoodz/?id=2",
+    "image": "https://atlas-mu-lime.vercel.app/cryptodoodz/images/0002.png",
+    "animation_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/interactive/0002.html?v=a0e300c57e02",
+    "external_url": "https://atlas-mu-lime.vercel.app/mint.html",
     "background_color": "91AC99",
     "properties": {
-      "model_url": "https://3dnft.vercel.app/cryptodoodz/models/0002.glb?v=11b5a69afb88"
+      "model_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/models/0002.glb"
     }
   },
   "12": {
@@ -187,12 +187,12 @@ export const CRYPTODOODZ_FIXTURES: Record<string, unknown> = {
         "value": "None"
       }
     ],
-    "image": "https://3dnft.vercel.app/cryptodoodz/images/0012.png?v=259449acc8c4",
-    "animation_url": "https://3dnft.vercel.app/cryptodoodz/interactive/0012.html?v=a0e300c57e02",
-    "external_url": "https://3dnft.vercel.app/cryptodoodz/?id=12",
+    "image": "https://atlas-mu-lime.vercel.app/cryptodoodz/images/0012.png",
+    "animation_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/interactive/0012.html?v=a0e300c57e02",
+    "external_url": "https://atlas-mu-lime.vercel.app/mint.html",
     "background_color": "8EAAC0",
     "properties": {
-      "model_url": "https://3dnft.vercel.app/cryptodoodz/models/0012.glb?v=2a0d2687b74f"
+      "model_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/models/0012.glb"
     }
   },
   "77": {
@@ -252,12 +252,12 @@ export const CRYPTODOODZ_FIXTURES: Record<string, unknown> = {
         "value": "None"
       }
     ],
-    "image": "https://3dnft.vercel.app/cryptodoodz/images/0077.png?v=6a68bb996f0f",
-    "animation_url": "https://3dnft.vercel.app/cryptodoodz/interactive/0077.html?v=a0e300c57e02",
-    "external_url": "https://3dnft.vercel.app/cryptodoodz/?id=77",
+    "image": "https://atlas-mu-lime.vercel.app/cryptodoodz/images/0077.png",
+    "animation_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/interactive/0077.html?v=a0e300c57e02",
+    "external_url": "https://atlas-mu-lime.vercel.app/mint.html",
     "background_color": "8EAAC0",
     "properties": {
-      "model_url": "https://3dnft.vercel.app/cryptodoodz/models/0077.glb?v=5d46ef9d006c"
+      "model_url": "https://atlas-mu-lime.vercel.app/cryptodoodz/models/0077.glb"
     }
   }
 };

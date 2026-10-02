@@ -17,7 +17,7 @@ contract DoodverseTrinkets is ERC1155, Ownable {
     constructor(address authority) ERC1155("") Ownable(authority) {}
     function uri(uint256 id) public pure override returns (string memory) {
         if(id==0 || id>ITEM_COUNT) revert InvalidTrinket();
-        return string.concat("https://3dnft.vercel.app/trinkets/metadata/",Strings.toString(id),".json");
+        return string.concat("https://atlas-mu-lime.vercel.app/trinkets/metadata/",Strings.toString(id),".json");
     }
     /// @notice A lifetime mint allowance, independent of balances, transfers or escrow.
     function mint(uint256 id) external { _claim(msg.sender,id); }

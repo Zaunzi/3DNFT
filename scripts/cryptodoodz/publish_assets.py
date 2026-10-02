@@ -1,11 +1,14 @@
 """Create exact-geometry polygon previews and static hosted metadata for the 1000 GLBs."""
-import json,struct,shutil,math
+import json,struct,shutil,math,sys,hashlib
 from pathlib import Path
 import numpy as np
 from PIL import Image,ImageDraw
-SRC=Path('outputs/cryptodoodz-1000');DEST=Path('static/cryptodoodz')
+SRC=Path(sys.argv[1] if len(sys.argv)>1 else 'outputs/cryptodoodz-1000');DEST=Path(sys.argv[2] if len(sys.argv)>2 else 'static/cryptodoodz')
+SCALE=170 if '--fit-tall-traits' in sys.argv else 195
 for folder in ['models','images','metadata']: (DEST/folder).mkdir(parents=True,exist_ok=True)
 recipes=json.loads((SRC/'recipes.json').read_text())
+if '--shard' in sys.argv:
+ index=sys.argv.index('--shard');shard=int(sys.argv[index+1]);total=int(sys.argv[index+2]);recipes=[r for r in recipes if (r['token_id']-1)%total==shard]
 right=np.array([.894,0,-.447]);up=np.array([-.11,.97,-.22]);forward=np.cross(right,up);light=np.array([-.5,.8,1.0]);light/=np.linalg.norm(light)
 def matrix(n):
  if 'matrix' in n:return np.array(n['matrix']).reshape(4,4).T
@@ -34,7 +37,7 @@ for recipe in recipes:
     normal/=length
     if normal@forward<=0:continue
     shade=.65+.35*max(0,float(normal@light));c=tuple(round(255*min(1,(v*shade)**(1/2.2))) for v in rgb)
-    xy=[(256+float(q@right)*195,475-float(q@up)*195) for q in pts];faces.append((pts@forward,xy,c))
+    xy=[(256+float(q@right)*SCALE,475-float(q@up)*SCALE) for q in pts];faces.append((pts@forward,xy,c))
  image=Image.new('RGB',(512,512),recipe['sources']['background']);pixels=np.array(image);depths=np.full((512,512),-np.inf)
  for depth,xy,c in faces:
   (x0,y0),(x1,y1),(x2,y2)=xy
@@ -49,7 +52,7 @@ for recipe in recipes:
   area[mask]=z[mask];pixels[ymin:ymax+1,xmin:xmax+1][mask]=c
  image=Image.fromarray(pixels)
  image.save(DEST/'images'/f'{ident}.png')
- meta=json.loads((SRC/'metadata'/f'{ident}.json').read_text());base='https://3dnft.vercel.app/cryptodoodz'
- meta.update(image=f'{base}/images/{ident}.png',animation_url=f'{base}/models/{ident}.glb',external_url=f'{base}/?id={recipe["token_id"]}')
+ meta=json.loads((SRC/'metadata'/f'{ident}.json').read_text());base='https://atlas-mu-lime.vercel.app/cryptodoodz' if '--doodverse' in sys.argv else 'https://3dnft.vercel.app/cryptodoodz'
+ meta.update(image=f'{base}/images/{ident}.png',animation_url=f'{base}/models/{ident}.glb',external_url=('https://atlas-mu-lime.vercel.app/mint.html' if '--doodverse' in sys.argv else f'{base}/?id={recipe["token_id"]}'))
  (DEST/'metadata'/f'{ident}.json').write_text(json.dumps(meta,separators=(',',':')))
  if recipe['token_id']%100==0:print('PREVIEWS',recipe['token_id'],flush=True)

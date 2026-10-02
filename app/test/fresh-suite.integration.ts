@@ -37,7 +37,7 @@ try {
         assert.equal(await client.readContract({address,abi:parseAbi(['function name() view returns(string)']),functionName:'name'}),expected);
     }
     await write(land, parseAbi(['function mint(uint256)']), 'mint', [1n]);
-    await write(characters, parseAbi(['function mint(address,uint256)']), 'mint', [alice, 1n]);
+    await write(characters, parseAbi(['function mint(uint256)']), 'mint', [1n]);
     await write(items, parseAbi(['function mint(address,uint256,uint256)']), 'mint', [alice, 3n, 20n]);
     const state = await deploy('DoodverseParcelState', [land]);
     await deploy('WorldItemState', [land, items]);

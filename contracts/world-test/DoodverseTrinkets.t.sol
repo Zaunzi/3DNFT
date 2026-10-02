@@ -21,7 +21,7 @@ contract DoodverseTrinketsTest {
         for(uint256 id=1;id<=5;id++){vm.prank(alice);trinkets.mint(id);require(trinkets.balanceOf(alice,id)==1);require(bytes(trinkets.uri(id)).length>0);}
         require(utility.balanceOf(alice,4)==0);
         utility.mint(alice,4,1);require(utility.balanceOf(alice,4)==1&&trinkets.balanceOf(alice,4)==1);
-        require(keccak256(bytes(trinkets.uri(4)))==keccak256(bytes("https://3dnft.vercel.app/trinkets/metadata/4.json")));
+        require(keccak256(bytes(trinkets.uri(4)))==keccak256(bytes("https://atlas-mu-lime.vercel.app/trinkets/metadata/4.json")));
         vm.prank(alice);vm.expectRevert();trinkets.mint(alice,1,1);
         vm.expectRevert();trinkets.mint(alice,0,1);
         vm.expectRevert();trinkets.mint(alice,6,1);

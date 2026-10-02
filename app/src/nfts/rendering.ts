@@ -29,7 +29,7 @@ export class NFTRepresentationRegistry {
     private renderers: NFTRepresentation[] = [];
     private characters=new CharacterModels();
     private nativeCollection?:string;
-    character(asset:NFTAsset){return !!this.nativeCollection&&asset.contractAddress.toLowerCase()===this.nativeCollection.toLowerCase()&&asset.tokenId>=1n&&asset.tokenId<=1000n;}
+    character(asset:NFTAsset){return !!this.nativeCollection&&asset.contractAddress.toLowerCase()===this.nativeCollection.toLowerCase()&&asset.tokenId>=1n&&asset.tokenId<=5000n;}
     async loadCharacter(asset:NFTAsset){return this.character(asset)?this.characters.load(asset.tokenId).catch(()=>null):null;}
     dispose(){this.characters.clear();}
     constructor(nativeCollection?: string) { this.nativeCollection=nativeCollection; if (nativeCollection)

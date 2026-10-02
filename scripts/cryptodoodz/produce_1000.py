@@ -2,6 +2,7 @@
 import json,struct,sys,copy,hashlib
 from pathlib import Path
 SOURCE=Path(sys.argv[1]).resolve(); OUT=Path(sys.argv[2]).resolve()
+PLAN=Path(sys.argv[3]).resolve() if len(sys.argv)>3 else SOURCE
 (OUT/'models').mkdir(parents=True,exist_ok=True); (OUT/'metadata').mkdir(exist_ok=True)
 cache={}
 def read(path):
@@ -15,7 +16,7 @@ def color(hexvalue):
 def accessor_bytes(d,b,index):
     a=d['accessors'][index]; v=d['bufferViews'][a['bufferView']]
     return b[v.get('byteOffset',0):v.get('byteOffset',0)+v['byteLength']]
-recipes=json.loads((SOURCE/'recipes.json').read_text()); assert len(recipes)==1000
+recipes=json.loads((PLAN/'recipes.json').read_text()); assert 1<=len(recipes)<=5000
 base,basebin=read(SOURCE/'models/reusable-body.glb')
 joint_names=[base['nodes'][i]['name'] for i in base['skins'][0]['joints']]
 basebind=accessor_bytes(base,basebin,base['skins'][0]['inverseBindMatrices'])
@@ -26,6 +27,13 @@ for recipe in recipes:
     src=recipe['sources']
     for mat in d['materials']:
         if mat.get('name','').split('.')[0]=='skin': mat['pbrMetallicRoughness']['baseColorFactor']=color(src['skin'])
+    # The pelvis belongs to the reusable body, but visually belongs to the trousers.
+    for node in d['nodes']:
+        if node.get('name','').startswith('body_pelvis'):
+            for primitive in d['meshes'][node['mesh']]['primitives']:
+                mat=copy.deepcopy(d['materials'][primitive['material']])
+                mat['name']='pants_waist';mat['pbrMetallicRoughness']['baseColorFactor']=color(src['trousers_color'])
+                primitive['material']=len(d['materials']);d['materials'].append(mat)
     components=[('brows','01-base'),('trousers','35-tracksuit' if src['outfit']=='35-tracksuit' else '01-base'),('shoes','01-base')]+[(slot,src.get(slot)) for slot in ['hair','headwear','facial_hair','eyewear','outfit','neckwear','earwear','backwear']]
     for slot,donor in components:
         if donor is None: continue
@@ -53,7 +61,9 @@ for recipe in recipes:
                 primitive['attributes']={k:access(v) for k,v in primitive['attributes'].items()}
                 primitive['indices']=access(primitive['indices'])
                 tint=None; name=node.get('name','')
-                if slot in ['hair','brows','facial_hair']:tint=src['hair_color']
+                if slot in ['hair','brows','facial_hair']:
+                    material_name=sd['materials'][primitive['material']].get('name','')
+                    if slot!='hair' or not material_name.startswith('r9_'):tint=src['hair_color']
                 elif slot=='trousers' and not name.startswith('tracksuit_'):tint=src['trousers_color']
                 elif slot=='shoes' and not name.startswith('shoe_sole'):tint=src['shoes_color']
                 key=(primitive['material'],tint)
@@ -74,7 +84,8 @@ for recipe in recipes:
     (OUT/'metadata'/f'{ident}.json').write_text(json.dumps(metadata,indent=2))
     receipt.append({'token_id':recipe['token_id'],'file':f'models/{ident}.glb','bytes':len(output),'sha256':hashlib.sha256(output).hexdigest(),'appearance_signature':recipe['appearance_signature']})
     if recipe['token_id']%100==0:print('EXPORTED',recipe['token_id'],flush=True)
-assert len({r['sha256'] for r in receipt})==1000
-(OUT/'production-manifest.json').write_text(json.dumps({'count':1000,'source':'approved v1 revision 2','files':receipt},indent=2))
-for name in ['recipes.json','trait-catalog.json','distribution.json']:(OUT/name).write_bytes((SOURCE/name).read_bytes())
+assert len({r['sha256'] for r in receipt})==len(recipes)
+(OUT/'production-manifest.json').write_text(json.dumps({'count':len(recipes),'source':str(SOURCE.name),'files':receipt},indent=2))
+for name in ['recipes.json','trait-catalog.json','distribution.json']:
+    if (OUT/name).resolve()!=(PLAN/name).resolve():(OUT/name).write_bytes((PLAN/name).read_bytes())
 print('PRODUCTION_COMPLETE')

@@ -15,3 +15,5 @@ Before switching the runtime's token and escrow configuration, preserve a way to
 ## Verification
 
 Foundry tests cover per-ID claims, independent wallets, invalid IDs/quantities, transfers, callback reentry and rejected receivers. Existing escrow capacity tests use a clearly test-only mint fixture so their bulk balances do not create an administrative bypass in the production contract. Local-chain integration checks the new mint and escrow/parcel-transfer lifecycle.
+
+The collection metadata base is now `https://atlas-mu-lime.vercel.app/trinkets/metadata/`. On October 2, 2026, all 71 Foundry tests passed using the repository-local Forge binary, and the fresh-suite local-chain integration passed using the isolated Ganache install.

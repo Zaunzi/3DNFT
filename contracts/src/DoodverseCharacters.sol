@@ -2,17 +2,28 @@
 pragma solidity ^0.8.24;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract DoodverseCharacters is ERC721, Ownable {
-    uint256 public constant MAX_SUPPLY = 1000;
-    string public constant METADATA_BASE = "https://3dnft.vercel.app/cryptodoodz/metadata/";
+contract DoodverseCharacters is ERC721, Ownable, ReentrancyGuard {
+    uint256 public constant MAX_SUPPLY = 5000;
+    string public constant METADATA_BASE = "https://atlas-mu-lime.vercel.app/cryptodoodz/metadata/";
     error InvalidCharacterId();
     constructor(address authority) ERC721("Doodverse Characters", "DOODCHAR") Ownable(authority) {}
 
-    function mint(address to, uint256 id) external onlyOwner {
-        if (id == 0 || id > MAX_SUPPLY) revert InvalidCharacterId();
-        _safeMint(to, id);
+    uint256 public constant MAX_PER_WALLET = 5;
+    bool public constant PUBLIC_MINT = true;
+    mapping(address => uint256) public mintedBy;
+    uint256 public totalSupply;
+    error InvalidQuantity(); error WalletMintLimit(); error SoldOut();
+    /// @notice Free public mint, sequential IDs 1..5000. Transfers never reset allowance.
+    function mint(uint256 quantity) external nonReentrant {
+        if(quantity==0 || quantity>MAX_PER_WALLET) revert InvalidQuantity();
+        if(mintedBy[msg.sender]+quantity>MAX_PER_WALLET) revert WalletMintLimit();
+        if(totalSupply+quantity>MAX_SUPPLY) revert SoldOut();
+        uint256 first=totalSupply+1;
+        mintedBy[msg.sender]+=quantity;totalSupply+=quantity;
+        for(uint256 i;i<quantity;++i) _safeMint(msg.sender,first+i);
     }
 
     function tokenURI(uint256 id) public view override returns (string memory) {

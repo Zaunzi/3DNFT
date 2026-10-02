@@ -1,0 +1,20 @@
+{
+  "name": "Backbeat",
+  "description": "Backbeat, a collectible instrument from Doodverse Trinkets. Open the interactive edition to play.",
+  "image": "https://atlas-mu-lime.vercel.app/trinkets/images/3.svg",
+  "animation_url": "https://atlas-mu-lime.vercel.app/trinkets/play/3.html",
+  "external_url": "https://atlas-mu-lime.vercel.app/mint.html",
+  "properties": {
+    "model_url": "https://atlas-mu-lime.vercel.app/trinkets/models/3.glb"
+  },
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Doodverse Trinkets"
+    },
+    {
+      "trait_type": "Instrument ID",
+      "value": 3
+    }
+  ]
+}

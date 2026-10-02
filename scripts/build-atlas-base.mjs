@@ -13,5 +13,7 @@ for (const line of configuration.split(/\r?\n/)) {
 if (process.env.VITE_CHAIN_ID !== '8453' || process.env.VITE_WORLD_STATE_MODE !== 'onchain') throw new Error('Expected Base mainnet configuration');
 const check = spawnSync(process.execPath, [require.resolve('typescript/bin/tsc'), '-p', 'app/tsconfig.json'], { stdio: 'inherit' });
 if (check.status !== 0) process.exit(check.status ?? 1);
+const assets=spawnSync(process.execPath,['scripts/validate-collection-assets.mjs'],{stdio:'inherit'});
+if(assets.status!==0)process.exit(assets.status??1);
 const { build } = await import('vite');
 await build({ configFile: 'app/vite.config.ts' });

@@ -3,10 +3,10 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {getAddress} from 'viem';
 import type {NFTAsset} from './model.ts';
 export function characterAsset(chainId:number,collection:string,id:string):NFTAsset {
-  if(!/^[0-9]+$/.test(id)||BigInt(id)<1n||BigInt(id)>1000n)throw new Error('Character ID must be between 1 and 1000.');
+  if(!/^[0-9]+$/.test(id)||BigInt(id)<1n||BigInt(id)>5000n)throw new Error('Character ID must be between 1 and 5000.');
   return {chainId,contractAddress:getAddress(collection),tokenId:BigInt(id)};
 }
-export function characterModelURL(id:bigint){if(id<1n||id>1000n)throw new Error('Invalid character ID');return `https://3dnft.vercel.app/cryptodoodz/models/${String(id).padStart(4,'0')}.glb`;}
+export function characterModelURL(id:bigint){if(id<1n||id>5000n)throw new Error('Invalid character ID');return `https://atlas-mu-lime.vercel.app/cryptodoodz/models/${String(id).padStart(4,'0')}.glb`;}
 const MAX_BYTES=8*1024*1024;
 export function validateCharacterGLB(bytes:ArrayBuffer){
   const view=new DataView(bytes);
