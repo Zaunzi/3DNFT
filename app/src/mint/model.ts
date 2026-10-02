@@ -1,5 +1,7 @@
 import { getAddress, isAddress, zeroAddress } from 'viem';
 export type MintKind = 'parcel' | 'character' | 'item' | 'trinket';
+export const CHARACTER_CLIPS = ['Idle', 'Walk', 'Run', 'Jump', 'Shoot', 'Wave'] as const;
+export type CharacterClip = typeof CHARACTER_CLIPS[number];
 export function mintInput(kind: MintKind, recipient: string, idText: string, quantityText: string) {
   if (!isAddress(recipient) || getAddress(recipient) === zeroAddress) throw new Error('Enter a valid, nonzero recipient address.');
   const integer = (value: string) => { if (!/^\d+$/.test(value)) throw new Error('IDs and quantities must be whole numbers.'); const n = BigInt(value); if (n >= 2n ** 256n) throw new Error('Number exceeds uint256.'); return n; };

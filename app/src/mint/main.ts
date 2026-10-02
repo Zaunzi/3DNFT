@@ -1,7 +1,7 @@
 import { createPublicClient, createWalletClient, custom, http, parseAbi, getAddress, decodeEventLog, zeroAddress, type Address } from 'viem';
 import { base } from 'viem/chains';
 import { InjectedWallet, type InjectedProvider } from '../blockchain/wallet.ts';
-import { mintInput, parcelMintQuantity, type MintKind as AllMintKind } from './model.ts';
+import { mintInput, parcelMintQuantity, CHARACTER_CLIPS, type CharacterClip, type MintKind as AllMintKind } from './model.ts';
 import { TRINKETS } from '../items/trinkets.ts';
 import './style.css';
 type MintKind = Exclude<AllMintKind, 'item'>;
@@ -13,7 +13,9 @@ document.querySelector('#app')!.innerHTML = `<nav><a class="wordmark" href="/">�
 <button type="button" data-kind="character" aria-pressed="false"><span>02 / PEOPLE</span><strong>Characters</strong><small>Meet your next world resident.</small></button>
 <button type="button" data-kind="trinket" aria-pressed="false"><span>03 / PLAY</span><strong>Trinkets</strong><small>Five instruments. Your soundtrack.</small></button>
 </div>
-<div class="mint-layout"><section class="preview" aria-label="Asset preview"><div id="preview-media"></div><div class="preview-caption"><span id="preview-name">Parcel #1</span><span id="preview-note">Example parcel · minted IDs are assigned automatically</span></div></section>
+<div class="mint-layout"><section class="preview" aria-label="Asset preview"><div id="preview-media"></div>
+<div id="character-controls" hidden><div class="character-navigation"><button type="button" id="previous-character" aria-label="Previous character">←</button><label for="preview-character-id">Preview #<input id="preview-character-id" type="number" min="1" max="5000" step="1" value="1" aria-label="Preview character number"></label><button type="button" id="next-character" aria-label="Next character">→</button></div><div class="character-animations" role="group" aria-label="Character animation">${CHARACTER_CLIPS.map(clip=>`<button type="button" data-clip="${clip}" aria-pressed="${clip==='Idle'}" disabled>${clip}</button>`).join('')}</div></div>
+<div class="preview-caption"><span id="preview-name">Parcel #1</span><span id="preview-note">Example parcel · minted IDs are assigned automatically</span></div></section>
 <div class="mint-details"><section class="wallet"><div class="wallet-top"><span class="eyebrow">YOUR WALLET</span><button id="connect">Connect wallet</button><button id="switch" hidden>Switch to Base</button></div><p id="wallet">Connect to mint directly to your wallet.</p><p id="setup" role="status">Checking deployment…</p></section>
 <form id="mint"><p class="eyebrow">MAKE IT YOURS</p><h2 id="form-title">Mint Parcels</h2><label hidden>Asset<select id="kind"><option value="parcel">Parcel</option><option value="character">Character</option><option value="trinket">Trinket</option></select></label>
 <p id="help"></p><label id="id-label">Character ID<input id="token-id" value="1" inputmode="numeric"></label>
@@ -138,27 +140,64 @@ async function init() {
 void init();
 
 let disposePreview:(()=>void)|undefined;let previewVersion=0;
+let characterId=1, characterClip:CharacterClip='Idle';
+let characterInputTimer:number|undefined;
+let playCharacterClip:((clip:CharacterClip)=>void)|undefined;
+const animationButtons=Array.from(document.querySelectorAll<HTMLButtonElement>('[data-clip]'));
 function preview() {
-  disposePreview?.();disposePreview=undefined;const version=++previewVersion;
+  window.clearTimeout(characterInputTimer);
+  disposePreview?.();disposePreview=undefined;playCharacterClip=undefined;const version=++previewVersion;
   const media=el('preview-media'), k=kind(); media.replaceChildren();
+  el('character-controls').hidden=k!=='character';
+  el<HTMLInputElement>('preview-character-id').value=String(characterId);
+  el<HTMLButtonElement>('previous-character').disabled=characterId===1;
+  el<HTMLButtonElement>('next-character').disabled=characterId===5000;
+  animationButtons.forEach(button=>{button.disabled=true;button.setAttribute('aria-pressed',String(button.dataset.clip===characterClip));});
   if(k==='parcel') {
     const frame=document.createElement('iframe');frame.src='/?mode=showcase&tokenId=1';frame.title='Interactive example of parcel 1';frame.loading='lazy';media.append(frame);
     el('preview-name').textContent='Parcel #1';el('preview-note').textContent='Live example · your parcel ID is assigned automatically';return;
   }
-  const id=k==='character'?input('token-id'):input('item');
+  const id=k==='character'?String(characterId):input('item');
   const valid=/^[0-9]+$/.test(id)&&BigInt(id)>=1n&&BigInt(id)<=BigInt(k==='character'?5000:5);
   el('preview-name').textContent=k==='character'?`Character #${id}`:TRINKETS.find(t=>String(t.id)===id)?.name??'Trinket';
-  el('preview-note').textContent=k==='character'?'Example character · minted IDs are assigned automatically':TRINKETS.find(t=>String(t.id)===id)?.kind??'';
+  el('preview-note').textContent=k==='character'?'Drag to rotate · Preview choice does not select the NFT you mint.':TRINKETS.find(t=>String(t.id)===id)?.kind??'';
   if(!valid){media.textContent='Choose a valid ID to preview this asset.';return;}
   if(k==='trinket'){
     media.textContent='Loading 3D instrument…';el('preview-note').textContent+=' · Drag to rotate';
     void import('./trinketPreview.ts').then(module=>{if(version!==previewVersion)return;try{disposePreview=module.trinketPreview(media,Number(id));}catch{media.textContent='3D preview unavailable on this device.';}}).catch(()=>{if(version===previewVersion)media.textContent='Unable to load 3D preview.';});return;
   }
-  const image=document.createElement('img');image.alt=el('preview-name').textContent!;
-  image.src=k==='character'?`https://atlas-mu-lime.vercel.app/cryptodoodz/images/${String(Number(id)).padStart(4,'0')}.png`:`https://atlas-mu-lime.vercel.app/trinkets/images/${Number(id)}.svg`;
-  image.onerror=()=>{if(image.parentElement===media){media.replaceChildren();media.textContent='Preview unavailable. You can still review the collection details.';}};
-  media.append(image);
+  media.textContent='Loading character…';
+  void import('./characterPreview.ts').then(module=>{
+    if(version!==previewVersion)return;
+    const player=module.characterPreview(media,characterId,characterClip,()=>{
+      if(version===previewVersion)animationButtons.forEach(button=>{button.disabled=false;});
+    });
+    disposePreview=player.dispose;playCharacterClip=player.play;
+  }).catch(()=>{if(version===previewVersion)media.textContent='3D character preview unavailable on this device.';});
 }
+function browseCharacter(id:number){characterId=Math.max(1,Math.min(5000,id));preview();}
+el('previous-character').onclick=()=>browseCharacter(characterId-1);
+el('next-character').onclick=()=>browseCharacter(characterId+1);
+el('preview-character-id').addEventListener('input',()=>{
+  window.clearTimeout(characterInputTimer);
+  const field=el<HTMLInputElement>('preview-character-id');
+  if(!field.value.trim()||!field.checkValidity())return;
+  const id=field.valueAsNumber;
+  characterInputTimer=window.setTimeout(()=>{if(kind()==='character')browseCharacter(id);},300);
+});
+el('preview-character-id').addEventListener('change',()=>{
+  window.clearTimeout(characterInputTimer);
+  const field=el<HTMLInputElement>('preview-character-id');
+  if(!field.value.trim()||!field.checkValidity()){field.reportValidity();field.value=String(characterId);return;}
+  browseCharacter(field.valueAsNumber);
+});
+animationButtons.forEach(button=>{button.onclick=()=>{
+  characterClip=button.dataset.clip as CharacterClip;
+  playCharacterClip?.(characterClip);
+  animationButtons.forEach(other=>other.setAttribute('aria-pressed',String(other===button)));
+};});
+addEventListener('pagehide',()=>{++previewVersion;disposePreview?.();disposePreview=undefined;});
+addEventListener('pageshow',event=>{if(event.persisted)preview();});
 el('item').addEventListener('change',()=>{preview();void refreshAllowance();});
 el('token-id').addEventListener('input',preview);
 preview();
