@@ -11,7 +11,7 @@ const shapes=[
  '<path d="M110 180l25 130h100l20-130M270 180l20 110h90l25-110" fill="#b87950"/><ellipse cx="182" cy="180" rx="73" ry="30" fill="#ecd2a0"/><ellipse cx="337" cy="180" rx="68" ry="28" fill="#ecd2a0"/>'
 ];
 for(const item of items){
- const page=fs.readFileSync(new URL(`../static/${item.source}/index.html`,import.meta.url),'utf8').replace(/<nav class="item-nav"[\s\S]*?<\/nav>/g,'');
+ const page=fs.readFileSync(new URL(`../static/${item.source}/index.html`,import.meta.url),'utf8').replace(/<nav class="item-nav"[\s\S]*?<\/nav>/g,'').replace(/href="\/items\/([1-5])\/"/g,'href="/trinkets/play/$1.html"');
  fs.writeFileSync(new URL(`play/${item.id}.html`,root),page);
  fs.copyFileSync(new URL(`../app/src/trinkets/models/${item.id}.glb`,import.meta.url),new URL(`models/${item.id}.glb`,root));
  const image=`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#142a28"/><g fill="#82978d">${shapes[item.id-1]}</g><text x="256" y="390" text-anchor="middle" fill="#eef3dc" font-family="sans-serif" font-size="32">${item.title}</text><text x="256" y="445" text-anchor="middle" fill="#b8cbba" font-family="sans-serif" font-size="20">DOODVERSE TRINKETS / ${item.id}</text></svg>`;
