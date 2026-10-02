@@ -3,13 +3,13 @@
   "firstTokenId": 1,
   "lastTokenId": 5000,
   "host": "https://atlas-mu-lime.vercel.app/",
-  "source": "project-authored CryptoDoodz r10 traits",
+  "source": "project-authored CryptoDoodz r11 repaired traits",
   "seed": 1000302026,
   "uniqueAppearancesExcludingBackground": 5000,
   "recipeSHA256": "2effd82db3585a7a58444188ac293d9c2c820e1f43b173533270f9272d01b879",
   "validatedModels": 5000,
   "maxTriangles": 4608,
-  "maxModelBytes": 758136,
+  "maxModelBytes": 758140,
   "animationClips": [
     "Idle",
     "Walk",
@@ -18,5 +18,7 @@
     "Shoot",
     "Wave"
   ],
-  "mint": "Replacement DoodverseCharacters: free public mint, 5 per wallet lifetime; deployment required"
+  "mint": "Replacement DoodverseCharacters: free public mint, 5 per wallet lifetime; deployment required",
+  "geometryRevision": "r11",
+  "repairedModels": 3319
 }

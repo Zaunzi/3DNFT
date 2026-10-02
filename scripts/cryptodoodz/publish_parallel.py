@@ -11,4 +11,4 @@ failed=False
 for process,log in processes:
  failed=process.wait()!=0 or failed;log.close()
 if failed:raise SystemExit('Preview worker failed; inspect preview-logs')
-print('All 5000 previews and metadata published',flush=True)
+print('All requested previews and metadata published',flush=True)
