@@ -1,3 +1,5 @@
+import {HarvestRuntime} from './economy/runtime.ts';
+import {costLabel} from './economy/model.ts';
 import {WorldInputMode} from './player/inputMode.ts';
 import * as THREE from 'three';
 import { GENERATOR_VERSION, PARCEL_SIZE } from './world/constants.ts';
@@ -75,13 +77,14 @@ async function start() {
   experience=new ItemPortalRuntime({openCharacters:()=>assets?.setOpen(true),backend,scene,camera,world,objects:layer,player,token:()=>token,canEdit:canBuild,builder:()=>builder,report,blocked:()=>!!assets?.open,extraOccluders:()=>assets?.layer.roots()??[],extraObstacles:async id=>{const s=await backend.nfts.snapshot(id);return [...s.containers,...s.doors,...s.attachments.flatMap(a=>a.location.kind==='parcel'?[a.location]:[])].map(t=>({...objectToWorldPosition(id,t),radius:1.5}));},modalChanged:active=>{if(active&&assets?.open)assets.setOpen(false);modalChanged(active);},commit(location,position,url){token=Number(location.tokenId);camera.position.set(position.x,position.y,position.z);player.resetVertical();world.update(token);layer.sync(world.parcels.keys());assets?.sync();void enterParcel(token);history.pushState(null,'',url);}});
   assets=new NFTRuntime({backend,scene,camera,seed:identity.seed,ids:()=>world.parcels.keys(),token:()=>token,enabled:()=>player.active&&!builder?.active&&!experience.open,modal:active=>{if(active){if(builder?.active)builder.setActive(false);if(experience.open)experience.closePanels();}modalChanged(active);},report,changed:()=>{void refreshOwnership();void experience.refresh();},occluders:()=>[...[...world.parcels.values()].map(p=>p.terrain),...layer.roots(),...experience.layer.roots(),...experience.trinketLayer.roots()],gateway:import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/',native:backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,items:import.meta.env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS):undefined});
   assets.sync();
-  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, modular:backend.supportsModular, lockedDoor:backend.supportsElevatedDoors?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{if(backend.nfts.lockKeys&&backend.nfts.createKeyedDoor)await backend.nfts.createKeyedDoor(id,t);else await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:backend.config.mode==='mock'?MOCK_ITEMS:getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS),tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
+  builder = new BuildController({ canvas, camera, scene, world, layer, registry, writer: backend.objects, cost:backend.economy?costLabel:undefined, modular:backend.supportsModular, lockedDoor:backend.supportsElevatedDoors?{createPreview:()=>new NFTRepresentationRegistry().door(),place:async(id,t)=>{if(backend.nfts.lockKeys&&backend.nfts.createKeyedDoor)await backend.nfts.createKeyedDoor(id,t);else await backend.nfts.createDoor(id,t,{kind:'erc1155',contractAddress:backend.config.mode==='mock'?MOCK_ITEMS:getAddress(import.meta.env.VITE_ATLAS_ITEMS_ADDRESS),tokenId:4n,minimum:1n,mode:'CHECK_ONLY'});await assets!.refreshWorld();}}:undefined, currentToken: () => token, canBuild, report,portals:backend.experience.enabled?experience.portals():undefined,
     onMode(active) {
       if(active){if(assets?.open)assets.setOpen(false);if(experience.open)experience.closePanels();}
       modalChanged(active);
       el('build-toggle').textContent = active ? 'Exit build [B]' : 'Build [B]';
     },
   });
+  const harvesting=backend.economy?new HarvestRuntime({provider:backend.economy,world,camera,enabled:()=>player.active&&!menusOpen(),canHarvest:canBuild,token:()=>token,occluders:()=>[...layer.roots(),...experience.layer.roots(),...experience.trinketLayer.roots(),...assets!.layer.roots()],report,changed:()=>experience.inventory.refresh()}):undefined;
   player.ceiling=(x,z,feet)=>layer.ceilingHeight(x,z,feet);
   player.surface=(x,z,feet)=>layer.floorHeight(x,z,feet);
   player.obstructed=(position)=>layer.blocks(position.x,position.z,position.y-1.75)||!!assets?.blocks(position);
@@ -144,13 +147,13 @@ async function start() {
     const c = worldToParcel(camera.position.x, camera.position.z), next = coordinateToTokenId(c.x, c.z)!;
     if (next !== token) { token = next; world.update(token); layer.sync(world.parcels.keys());experience.sync();assets?.sync(); void enterParcel(token); const url = new URL(location.href); url.searchParams.set('tokenId', String(token)); history.replaceState(null, '', url); }
     layer.updateLighting(camera.position);
-    builder.update();experience.update();assets?.update();
+    builder.update();experience.update();assets?.update();harvesting?.update();
     frames++; elapsed += dt; hudTime += dt;
     if (hudTime > 0.2) { updateDebug(el('debug'), token, camera.position.x, camera.position.z, identity.seed, [...world.parcels.keys()].sort((a,b) => a-b), frames / elapsed); camera.getWorldDirection(direction); const degrees = (Math.atan2(direction.x, -direction.z) * 180 / Math.PI + 360) % 360; el('heading').textContent = `${['N', 'E', 'S', 'W'][Math.round(degrees / 90) % 4]} ${degrees.toFixed(0)}°`; hudTime = 0; frames = 0; elapsed = 0; }
     if(el('debug').textContent&&!el('debug').textContent!.includes('ATTACHED721'))el('debug').textContent+=experience.debug()+assets?.debug();
     sun.position.set(camera.position.x-40,camera.position.y+70,camera.position.z+25);sun.target.position.set(camera.position.x,camera.position.y-2,camera.position.z);
     renderer.render(scene, camera);
   });
-  import.meta.hot?.dispose(() => { inputEvents.abort();renderer.setAnimationLoop(null); stopWallet(); stopEvents?.();experience.dispose();assets?.dispose(); backend.wallet.dispose(); builder.dispose(); layer.dispose(); registry.dispose(); player.dispose(); world.dispose(); renderer.dispose(); window.removeEventListener('resize', resize); window.removeEventListener('focus', reconcile); clearTimeout(toastTimer); clearInterval(reconciliationTimer); });
+  import.meta.hot?.dispose(() => { inputEvents.abort();harvesting?.dispose();renderer.setAnimationLoop(null); stopWallet(); stopEvents?.();experience.dispose();assets?.dispose(); backend.wallet.dispose(); builder.dispose(); layer.dispose(); registry.dispose(); player.dispose(); world.dispose(); renderer.dispose(); window.removeEventListener('resize', resize); window.removeEventListener('focus', reconcile); clearTimeout(toastTimer); clearInterval(reconciliationTimer); });
 }
 void start().catch(error => { el('notice').textContent = error instanceof Error ? error.message : String(error); el('mode').textContent = 'UNAVAILABLE'; (el('enter') as HTMLButtonElement).disabled = true; });

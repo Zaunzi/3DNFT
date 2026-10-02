@@ -32,6 +32,7 @@ export function createParcel(tokenId: number, seed: bigint): ParcelView {
   const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.14, 0.32, 3.6, 10), new THREE.MeshStandardMaterial({ color: 0x66513c, roughness:1 }), trees.length);
   const crown = new THREE.InstancedMesh(pineGeometry(), new THREE.MeshStandardMaterial({ vertexColors:true, roughness: 1 }), trees.length);
   const stone = new THREE.InstancedMesh(rockGeometry(.9), new THREE.MeshStandardMaterial({ vertexColors:true, roughness: 1 }), rocks.length);
+  for(const mesh of [trunk,crown,stone])mesh.userData={kind:'harvest-scenery',parcel:tokenId,resource:mesh===stone?'stone':'wood'};
   const dummy = new THREE.Object3D();
   trunk.castShadow=true;crown.castShadow=true;stone.castShadow=true;stone.receiveShadow=true;
   for (const [list, mesh, offset] of [[trees, trunk, 1.8], [trees, crown, 0], [rocks, stone, 0.4]] as const) {

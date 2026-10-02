@@ -1,3 +1,5 @@
+import {RESERVE_CAP} from '../economy/model.ts';
+import {decodeMockParcel} from '../blockchain/mockParcelState.ts';
 import { isAddress, type Address } from 'viem';
 import type { LocalStorageLike } from '../blockchain/mockParcelState.ts';
 import { tokenIdToCoordinate } from '../world/coordinates.ts';
@@ -7,7 +9,7 @@ import type { ExperienceStore } from './providers.ts';
 
 export const EXPERIENCE_KEY = 'atlas:7422026:generator1:items-portals:v1';
 interface StoredItem extends Omit<AttachedWorldItem, 'quantity'> { quantity: string }
-export interface Data { schema: 1; balances: Record<string, Record<string, string>>; parcels: Record<string, { nextItemId: number; nextPortalId: number; items: StoredItem[]; portals: Portal[] }>; nftState?: import('../nfts/mock.ts').NFTData }
+export interface Data { economy?:import('../economy/mock.ts').EconomyData; schema: 1; balances: Record<string, Record<string, string>>; parcels: Record<string, { nextItemId: number; nextPortalId: number; items: StoredItem[]; portals: Portal[] }>; nftState?: import('../nfts/mock.ts').NFTData }
 const empty = (): Data => ({ schema: 1, balances: {}, parcels: {} });
 const uint = (value: unknown) => typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value) && BigInt(value) < 1n << 256n;
 export function decodeExperience(raw: string | null): Data {
@@ -25,6 +27,14 @@ export function decodeExperience(raw: string | null): Data {
     checkIds(parcel.items,parcel.nextItemId); checkIds(parcel.portals,parcel.nextPortalId);
     for(const item of parcel.items) { if(!uint(item.quantity)||!isAddress(item.depositor)) throw new Error('Invalid escrow item'); validateItemPlacement({...item,quantity:BigInt(item.quantity)}); }
     parcel.portals.forEach(validatePortal);
+  }
+  if(data.economy){
+    if(data.economy.schema!==1||!data.economy.resources||!data.economy.builds)throw new Error('Invalid economy schema');
+    for(const [id,resources] of Object.entries(data.economy.resources)){
+      tokenIdToCoordinate(Number(id));if(!Number.isSafeInteger(resources.nextHarvestAt)||resources.nextHarvestAt<0)throw new Error('Invalid harvest cooldown');
+      for(const kind of ['wood','stone'] as const){const reserve=resources[kind];if(!reserve||!Number.isInteger(reserve.available)||reserve.available<0||reserve.available>RESERVE_CAP||!Number.isSafeInteger(reserve.updatedAt)||reserve.updatedAt<0)throw new Error('Invalid resource reserve');}
+    }
+    for(const [id,parcel] of Object.entries(data.economy.builds)){tokenIdToCoordinate(Number(id));decodeMockParcel(JSON.stringify(parcel));}
   }
   return data;
 }

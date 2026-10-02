@@ -1,8 +1,9 @@
+import {MockEconomy} from '../economy/mock.ts';
+import type {HarvestProvider} from '../economy/model.ts';
 import { readConfig } from './config.ts';
 import { InjectedWallet, type InjectedProvider, type WalletSession } from './wallet.ts';
 import { MockWallet } from './mockWallet.ts';
 import { MockWorldState, type WorldStateProvider } from './state.ts';
-import { MockParcelStateProvider } from './mockParcelState.ts';
 import { isParcelOwner } from './ownership.ts';
 import type { ParcelStateStore } from './parcelState.ts';
 import { MockInventoryProvider } from '../items/mockInventory.ts';
@@ -14,6 +15,7 @@ export async function createBackend(env: Record<string, string | undefined>) {
   const config = readConfig(env);
   let wallet: WalletSession, world: WorldStateProvider, objects: ParcelStateStore, experience: ExperienceStore, nfts:NFTStateProvider;
   let trinkets:ExperienceStore;
+  let economy:HarvestProvider|undefined;
   let transferMockParcel:((id:number,to:string)=>Promise<void>)|undefined;
   if (config.mode === 'mock') {
     wallet = new MockWallet(config.mockAddress, config.chainId);
@@ -22,8 +24,8 @@ export async function createBackend(env: Record<string, string | undefined>) {
     const ownerFor = (id: number) => getAddress((JSON.parse(window.localStorage.getItem(ownerKey)??'{}') as Record<string,string>)[id]??(config.mockParcels.has(id) ? config.mockAddress : '0x2222222222222222222222222222222222222222'));
     transferMockParcel=async(id,to)=>{if(!isParcelOwner(ownerFor(id),wallet.snapshot,config.chainId))throw new Error('Only the current owner may transfer land');const owners=JSON.parse(window.localStorage.getItem(ownerKey)??'{}');if(ownerFor(id).toLowerCase()!==to.toLowerCase())owners[`epoch:${id}`]=epochFor(id)+1;owners[id]=getAddress(to);window.localStorage.setItem(ownerKey,JSON.stringify(owners));};
     world = new MockWorldState(ownerFor);
-    objects = new MockParcelStateProvider({ getItem: key => window.localStorage.getItem(key), setItem: (key, value) => window.localStorage.setItem(key, value) }, id => isParcelOwner(ownerFor(id), wallet.snapshot, config.chainId));
     experience = new MockInventoryProvider({getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},()=>wallet.snapshot.connectedAddress,id=>isParcelOwner(ownerFor(id),wallet.snapshot,config.chainId));
+    const economyStore=new MockEconomy(experience as MockInventoryProvider,window.localStorage,id=>isParcelOwner(ownerFor(id),wallet.snapshot,config.chainId));objects=economyStore;economy=economyStore;
     const {MockTrinketProvider}=await import('../trinkets/mock.ts');
     trinkets=new MockTrinketProvider({getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},()=>wallet.snapshot.connectedAddress,id=>isParcelOwner(ownerFor(id),wallet.snapshot,config.chainId));
     nfts=new MockNFTProvider(experience as MockInventoryProvider,config.chainId,config.mockAddress,id=>isParcelOwner(ownerFor(id),wallet.snapshot,config.chainId),ownerFor,epochFor);
@@ -43,5 +45,5 @@ export async function createBackend(env: Record<string, string | undefined>) {
     const {OnchainNFTProvider}=await import('../nfts/onchain.ts');
     const nftProvider=new OnchainNFTProvider(provider.client,injected,{land:config.land!,world:env.VITE_WORLD_NFT_STATE_ADDRESS?getAddress(env.VITE_WORLD_NFT_STATE_ADDRESS):undefined,containers:env.VITE_CONTAINER_ITEM_STATE_ADDRESS?getAddress(env.VITE_CONTAINER_ITEM_STATE_ADDRESS):undefined,items:env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(env.VITE_ATLAS_ITEMS_ADDRESS):undefined,characters:env.VITE_ATLAS_CHARACTERS_ADDRESS?getAddress(env.VITE_ATLAS_CHARACTERS_ADDRESS):undefined});await nftProvider.validateDeployment();nfts=nftProvider;
   }
-  return { config, wallet, world, objects, experience, trinkets, nfts, transferMockParcel, supportsModular:config.mode==='mock'||('schemaVersion' in objects&&objects.schemaVersion===2), supportsElevatedDoors:config.mode==='mock'||('schemaVersion' in nfts&&nfts.schemaVersion===2), supportsBuild: config.mode === 'mock' || !!config.state };
+  return { economy, config, wallet, world, objects, experience, trinkets, nfts, transferMockParcel, supportsModular:config.mode==='mock'||('schemaVersion' in objects&&objects.schemaVersion===2), supportsElevatedDoors:config.mode==='mock'||('schemaVersion' in nfts&&nfts.schemaVersion===2), supportsBuild: config.mode === 'mock' || !!config.state };
 }

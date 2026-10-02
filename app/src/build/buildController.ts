@@ -13,6 +13,7 @@ interface BuildOptions {
   layer: PersistentObjectLayer; registry: ObjectRegistry; writer: ParcelStateWriter;
   currentToken(): number; canBuild(tokenId: number): boolean;
   onMode(active: boolean): void; report(message: string): void;
+  cost?:(type:number)=>string;
   modular?: boolean;
   lockedDoor?: {createPreview():THREE.Group; place(token:number,t:LocalTransform):Promise<void>};
   portals?: { createPreview():THREE.Group; roots():THREE.Object3D[]; find(tokenId:number,id:number):THREE.Object3D|undefined; count(tokenId:number):number; place(tokenId:number,placement:LocalTransform&{destinationTokenId:number}):Promise<void>; remove(tokenId:number,id:number):Promise<void> };
@@ -75,7 +76,7 @@ export class BuildController {
     options.canvas.addEventListener('click', event => { if (event.button === 0) void this.click(); }, { signal });
     this.choose(options.modular ? 7 : 4);
   }
-  private status(message: string) { this.panel.querySelector('#build-status')!.textContent = message; }
+  private status(message: string) { this.panel.querySelector('#build-status')!.textContent = message+(this.options.cost?` · Cost: ${this.options.cost(this.type)} · No removal refunds`: ''); }
   toggle() {
     if (this.pending) return;
     if (!this.active && !this.options.canBuild(this.options.currentToken())) { this.options.report('Connect the parcel owner on the configured chain to build here.'); return; }
