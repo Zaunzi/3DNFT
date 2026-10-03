@@ -59,7 +59,12 @@ export class NFTRuntime {
         this.button.addEventListener('click', () => this.setOpen(!this.open));
         this.panel.className = 'asset-panel';
         this.panel.hidden = true;
-        this.panel.append(this.content, this.status);
+        this.panel.setAttribute('role','dialog');this.panel.setAttribute('aria-label','Characters, NFTs and containers');
+        const heading=document.createElement('div');heading.className='menu-heading';
+        heading.innerHTML='<div><div class="menu-kicker">YOUR WORLD ASSETS</div><h2>Make yourself at home.</h2><p>Characters, collectibles & containers.</p></div>';
+        const close=document.createElement('button');close.className='menu-close';close.textContent='×';close.setAttribute('aria-label','Close assets');close.onclick=()=>this.setOpen(false);heading.append(close);
+        this.content.className='menu-body';this.status.className='menu-status';this.status.setAttribute('role','status');
+        this.panel.append(heading,this.content, this.status);
         document.getElementById('app')!.append(this.button, this.panel);
         this.label.className = 'nft-interaction-label';
         document.getElementById('app')!.append(this.label);
@@ -137,7 +142,7 @@ export class NFTRuntime {
             this.content.replaceChildren();
             this.text(this.content, `NFT ASSETS · PARCEL #${this.parcel}`, 'h2');
             this.text(this.content, `Controller: ${owner ?? 'unminted'} · Wallet: ${account ?? 'disconnected'}`);
-            this.action(this.content, 'Close [Esc]', async () => { this.busy = false; this.setOpen(false); });
+
             if (!o.backend.nfts.enabled) {
                 this.text(this.content, 'Configure NFT custody contracts to enable attachments.');
                 return;
@@ -159,12 +164,14 @@ export class NFTRuntime {
             this.text(this.content, 'Wallet NFTs', 'h3');
             for (const entry of holdings.filter(e => e.owner?.toLowerCase() === account?.toLowerCase()))
                 this.action(this.content, `Select character #${entry.asset.tokenId}`, async () => { this.selected = entry.asset; });
+            this.text(this.content,'External NFTs','h3');
             const contract = this.input(this.content, 'Collection address', this.selected?.contractAddress ?? ''), token = this.input(this.content, 'Token ID', this.selected ? String(this.selected.tokenId) : '');
             this.action(this.content, 'Inspect pasted NFT', async () => { if (!/^\d+$/.test(token.value))
                 throw new Error('Enter a non-negative token ID'); this.selected = { chainId: o.backend.config.chainId, contractAddress: getAddress(contract.value.trim()), tokenId: BigInt(token.value) }; assetKey(this.selected); await o.backend.nfts.ownerOf(this.selected); });
             this.text(this.content, 'Attached NFTs', 'h3');
             for (const a of snapshot.attachments)
                 this.action(this.content, `Inspect #${a.asset.tokenId} · ${a.location.kind}${a.location.kind === 'container' ? ` #${a.location.containerId}` : ''}`, async () => { this.selected = a.asset; });
+            this.text(this.content,'Placement destination','h3');
             const destination = this.input(this.content, 'Destination parcel', String(this.parcel));
             const container = document.createElement('select');
             container.append(new Option('Parcel floor', '0'));
@@ -227,7 +234,7 @@ export class NFTRuntime {
                     this.action(this.content, 'Retrieve items', () => { this.near(opened); return o.backend.nfts.retrieveItem(opened.id, Number(item.value), BigInt(amount.value)); });
                 }
             }
-            this.text(this.content, 'CHECK_ONLY doors', 'h3');
+            this.text(this.content, 'Doors & keys', 'h3');
             if (controlled) {
                 const kind = document.createElement('select');
                 kind.append(new Option('ERC-1155 balance', 'erc1155'), new Option('Exact ERC-721 ownership', 'erc721'));
@@ -252,6 +259,16 @@ export class NFTRuntime {
                     this.action(this.content, 'Transfer this parcel to Bob', () => o.backend.transferMockParcel!(this.parcel, '0x2222222222222222222222222222222222222222'));
                     this.action(this.content, 'Transfer this parcel to Alice', () => o.backend.transferMockParcel!(this.parcel, o.backend.config.mockAddress));
                 }
+            }
+            let section: HTMLElement | null = null;
+            for(const node of Array.from(this.content.children)) {
+                if(node.tagName==='H3') {
+                    const advanced=['Doors & keys','Development ownership controls','Placement destination'].includes(node.textContent??'');
+                    section=document.createElement(advanced?'details':'section');section.className='menu-card';
+                    this.content.insertBefore(section,node);
+                    if(advanced){const summary=document.createElement('summary');summary.textContent=node.textContent;section.append(summary);node.remove();}
+                    else section.append(node);
+                } else if(section) section.append(node);
             }
         }
         catch (error) {
