@@ -1,6 +1,6 @@
 import type {WorldObjectType} from '../objects/model.ts';
 export type Resource='wood'|'stone';
-export const RESERVE_CAP=40, HARVEST_YIELD=4, REFILL_MS=30000, HARVEST_COOLDOWN_MS=2000;
+export const RESERVE_CAP=40, REFILL_MS=30000, HARVEST_COOLDOWN_MS=2000;
 export const RESOURCE_ITEM={wood:2,stone:1} as const;
 export interface Reserve {available:number;updatedAt:number}
 export interface ParcelResources {wood:Reserve;stone:Reserve;nextHarvestAt:number}

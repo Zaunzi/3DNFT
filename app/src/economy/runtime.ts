@@ -14,7 +14,7 @@ export class HarvestRuntime {
  const hit=this.ray.intersectObjects([...roots,...o.occluders()],true)[0];if(!hit||hit.object.userData.kind!=='harvest-scenery')return;
  const parcel=hit.object.userData.parcel as number,resource=hit.object.userData.resource as Resource;
  if(!o.canHarvest(parcel)){this.label.textContent='Harvesting requires the current parcel owner';return;}
- const reserve=o.provider.reserves(parcel)[resource];this.target={parcel,resource};this.label.textContent=this.busy?'Harvesting…':`[F] ${resource==='wood'?'Chop tree':'Mine rock'} · ${reserve.available} ${resource} available · shared parcel reserve`;
+ const reserve=o.provider.reserves(parcel)[resource];this.target=reserve.available>0?{parcel,resource}:null;this.label.textContent=this.busy?'Harvesting…':reserve.available>0?`[F] Harvest all ${reserve.available} ${resource} · parcel reserve`:`${resource==='wood'?'Wood':'Stone'} reserve depleted · +1 every 30s`;
  }catch{this.hud.textContent='Mock resource data unavailable';}}
  dispose(){this.abort.abort();this.label.remove();this.hud.remove();}
 }

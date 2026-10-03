@@ -9,7 +9,7 @@ Run `npm run dev:mock`, open the URL printed by Vite with `/?tokenId=742`, and c
 
 ## Allowances and persistence
 
-Each parcel starts with 40 wood and 40 stone available. A harvest claims up to four units. Both resources share a two-second harvest cooldown; each reserve independently replenishes one unit every 30 seconds up to 40. All trees share the parcel's wood reserve, and all rocks share its stone reserve. Walking to another tree does not reset it.
+Each parcel starts with 40 wood and 40 stone available. One harvest claims the entire currently available reserve for the selected resource (up to 40 units), atomically crediting inventory and emptying that reserve. The prompt shows the amount before harvesting; depleted reserves cannot be harvested. Both resources share a two-second harvest cooldown; each reserve independently replenishes one unit every 30 seconds up to 40. All trees share the parcel's wood reserve, and all rocks share its stone reserve. Walking to another tree does not reset it.
 
 Reserves and cooldowns belong to the parcel and survive refreshes and mock land transfers. The seller keeps harvested materials already in their wallet; the buyer inherits the remaining reserve and existing buildings. Moving the browser clock backward does not create credit, but localStorage and the local clock are editable: mock mode is not an enforceable token economy.
 

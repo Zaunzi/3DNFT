@@ -3,7 +3,7 @@ import {decodeMockParcel,MOCK_STORAGE_PREFIX,type LocalStorageLike} from '../blo
 import type {ParcelStateStore} from '../blockchain/parcelState.ts';
 import {tokenIdToCoordinate} from '../world/coordinates.ts';
 import {MAX_OBJECTS,validatePlacement,type ObjectPlacement} from '../objects/model.ts';
-import {BUILD_COSTS,replenish,RESOURCE_ITEM,HARVEST_YIELD,HARVEST_COOLDOWN_MS,type HarvestProvider,type Resource,type ParcelResources} from './model.ts';
+import {BUILD_COSTS,replenish,RESOURCE_ITEM,HARVEST_COOLDOWN_MS,type HarvestProvider,type Resource,type ParcelResources} from './model.ts';
 export interface EconomyData {schema:1;resources:Record<string,ParcelResources>;builds:Record<string,ReturnType<typeof decodeMockParcel>>}
 /** Materials, resource allowances and migrated buildings commit in one inventory-ledger write. */
 export class MockEconomy implements ParcelStateStore,HarvestProvider {
@@ -14,7 +14,7 @@ export class MockEconomy implements ParcelStateStore,HarvestProvider {
  private readReserve(data:Data,id:number){tokenIdToCoordinate(id);const previous=data.economy?.resources[id],now=this.now();return {wood:replenish(previous?.wood,now),stone:replenish(previous?.stone,now),nextHarvestAt:previous?.nextHarvestAt??0};}
  reserves(id:number){return this.readReserve(this.ledger.read(),id);}
  async harvest(id:number,resource:Resource){if(resource!=='wood'&&resource!=='stone')throw new Error('Invalid resource');let amount=0;
- await this.ledger.mutate((data,owner)=>{this.check(id);const reserves=this.readReserve(data,id),now=this.now();if(now<reserves.nextHarvestAt)throw new Error('Wait a moment before harvesting again.');amount=Math.min(HARVEST_YIELD,reserves[resource].available);if(!amount)throw new Error(`${resource} reserve depleted. One unit returns every 30 seconds.`);reserves[resource].available-=amount;reserves.nextHarvestAt=now+HARVEST_COOLDOWN_MS;this.state(data).resources[id]=reserves;this.ledger.credit(data,owner,RESOURCE_ITEM[resource],BigInt(amount));});return amount;}
+ await this.ledger.mutate((data,owner)=>{this.check(id);const reserves=this.readReserve(data,id),now=this.now();if(now<reserves.nextHarvestAt)throw new Error('Wait a moment before harvesting again.');amount=reserves[resource].available;if(!amount)throw new Error(`${resource} reserve depleted. One unit returns every 30 seconds.`);reserves[resource].available-=amount;reserves.nextHarvestAt=now+HARVEST_COOLDOWN_MS;this.state(data).resources[id]=reserves;this.ledger.credit(data,owner,RESOURCE_ITEM[resource],BigInt(amount));});return amount;}
  private parcel(data:Data,id:bigint){tokenIdToCoordinate(Number(id));const state=this.state(data);return state.builds[String(id)]??=decodeMockParcel(this.legacy.getItem(`${MOCK_STORAGE_PREFIX}${id}`));}
  async getObjects(id:bigint){return this.parcel(this.ledger.read(),id).objects;}
  async addObject(id:bigint,placement:ObjectPlacement){validatePlacement(placement);await this.ledger.mutate((data,owner)=>{this.check(Number(id));const parcel=this.parcel(data,id);if(parcel.objects.length>=MAX_OBJECTS||parcel.nextId===0xffffffff)throw new Error('Parcel object capacity reached');const cost=BUILD_COSTS[placement.objectType];
