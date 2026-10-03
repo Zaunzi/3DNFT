@@ -1,5 +1,6 @@
 import { getGroundHeight } from '../world/terrain.ts';
 import { objectToWorldPosition, type ObjectPlacement } from './model.ts';
+export const STOREY_STAIR_WIDTH = 3; // meters; shared by geometry and walkable treads.
 export const BUILD_GRID = 50; // centimeters; 4 m modules and 2 m half-widths share this grid.
 export function snapBuildCoordinate(value: number) { return Math.round(value / BUILD_GRID) * BUILD_GRID; }
 export function objectBaseY(token: number, object: ObjectPlacement, seed: bigint) {
@@ -104,7 +105,7 @@ export function stairTop(x:number,z:number,base:number):number|null {
 }
 
 export function storeyStairTop(x:number,z:number,base:number):number|null {
-  if(Math.abs(x)>1||Math.abs(z)>2)return null;
+  if(Math.abs(x)>STOREY_STAIR_WIDTH/2||Math.abs(z)>2)return null;
   return base+Math.min(14,Math.floor((2-z)/(4/14))+1)*(3.4/14);
 }
 

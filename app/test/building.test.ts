@@ -131,3 +131,5 @@ test('independent placements follow local ground without inheriting the previous
  assert.equal(placementBaseHeight(-2,'3.25'),3.25);
  assert.equal(placementBaseHeight(-2,'',undefined,.5),.5);
 });
+
+test('wider storey staircase supports its full three-meter tread width',()=>{assert.notEqual(storeyStairTop(1.49,0,0),null);assert.notEqual(storeyStairTop(-1.49,0,0),null);assert.equal(storeyStairTop(1.51,0,0),null);});
