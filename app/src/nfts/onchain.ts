@@ -34,7 +34,7 @@ export class OnchainNFTProvider implements NFTStateProvider {
         world?: Address;
         containers?: Address;
         items?: Address;
-        characters?: Address;
+        characters?: Address; legacyCharacters?:Address;
     };
     constructor(client: OnchainParcelStateProvider['client'], wallet: InjectedWallet, addresses: OnchainNFTProvider['addresses']) { this.client = client; this.wallet = wallet; this.addresses = addresses; this.enabled = !!(addresses.world && addresses.containers && addresses.items); }
     async validateDeployment() { const a = this.addresses; if (!a.world && !a.containers)
@@ -47,7 +47,10 @@ export class OnchainNFTProvider implements NFTStateProvider {
     async rekeyDoor(parcel:number,id:number){await this.write(this.addresses.world,nftStateV2Abi,'rekeyDoor',[parcel,id]);}
     async issueKeyCopies(id:bigint,to:Address,quantity:bigint){await this.write(this.lockKeys,parseAbi(['function issueCopies(uint256,address,uint256)']),'issueCopies',[id,to,quantity]);}
     async ownedCharacters(owner:Address) {
-        const address=this.addresses.characters;if(!address)return [];
+        const addresses=[this.addresses.characters,this.addresses.legacyCharacters].filter((a):a is Address=>!!a);
+        return (await Promise.all(addresses.map(address=>this.ownedCollection(owner,address)))).flat();
+    }
+    private async ownedCollection(owner:Address,address:Address){
         const abi=parseAbi(['function balanceOf(address) view returns(uint256)','function ownerOf(uint256) view returns(address)']);
         const balance=await this.client.readContract({address,abi,functionName:'balanceOf',args:[owner]});
         if(balance===0n)return [];

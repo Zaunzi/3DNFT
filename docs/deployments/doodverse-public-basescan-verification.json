@@ -1,0 +1,26 @@
+{
+  "WorldEditionState": {
+    "address": "0xbAf278f2F6268a92745804a44154750d1eBe5D63",
+    "verified": true,
+    "checkedAt": "2026-10-03T23:49:31.800Z",
+    "url": "https://basescan.org/address/0xbAf278f2F6268a92745804a44154750d1eBe5D63#code"
+  },
+  "DoodverseCharacters": {
+    "address": "0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f",
+    "verified": true,
+    "checkedAt": "2026-10-03T23:49:50.084Z",
+    "url": "https://basescan.org/address/0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f#code"
+  },
+  "DoodverseTrinkets": {
+    "address": "0x2146CbbbbeBD6585172155ba937cc725c9849fEC",
+    "verified": true,
+    "checkedAt": "2026-10-03T23:50:08.453Z",
+    "url": "https://basescan.org/address/0x2146CbbbbeBD6585172155ba937cc725c9849fEC#code"
+  },
+  "WorldTrinketState": {
+    "address": "0x20484b268342156218b95d08832c21DD0ceDA90c",
+    "verified": true,
+    "checkedAt": "2026-10-03T23:50:26.535Z",
+    "url": "https://basescan.org/address/0x20484b268342156218b95d08832c21DD0ceDA90c#code"
+  }
+}

@@ -13,7 +13,7 @@ export class Multiplayer {
  private fail(){this.rejectReady(new Error('Multiplayer login was not completed. Retry Enter world, or choose Guest.'));this.status.textContent='Multiplayer login expired · reload to reconnect';this.disposed=true;this.socket?.close();clearInterval(this.keepalive);clearTimeout(this.deadline);}
 
  private remotes=new Map<string,{avatar:PlayerAvatar;camera:PerspectiveCamera;pose:Pose}>();
- private authenticate?: (message:string)=>Promise<{address:string;character:number;signature:string}>;
+ private authenticate?: (message:string)=>Promise<{address:string;collection?:string;character:number;signature:string}>;
  private mockCharacter=Number(GUEST_DOOD_ID);
  private scene:Scene;private url:string;private room:string;private status:HTMLElement;
  constructor(scene:Scene,url:string,room:string,authenticate?:Multiplayer['authenticate'],mockCharacter=Number(GUEST_DOOD_ID)){this.mockCharacter=mockCharacter;this.authenticate=authenticate;this.scene=scene;this.url=url;this.room=room;this.status=document.createElement('div');this.status.style.cssText='position:fixed;left:20px;bottom:55px;padding:8px 12px;background:#142e25cc;color:#dbe8d2;font:12px Arial;pointer-events:none';document.body.append(this.status);void this.ready.catch(()=>{});this.deadline=setTimeout(()=>this.fail(),120000);this.keepalive=setInterval(()=>{if(this.lastPose&&this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify(this.lastPose));},1000);this.connect();}

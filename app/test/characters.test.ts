@@ -25,3 +25,12 @@ test('native model loads once, grounds independent copies and disposes their GPU
  let disposed=0;first.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.addEventListener('dispose',()=>disposed++);});disposeEntity(first);assert.ok(disposed>0);assert.ok(second.children.length>0);disposeEntity(second);
  }finally{models.clear();globalThis.fetch=fetchOriginal;}
 });
+
+test('both configured character collections retain native models without admitting arbitrary collections',()=>{
+ const original='0x1111111111111111111111111111111111111111';
+ const registry=new NFTRepresentationRegistry(collection,original);
+ assert.equal(registry.character(characterAsset(8453,collection,'1')),true);
+ assert.equal(registry.character(characterAsset(8453,original,'1')),true);
+ assert.equal(registry.character(characterAsset(8453,'0x2222222222222222222222222222222222222222','1')),false);
+ registry.dispose();
+});

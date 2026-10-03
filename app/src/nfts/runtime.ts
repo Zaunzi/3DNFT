@@ -1,3 +1,4 @@
+import {EditionLayer} from '../editions/rendering.ts';
 import {AssetPlacement} from './placement.ts';
 import {characterAsset} from './characters.ts';
 import { localPoint } from '../objects/building.ts';
@@ -31,13 +32,17 @@ interface Options {
     changed(): void;
     occluders(): THREE.Object3D[];
     gateway: string;
-    native?: string;
+    native?: string; legacyNative?:string;
     items?: Address;
 }
 /** DOM controls and interactables live here, not inside the render loop. */
 export class NFTRuntime {
     readonly layer: NFTLayer;
     readonly cache: MetadataCache;
+    readonly editions:EditionLayer;
+    readonly editionCache:MetadataCache;
+    private selectedEdition:NFTAsset|null=null;
+    private editionQuantity="1";
     open = false;
     private placement:AssetPlacement|null=null;
     get placing(){return this.placement!==null;}
@@ -61,7 +66,9 @@ export class NFTRuntime {
         this.options = options;
         this.parcel = options.token();
         this.cache = new MetadataCache(a => options.backend.nfts.tokenURI(a), options.gateway);
-        this.layer = new NFTLayer(options.scene, options.backend.nfts, new NFTRepresentationRegistry(options.native), options.seed, this.cache, options.report);
+        this.layer = new NFTLayer(options.scene, options.backend.nfts, new NFTRepresentationRegistry(options.native,options.legacyNative), options.seed, this.cache, options.report);
+        this.editionCache=new MetadataCache(a=>options.backend.editions.uri(a),options.gateway);
+        this.editions=new EditionLayer(options.scene,options.backend.editions,options.seed,this.editionCache,options.report);
         this.button.textContent = 'Characters / NFTs / Containers';
         this.button.className = 'assets-button';
         this.button.addEventListener('click', () => this.setOpen(!this.open));
@@ -76,8 +83,9 @@ export class NFTRuntime {
         document.getElementById('app')!.append(this.button, this.panel);
         this.label.className = 'nft-interaction-label';
         document.getElementById('app')!.append(this.label);
-        this.interactions = new InteractionController({ camera: options.camera, origin:options.playerPosition, roots: () => this.layer.roots(), occluders: options.occluders, context: () => ({ connected: options.backend.wallet.snapshot.isConnected, canEdit: () => false }), enabled: () => options.enabled() && !this.open, label: this.label, report: options.report, resolve: object => {
+        this.interactions = new InteractionController({ camera: options.camera, origin:options.playerPosition, roots: () => [...this.layer.roots(),...this.editions.roots()], occluders: options.occluders, context: () => ({ connected: options.backend.wallet.snapshot.isConnected, canEdit: () => false }), enabled: () => options.enabled() && !this.open, label: this.label, report: options.report, resolve: object => {
                 const kind = object.userData.kind;
+                if(kind==='edition'){const a=object.userData.entity;return {id:`edition:${a.editionId}`,type:'NFT',getInteractionLabel:()=>`Inspect ${object.userData.metadata.name} × ${a.quantity}`,canInteract:()=>true,interact:async()=>{this.parcel=a.location.parcelId;this.selectedEdition=a.asset;this.setOpen(true,false);}};}
                 if (kind === 'nft') {
                     const a = object.userData.entity as NFTAttachment;
                     return { id: assetKey(a.asset), type: 'NFT', getInteractionLabel: () => `Inspect ${object.userData.metadata.name}`, canInteract: () => true, interact: async () => { this.parcel = a.location.parcelId; this.selected = a.asset; this.openContainer = 0; this.setOpen(true, false); } };
@@ -117,13 +125,13 @@ export class NFTRuntime {
     } this.options.modal(open); if (open)
         void this.refresh(); }
     cancelPlacement() {if(!this.placement)return;this.placement.dispose();this.placement=null;this.options.modal(false);}
-    private async beginPlacement(asset?:NFTAsset,move=false) {
+    private async beginPlacement(asset?:NFTAsset,move=false,edition?:{quantity:bigint;id?:bigint}) {
         const o=this.options, token=o.token();
         if(!o.canPlace())throw new Error('Visit a parcel you own to place assets.');
-        const registry=new NFTRepresentationRegistry(o.native);
+        const registry=new NFTRepresentationRegistry(edition?undefined:o.native,edition?undefined:o.legacyNative);
         let preview:THREE.Group;
         try {
-            if(asset){const metadata=await this.cache.get(asset);preview=await registry.loadCharacter(asset)??registry.create(asset,metadata);
+            if(asset){const metadata=await (edition?this.editionCache:this.cache).get(asset);preview=await registry.loadCharacter(asset)??registry.create(asset,metadata);
                 if(metadata.image&&!preview.userData.characterModel)try{preview.add(createNFTArtwork(await loadSafeImage(metadata.image)));}catch{/* Pedestal remains usable. */}
             }else preview=registry.container();
         }finally{registry.dispose();}
@@ -133,7 +141,7 @@ export class NFTRuntime {
             cancel:()=>this.cancelPlacement(),place:t=>{
                 if(this.busy)return;
                 this.cancelPlacement();
-                void this.run(async()=>{if(asset){const location={kind:'parcel' as const,parcelId:token,...t};if(move)await o.backend.nfts.move(asset,location);else await o.backend.nfts.attach(asset,location);}else await o.backend.nfts.createContainer(token,t,16);});
+                void this.run(async()=>{if(asset&&edition){const location={parcelId:token,...t};if(edition.id!==undefined)await o.backend.editions.move(edition.id,location);else await o.backend.editions.attach(asset,edition.quantity,location);}else if(asset){const location={kind:'parcel' as const,parcelId:token,...t};if(move)await o.backend.nfts.move(asset,location);else await o.backend.nfts.attach(asset,location);}else await o.backend.nfts.createContainer(token,t,16);});
             }});
         o.modal(true);
     }
@@ -191,9 +199,9 @@ export class NFTRuntime {
                 });
             }
             this.text(this.content, 'Wallet NFTs', 'h3');
-            for (const entry of holdings.filter(e => e.owner?.toLowerCase() === account?.toLowerCase()))
+            for (const entry of holdings.filter(e => !!account && e.owner?.toLowerCase() === account.toLowerCase()))
                 this.action(this.content, `Select character #${entry.asset.tokenId}`, async () => { this.selected = entry.asset; });
-            this.text(this.content,'External NFTs','h3');
+            this.text(this.content,'External NFTs · ERC-721','h3');
             const contract = this.input(this.content, 'Collection address', this.selected?.contractAddress ?? ''), token = this.input(this.content, 'Token ID', this.selected ? String(this.selected.tokenId) : '');
             this.action(this.content, 'Inspect pasted NFT', async () => { if (!/^\d+$/.test(token.value))
                 throw new Error('Enter a non-negative token ID'); this.selected = { chainId: o.backend.config.chainId, contractAddress: getAddress(contract.value.trim()), tokenId: BigInt(token.value) }; assetKey(this.selected); await o.backend.nfts.ownerOf(this.selected); });
@@ -246,6 +254,8 @@ export class NFTRuntime {
                     this.action(this.content, 'Detach into my wallet', () => o.backend.nfts.detach(asset));
                 }
             }
+            await this.renderEditions(this.content,controlled,request);
+            if(request!==this.request)return;
             this.text(this.content, 'Containers', 'h3');
             if (controlled)
                 this.action(this.content, 'Place chest · choose a spot', () => this.beginPlacement());
@@ -313,9 +323,33 @@ export class NFTRuntime {
             this.status.textContent = String(error).slice(0, 300);
         }
     }
-    async refreshWorld() { this.openedDoors.clear(); this.restoreDoors(); await Promise.all([...this.options.ids()].map(id => this.layer.refresh(id))); }
-    sync() { this.layer.sync(this.options.ids()); }
-    update() { this.placement?.update();this.layer.updateGrounding(this.options.height,this.options.surfaces()); this.interactions.update(); for (const root of this.layer.roots())
+    private async renderEditions(parent:HTMLElement,controlled:boolean,request:number){
+        const o=this.options,p=o.backend.editions,account=o.backend.wallet.snapshot.connectedAddress;
+        this.text(parent,'External editions · ERC-1155','h3');
+        this.text(parent,'For BasePaint and other ERC-1155 collections. Place an edition on the parcel or retrieve it into your wallet.');
+        const collection=this.input(parent,'ERC-1155 collection address',this.selectedEdition?.contractAddress??''),id=this.input(parent,'Edition token ID',this.selectedEdition?String(this.selectedEdition.tokenId):'');
+        const quantity=this.input(parent,'Edition quantity',this.editionQuantity);quantity.inputMode='numeric';
+        this.action(parent,'Inspect ERC-1155 edition',async()=>{if(!/^\d+$/.test(id.value))throw new Error('Enter a valid token ID');if(!/^[1-9]\d*$/.test(quantity.value)||BigInt(quantity.value)>=1n<<256n)throw new Error('Enter a positive quantity');const a={chainId:o.backend.config.chainId,contractAddress:getAddress(collection.value.trim()),tokenId:BigInt(id.value)};assetKey(a);await p.uri(a);this.selectedEdition=a;this.editionQuantity=quantity.value;});
+        if(!p.enabled)this.text(parent,'ERC-1155 inspection is available. Placement will be enabled after WorldEditionState is deployed and configured.');
+        if(this.selectedEdition){
+            const a=this.selectedEdition,[metadata,balance,approved]=await Promise.all([this.editionCache.get(a),account?p.balance(a,account).catch(()=>null):Promise.resolve(0n),account?p.approved(a,account).catch(()=>false):Promise.resolve(false)]);
+            if(request!==this.request)return;
+            this.text(parent,metadata.name,'h3');this.text(parent,`${a.contractAddress} · #${a.tokenId} · Wallet balance: ${balance??'unavailable'}`);this.text(parent,metadata.description);
+            if(account&&balance!==null&&balance>0n&&p.enabled&&controlled){
+                if(!approved){this.text(parent,'ERC-1155 approval authorizes this escrow for all editions in this collection. Approve only if you intend to attach; you can revoke it later in your wallet.');this.action(parent,'1. Approve collection for edition escrow',()=>p.approve(a));}
+                const place=this.action(parent,'2. Choose edition placement',()=>{const raw=quantity.value;if(!/^[1-9]\d*$/.test(raw)||BigInt(raw)>balance)throw new Error('Quantity exceeds wallet balance or is invalid');this.editionQuantity=raw;return this.beginPlacement(a,false,{quantity:BigInt(raw)});});place.disabled=this.busy||!approved;
+            }
+        }
+        const rows=await p.snapshot(this.parcel);if(request!==this.request)return;
+        this.text(parent,`Placed editions · ${rows.length}`,'h3');
+        for(const row of rows){this.text(parent,`#${row.asset.tokenId} × ${row.quantity} · ${row.asset.contractAddress}`);
+            this.action(parent,'Inspect placed edition',async()=>{this.selectedEdition=row.asset;});
+            if(controlled){this.action(parent,'Reposition edition',()=>this.beginPlacement(row.asset,true,{quantity:row.quantity,id:row.id}));this.action(parent,'Collect edition into my wallet',()=>p.detach(row.id));}
+        }
+    }
+    async refreshWorld() { this.openedDoors.clear(); this.restoreDoors(); await Promise.all([...this.options.ids()].map(async id => {await Promise.all([this.layer.refresh(id),this.editions.refresh(id)]);})); }
+    sync() { this.layer.sync(this.options.ids());this.editions.sync(this.options.ids()); }
+    update() { this.placement?.update();this.layer.updateGrounding(this.options.height,this.options.surfaces());this.editions.updateGrounding(this.options.height,this.options.surfaces()); this.interactions.update(); for (const root of this.layer.roots())
         root.traverse(o => { if (o.userData.kind === 'door') {
             const door = o.userData.entity as WorldDoor;
             const panel = o.getObjectByName('door-panel');
@@ -332,5 +366,5 @@ export class NFTRuntime {
                 return true;
         } return false; }
     debug() { const snapshots = [...this.layer.parcels.values()].map(e => e.snapshot); const attachments = snapshots.flatMap(s => s.attachments); const focused = attachments.find(a => assetKey(a.asset) === this.interactions.focused?.id); const container = snapshots.flatMap(s => s.containers).find(c => c.id === this.openContainer); return `\nATTACHED721 ${attachments.length}\nNFT ENTITIES ${attachments.filter(a => a.location.kind === 'parcel').length}\nNFT FOCUS   ${focused ? assetKey(focused.asset) : 'none'}\nCUSTODY     ${focused ? 'WorldNFTState escrow' : '—'}\nCANONICAL   ${focused ? `${focused.location.kind} / #${focused.location.parcelId}` : '—'}\nCONTAINER   ${this.openContainer || 'none'} · ${container?.occupied ?? 0} assets\nACCESS      ${this.accessResult}\nMETA CACHE  ${this.cache.hits} hits / ${this.cache.misses} misses`; }
-    dispose() { this.cancelPlacement();this.request++; this.stopWallet(); this.abort.abort(); this.interactions.dispose(); this.layer.dispose(); this.panel.remove(); this.button.remove(); this.label.remove(); }
+    dispose() { this.cancelPlacement();this.request++; this.stopWallet(); this.abort.abort(); this.interactions.dispose(); this.layer.dispose();this.editions.dispose(); this.panel.remove(); this.button.remove(); this.label.remove(); }
 }

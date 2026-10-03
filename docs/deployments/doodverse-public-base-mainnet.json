@@ -1,0 +1,58 @@
+{
+  "chainId": 8453,
+  "owner": "0xdB6882db2a406bc1541988715842906dfd4fd590",
+  "land": "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+  "addresses": {
+    "WorldEditionState": "0xbAf278f2F6268a92745804a44154750d1eBe5D63",
+    "DoodverseCharacters": "0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f",
+    "DoodverseTrinkets": "0x2146CbbbbeBD6585172155ba937cc725c9849fEC",
+    "WorldTrinketState": "0x20484b268342156218b95d08832c21DD0ceDA90c"
+  },
+  "constructorArgs": {
+    "WorldEditionState": [
+      "0x383891F3537627Fb9E235f0242D874fe00Ca6443"
+    ],
+    "DoodverseCharacters": [
+      "0xdB6882db2a406bc1541988715842906dfd4fd590"
+    ],
+    "DoodverseTrinkets": [
+      "0xdB6882db2a406bc1541988715842906dfd4fd590"
+    ],
+    "WorldTrinketState": [
+      "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+      "0x2146CbbbbeBD6585172155ba937cc725c9849fEC"
+    ]
+  },
+  "transactions": [
+    {
+      "name": "WorldEditionState",
+      "hash": "0xde9f0c63b1d394a1ccafca3415f4eab94f91f5823ddae691c3881d1171e6b654",
+      "blockNumber": 52140825,
+      "gasUsed": "1442899",
+      "feeETH": "0.000008683608563486"
+    },
+    {
+      "name": "DoodverseCharacters",
+      "hash": "0x9a8dcd3c921b607bb8872ae7759f94c736e60e8457a440248d6875b8fdee8b7e",
+      "blockNumber": 52140830,
+      "gasUsed": "1561051",
+      "feeETH": "0.000009396026543973"
+    },
+    {
+      "name": "DoodverseTrinkets",
+      "hash": "0x8fe7451a597214b1891e12cbaf55be11dcc622e49ac3877e1d4aa2fa06b2af56",
+      "blockNumber": 52140834,
+      "gasUsed": "1692728",
+      "feeETH": "0.000010188999350854"
+    },
+    {
+      "name": "WorldTrinketState",
+      "hash": "0x54d46db3c1c2a4ed2c6539a1aa8ecc647ada40895f995432c808af8261047cc9",
+      "blockNumber": 52140839,
+      "gasUsed": "1212947",
+      "feeETH": "0.000007299554317297"
+    }
+  ],
+  "minting": "none",
+  "totalFeeETH": "0.00003556818877561"
+}

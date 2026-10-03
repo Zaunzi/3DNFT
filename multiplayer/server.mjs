@@ -3,15 +3,16 @@ import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {WebSocketServer,WebSocket} from 'ws';
 import {pathToFileURL} from 'node:url';
-export function createPresenceServer({origins=['http://127.0.0.1:5177'],maxPlayers=100,allowMockAvatars=false,characters=process.env.CHARACTER_ADDRESS,rpc=process.env.RPC_URL??'https://mainnet.base.org',chainId=8453,verifyIdentity,sessionTTL=8*60*60*1000}={}){
+export function createPresenceServer({origins=['http://127.0.0.1:5177'],maxPlayers=100,allowMockAvatars=false,characters=process.env.CHARACTER_ADDRESS,rpc=process.env.RPC_URL??'https://mainnet.base.org',chainId=8453,characterCollections=(process.env.CHARACTER_ADDRESSES??'0x03847D61A017731A843109F0b6BC637AF8a3f7e0,0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f').split(','),verifyIdentity,sessionTTL=8*60*60*1000}={}){
  const peers=new Map(), sessions=new Map();
  const revoke=p=>{if(p.resumeToken)sessions.delete(p.resumeToken);p.resumeToken=null;};
  const client=createPublicClient({transport:http(rpc)});
  const checkIdentity=verifyIdentity??(async(message,auth)=>{
-  if(!characters||!/^0x[0-9a-fA-F]{40}$/.test(auth.address)||!Number.isInteger(auth.character)||auth.character<1||auth.character>5000)return false;
+  const collection=auth.collection??characters;
+  if(!collection||![characters,...characterCollections].some(a=>a?.toLowerCase()===collection.toLowerCase())||!/^0x[0-9a-fA-F]{40}$/.test(auth.address)||!Number.isInteger(auth.character)||auth.character<1||auth.character>5000)return false;
   if(!await verifyMessage({address:auth.address,message,signature:auth.signature}))return false;
   if(await client.getChainId()!==chainId)return false;
-  const owner=await client.readContract({address:characters,abi:parseAbi(['function ownerOf(uint256) view returns(address)']),functionName:'ownerOf',args:[BigInt(auth.character)]});return owner.toLowerCase()===auth.address.toLowerCase();
+  const owner=await client.readContract({address:collection,abi:parseAbi(['function ownerOf(uint256) view returns(address)']),functionName:'ownerOf',args:[BigInt(auth.character)]});return owner.toLowerCase()===auth.address.toLowerCase();
  });
  const server=createServer((req,res)=>{res.writeHead(req.url==='/health'?200:404,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:req.url==='/health'}));});
  const wss=new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false});
@@ -22,7 +23,7 @@ export function createPresenceServer({origins=['http://127.0.0.1:5177'],maxPlaye
   ws.on('close',()=>peers.delete(peer.id));ws.on('error',()=>ws.close());
   ws.on('message',async raw=>{const now=Date.now();peer.tokens=Math.min(30,peer.tokens+(now-peer.refill)*.02);peer.refill=now;if(--peer.tokens<0){ws.close(1008,'Rate limit');return;}
    try{const m=JSON.parse(raw.toString());
-    if(m.type==='join'&&!peer.room&&typeof m.room==='string'&&/^(mock|onchain):[0-9]+:0x[0-9a-f]{40}:[0-9]+:[0-9]+$/.test(m.room)){peer.room=m.room;if(Number.isInteger(m.guestCharacter)&&m.guestCharacter>=1&&m.guestCharacter<=5000){peer.guestCharacter=m.guestCharacter;peer.character=m.guestCharacter;}if(allowMockAvatars&&peer.room.startsWith('mock:')&&Number.isInteger(m.character)&&m.character>=1&&m.character<=5000)peer.character=m.character;peer.challenge=`Doodverse multiplayer login\nSession: ${peer.id}\nWorld: ${peer.room}\nNonce: ${randomUUID()}\nExpires: ${Date.now()+120000}`;peer.challengeExpires=Date.now()+120000;ws.send(JSON.stringify({type:'welcome',id:peer.id,message:peer.challenge,canAuthenticate:!!characters}));return;}
+    if(m.type==='join'&&!peer.room&&typeof m.room==='string'&&/^(mock|onchain):[0-9]+:0x[0-9a-f]{40}:[0-9]+:[0-9]+$/.test(m.room)){peer.room=m.room;if(Number.isInteger(m.guestCharacter)&&m.guestCharacter>=1&&m.guestCharacter<=5000){peer.guestCharacter=m.guestCharacter;peer.character=m.guestCharacter;}if(allowMockAvatars&&peer.room.startsWith('mock:')&&Number.isInteger(m.character)&&m.character>=1&&m.character<=5000)peer.character=m.character;peer.challenge=`Doodverse multiplayer login\nSession: ${peer.id}\nWorld: ${peer.room}\nNonce: ${randomUUID()}\nExpires: ${Date.now()+120000}`;peer.challengeExpires=Date.now()+120000;ws.send(JSON.stringify({type:'welcome',id:peer.id,message:peer.challenge,canAuthenticate:!!characters||characterCollections.length>0}));return;}
     if(m.type==='resume'&&peer.room&&!peer.authBusy){
       const session=sessions.get(m.token);peer.authBusy=true;const attempt=peer.authMessage=randomUUID();
       try{if(session&&session.room===peer.room&&session.expires>Date.now()&&await checkIdentity(session.message,session.auth)&&sessions.get(m.token)===session&&session.expires>Date.now()&&peer.authMessage===attempt&&ws.readyState===WebSocket.OPEN){peer.character=session.auth.character;peer.auth=session.auth;peer.authMessage=session.message;peer.authTime=Date.now();peer.resumeToken=m.token;peer.challenge=null;ws.send(JSON.stringify({type:'authenticated',resumeToken:m.token}));}else ws.send(JSON.stringify({type:'authFailed'}));}catch{ws.send(JSON.stringify({type:'authFailed'}));}finally{peer.authBusy=false;}return;
