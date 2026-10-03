@@ -50,7 +50,7 @@ export class NFTRepresentationRegistry {
         this.register({ supports: (a, metadata) => !metadata.image && a.contractAddress.toLowerCase() === nativeCollection.toLowerCase() && a.tokenId === 1n, createObject: () => { const g = new THREE.Group(); g.add(box(.8, 1.2, .5, 0x517d98, .8)); const head = new THREE.Mesh(new THREE.SphereGeometry(.35, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd8b48a })); head.position.y = 1.75; g.add(head); return g; } }); }
     register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
-        return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); return group; }
+        return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); group.scale.setScalar(2); return group; }
     container() { return createChest(); }
     door() { return createLockedDoor(); }
 }
