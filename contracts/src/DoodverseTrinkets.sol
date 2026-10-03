@@ -7,13 +7,25 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 contract DoodverseTrinkets is ERC1155, CollectionControls {
     string public constant name = "Doodverse Trinkets";
     string public constant symbol = "DOODTRINKET";
-    uint256 public constant ITEM_COUNT = 5;
+    // Append-only catalog; uint16 matches the world's compact itemType encoding.
+    uint256 public ITEM_COUNT = 5;
+    uint256 public constant MAX_ITEM_COUNT = type(uint16).max;
+    event TrinketRegistered(uint256 indexed id);
+    error CatalogFull();
+    /// @notice Publishes the next sequential ID. Existing IDs and mint history never reset.
+    function addTrinket() external onlyOwner returns (uint256 id) {
+        if (ITEM_COUNT == MAX_ITEM_COUNT) revert CatalogFull();
+        id = ++ITEM_COUNT;
+        emit TrinketRegistered(id);
+        emit URI(uri(id), id);
+    }
     string public metadataBaseURI = "https://atlas-mu-lime.vercel.app/trinkets/metadata/";
     function setMetadataBaseURI(string calldata value) external onlyOwner {
         _validateMetadataBaseURI(value);
         metadataBaseURI = value;
         emit MetadataURIUpdated(value);
-        for (uint256 id = 1; id <= ITEM_COUNT; ++id) emit URI(uri(id), id);
+        // Global event avoids an unbounded loop as the catalog grows.
+        // Clients refresh all URIs on MetadataURIUpdated.
     }
     bool public constant PUBLIC_MINT = true;
     mapping(address => mapping(uint256 => bool)) public minted;

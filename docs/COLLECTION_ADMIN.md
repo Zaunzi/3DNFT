@@ -36,7 +36,7 @@ Older deployments without that getter must be handled as older contracts.
 | --- | --- | --- |
 | Doodverse Parcels | `setMetadataBaseURI("ipfs://CID/parcels/")` | `<base><decimal tokenId>.json`, starting at `0.json` |
 | Doodverse Characters | `setMetadataBaseURI("https://host/cryptodoodz/metadata/")` | Four-digit IDs, e.g. `0001.json` through `5000.json` |
-| Doodverse Trinkets | `setMetadataBaseURI("https://host/trinkets/metadata/")` | `1.json` through `5.json` |
+| Doodverse Trinkets | `setMetadataBaseURI("https://host/trinkets/metadata/")` | `<id>.json` for registered IDs; initially 1–5 |
 | Doodverse Parcel Items | `setURI("ipfs://CID/items/{id}.json")` | Standard ERC-1155 URI/template |
 | Doodverse Keys | `setURI("ipfs://CID/keys/{id}.json")` | Standard ERC-1155 URI/template |
 
@@ -64,7 +64,7 @@ permanently removes the ability to pause/resume or update metadata.
 - `MintPausedChanged(bool)` records issuance state changes.
 - `MetadataURIUpdated(string)` records every metadata URL/template update.
 - ERC-721 collections advertise ERC-4906 and emit `BatchMetadataUpdate`.
-- Trinkets and Parcel Items also emit standard `URI` events for their finite IDs.
+- Parcel Items emit standard `URI` events for their finite IDs. Trinkets emit `URI` when adding an ID; base URL changes emit only the global `MetadataURIUpdated` event to avoid a growing gas-cost loop.
 - Keys emit the global metadata update event rather than looping through an
   unbounded number of key IDs. Indexers can refresh affected key metadata from it.
 - Parcels emit `RuntimeURLUpdated(string)` and a metadata refresh event.
@@ -85,3 +85,36 @@ token metadata, so no meaningless setters or transfer pauses were added to them.
 handoff, pause/resume, all mint entry points, unchanged allowances, transfer and
 escrow availability, atomic key/door rollback, metadata formatting, URL validation,
 events and compatibility contracts, alongside the existing world tests.
+
+## Expanding the Trinkets catalog after deployment
+
+The new `DoodverseTrinkets` starts with IDs 1–5 and exposes owner-only
+`addTrinket() returns (uint256 id)`. Each call registers the next ID (6, 7, …),
+emitting `TrinketRegistered(id)` and `URI(uri(id), id)`. `ITEM_COUNT()` now reads
+storage rather than a constant, preserving its existing getter selector.
+IDs are append-only: there is no deletion, reuse or allowance reset. Anyone may
+mint each registered ID once per wallet, subject to the global mint pause.
+Registration itself is permitted while minting is paused, allowing a staged release.
+The maximum is 65,535 types, matching the world's uint16 encoding.
+
+The new `WorldTrinketState` checks the collection's current `ITEM_COUNT()` rather
+than hardcoding five. Newly registered assets can enter escrow, remain attached
+through parcel sales and be collected by the current parcel owner. Both contracts
+must be deployed together for this capability. Existing deployed contracts and
+escrowed assets do not change or migrate automatically.
+
+### Adding a new trinket
+
+1. Read `ITEM_COUNT()` and prepare metadata for the next ID, e.g. `6.json`.
+2. Publish the metadata, image, model and optional playable instrument page.
+3. Add its presentation entry to `app/src/items/trinkets.ts`, its model mapping
+   in the trinket renderer and mint preview, and optional instrument playback.
+   The website currently curates these assets; registering an onchain ID does not
+   automatically download or execute arbitrary models or instrument pages.
+4. As contract owner, call `addTrinket()` and verify the returned/event ID.
+5. Publish the website catalog update and test minting, placement and pickup.
+
+Future additions require an owner transaction and website assets, **not a new
+Trinkets or placement-contract deployment**. Owner registration does not mint
+anything or give the owner a bypass around lifetime wallet limits. A wallet limit
+is not proof of a unique person.

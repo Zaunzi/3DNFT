@@ -12,6 +12,9 @@ contract ClaimReceiver is ERC1155Holder {
  }
 }
 interface TrinketVm {function prank(address) external;function expectRevert() external;}
+contract CatalogLimitFixture is DoodverseTrinkets {
+ constructor() DoodverseTrinkets(msg.sender) { ITEM_COUNT=MAX_ITEM_COUNT-1; }
+}
 contract DoodverseTrinketsTest {
     TrinketVm constant vm=TrinketVm(address(uint160(uint256(keccak256("hevm cheat code")))));
     function testCatalogAndSeparateBalances() public {
@@ -46,6 +49,41 @@ contract DoodverseTrinketsTest {
         DoodverseTrinkets t=new DoodverseTrinkets(address(this));ClaimReceiver r=new ClaimReceiver(t);
         vm.expectRevert();r.claim(true);require(!t.minted(address(r),1)&&t.balanceOf(address(r),1)==0);
         r.claim(false);require(!r.duplicateSucceeded()&&t.minted(address(r),1)&&t.balanceOf(address(r),1)==1);
+    }
+
+    function testAppendOnlyCatalogOwnerAndMintPause() public {
+        DoodverseTrinkets t=new DoodverseTrinkets(address(this));address alice=address(0xA11CE);
+        vm.prank(alice);vm.expectRevert();t.addTrinket();require(t.ITEM_COUNT()==5);
+        vm.prank(alice);t.mint(1);
+        t.setMintPaused(true);require(t.addTrinket()==6&&t.ITEM_COUNT()==6);
+        vm.prank(alice);vm.expectRevert();t.mint(6);
+        t.setMintPaused(false);vm.prank(alice);t.mint(6);
+        require(t.balanceOf(alice,6)==1&&t.minted(alice,1)&&t.minted(alice,6));
+        vm.prank(alice);vm.expectRevert();t.mint(6);
+        vm.prank(alice);vm.expectRevert();t.mint(1);
+        vm.prank(alice);vm.expectRevert();t.mint(7);
+        t.setMetadataBaseURI("https://example.com/trinkets/");
+        require(keccak256(bytes(t.uri(6)))==keccak256(bytes("https://example.com/trinkets/6.json")));
+        require(t.addTrinket()==7);
+    }
+    function testFuzzNewCatalogIds(uint8 additions,address user) public {
+        if(user==address(0)||user.code.length>0)return;
+        DoodverseTrinkets t=new DoodverseTrinkets(address(this));
+        uint256 count=uint256(additions)%32+1;
+        for(uint256 i;i<count;i++)require(t.addTrinket()==6+i);
+        uint256 id=5+count;vm.prank(user);t.mint(id);
+        require(t.balanceOf(user,id)==1&&t.minted(user,id));
+        vm.prank(user);vm.expectRevert();t.mint(id);
+        vm.expectRevert();t.uri(id+1);
+    }
+    function testCatalogEncodingLimitAndOwnershipTransfer() public {
+        CatalogLimitFixture t=new CatalogLimitFixture();
+        require(t.addTrinket()==65535);
+        vm.expectRevert();t.addTrinket();require(t.ITEM_COUNT()==65535);
+        address alice=address(0xA11CE);vm.prank(alice);t.mint(65535);
+        require(t.balanceOf(alice,65535)==1);vm.expectRevert();t.uri(65536);
+        DoodverseTrinkets normal=new DoodverseTrinkets(address(this));normal.transferOwnership(alice);
+        vm.expectRevert();normal.addTrinket();vm.prank(alice);require(normal.addTrinket()==6);
     }
 }
 

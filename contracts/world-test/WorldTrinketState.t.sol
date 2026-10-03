@@ -35,5 +35,17 @@ contract WorldTrinketStateTest {
  function testReceiverCannotReenterPickup() public {place();ReenterTrinketReceiver receiver=new ReenterTrinketReceiver(state);vm.prank(ALICE);land.transferFrom(ALICE,address(receiver),0);receiver.collect();require(receiver.attempted()&&!receiver.reentered()&&items.balanceOf(address(receiver),1)==1&&state.getItems(0).length==0);}
  function testFuzzBounds(uint16 x,uint16 z,uint16 rotation,uint16 kind,uint64 quantity) public {bool valid=x>=200&&x<=6200&&z>=200&&z<=6200&&rotation<36000&&kind>=1&&kind<=5&&quantity==1;if(valid){items.fixtureMint(ALICE,kind,1);vm.prank(ALICE);state.placeItem(0,kind,quantity,x,z,rotation);require(state.getItems(0).length==1);}else{vm.prank(ALICE);vm.expectRevert();state.placeItem(0,kind,quantity,x,z,rotation);require(state.getItems(0).length==0);}}
  function testFuzzValidPickup(uint16 x,uint16 z,uint16 rotation,uint8 kind) public {uint16 k=uint16(kind%5)+1;items.fixtureMint(ALICE,k,1);vm.prank(ALICE);uint32 id=state.placeItem(0,k,1,200+x%6001,200+z%6001,rotation%36000);vm.prank(ALICE);land.transferFrom(ALICE,BOB,0);vm.prank(BOB);state.pickupItem(0,id);require(items.balanceOf(BOB,k)==1&&state.escrowed(k)==0);}
+
+ function testNewTrinketCanBePlacedAndInherited() public {
+  vm.prank(ALICE);vm.expectRevert();state.placeItem(0,6,1,3200,3200,0);
+  items.addTrinket();vm.prank(ALICE);items.mint(6);
+  vm.prank(ALICE);uint32 id=state.placeItem(0,6,1,3200,3200,0);
+  require(items.balanceOf(ALICE,6)==0&&items.balanceOf(address(state),6)==1&&state.getItems(0)[0].itemType==6);
+  vm.prank(ALICE);land.transferFrom(ALICE,BOB,0);
+  vm.prank(ALICE);vm.expectRevert();state.pickupItem(0,id);
+  vm.prank(BOB);state.pickupItem(0,id);
+  require(items.balanceOf(BOB,6)==1&&state.escrowed(6)==0&&state.getItems(0).length==0);
+  vm.prank(ALICE);vm.expectRevert();items.mint(6);
+ }
 }
 

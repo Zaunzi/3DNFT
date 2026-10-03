@@ -6,6 +6,8 @@ import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 
+interface ITrinketCatalog { function ITEM_COUNT() external view returns (uint256); }
+
 /// @notice Land-attached custody. Selling the parcel transfers the claim to its attached items.
 contract WorldTrinketState is ERC1155Holder, ReentrancyGuard {
     IERC721 public immutable land;
@@ -26,7 +28,7 @@ contract WorldTrinketState is ERC1155Holder, ReentrancyGuard {
         land = IERC721(landAddress); items = IERC1155(itemsAddress);
     }
     function placeItem(uint256 tokenId, uint16 itemType, uint64 quantity, uint16 x, uint16 z, uint16 rotation) external nonReentrant returns (uint32 id) {
-        if (tokenId >= 5000 || (itemType < 1 || itemType > 5) || quantity != 1 || x < 200 || z < 200 || x > 6200 || z > 6200 || rotation >= 36000) revert InvalidPlacement();
+        if (tokenId >= 5000 || (itemType < 1 || itemType > ITrinketCatalog(address(items)).ITEM_COUNT()) || quantity != 1 || x < 200 || z < 200 || x > 6200 || z > 6200 || rotation >= 36000) revert InvalidPlacement();
         if (land.ownerOf(tokenId) != msg.sender) revert Unauthorized();
         Parcel storage parcel = parcels[tokenId];
         if (parcel.instances.length >= MAX_INSTANCES) revert ParcelFull();
