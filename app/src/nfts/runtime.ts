@@ -224,11 +224,19 @@ export class NFTRuntime {
                 this.text(this.content, metadata.description);
                 for (const trait of metadata.attributes)
                     this.text(this.content, `${trait.trait_type}: ${trait.value}`);
-                if (custodian?.toLowerCase() === account?.toLowerCase()) {
+                if(!account){
+                    this.text(this.content,'Connect the wallet holding this NFT to approve and place it.');
+                    this.action(this.content,'Connect wallet to place this NFT',async()=>{await o.backend.wallet.connect();});
+                }else if(custodian&&custodian.toLowerCase()!==account.toLowerCase()&&!attached){
+                    this.text(this.content,`Connected wallet ${account} does not hold this NFT. Connect its custodian wallet to place it.`);
+                }else if(!custodian){
+                    this.text(this.content,'NFT ownership could not be checked. Retry inspection before placing.');
+                }
+                if (account && custodian?.toLowerCase() === account.toLowerCase()) {
                     const character=!!o.native&&asset.contractAddress.toLowerCase()===o.native.toLowerCase();
                     this.action(this.content, character?'1. Approve character':'1. Approve this NFT only', () => o.backend.nfts.approve(asset));
                     if(controlled&&this.parcel===o.token())this.action(this.content,'2. Choose placement in world',()=>this.beginPlacement(asset));
-                    if(character&&!controlled)this.text(this.content,'Visit a parcel you own to place this character.');
+                    if(!controlled)this.text(this.content,'Visit a parcel you own to place this NFT. Approval alone does not grant parcel access.');
                     if (controlled)
                         this.action(this.content, '2. Attach NFT at destination', () => o.backend.nfts.attach(asset, target()));
                 }
