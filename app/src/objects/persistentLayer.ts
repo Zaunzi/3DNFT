@@ -52,6 +52,15 @@ export class PersistentObjectLayer {
     const positions=this.roots().flatMap(root=>root.children.flatMap(group=>group.children)).filter(o=>o.userData.objectType===12).sort((a,b)=>a.position.distanceToSquared(camera)-b.position.distanceToSquared(camera));
     this.lights.forEach((light,i)=>{const o=positions[i];light.intensity=o?12:0;if(o)light.position.copy(o.position).y+=2;});
   }
+  /** Current NFT custody stores X/Z only: use the highest foundation at that point. */
+  assetHeight(x:number,z:number) {
+    let height=getGroundHeight(x,z,this.seed);
+    for(const [id,entry] of this.parcels)for(const o of entry.objects)if(o.objectType===7){
+      const p=objectToWorldPosition(id,o),q=localPoint(x,z,p.x,p.z,o.rotation);
+      if(Math.abs(q.x)<=2&&Math.abs(q.z)<=2)height=Math.max(height,objectBaseY(id,o,this.seed)+.5);
+    }
+    return height;
+  }
   floorHeight(x:number,z:number,feet=Infinity) {
     let height=getGroundHeight(x,z,this.seed);
     for(const [id,entry] of this.parcels)for(const o of entry.objects)if([7,11,14,15].includes(o.objectType)){

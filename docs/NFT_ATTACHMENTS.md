@@ -106,3 +106,20 @@ Browser checks exercised floor attachment, NFT container storage, refresh persis
 Open **Inventory → Place Doodverse Characters**, or **Characters / NFTs / Containers**. Connect the wallet that owns your character and parcel. Enter the minted character token ID (1–1000), choose **Select my character**, then **Approve character** and **Place character near me**. Approval is per token. Placement uses the existing DoodverseNFTState escrow and positions the character three meters ahead, grounded on terrain. Near parcel edges, move inward before placing. Use E to inspect a placed character, move/store it or detach it into the current parcel owner's wallet. Attached characters remain with the land after sale. No new contracts are required.
 
 The picker verifies ownerOf for the entered ID; it does not scan the wallet or assume ERC721Enumerable support. Mock mode supplies characters 1, 2, 12 and 77. The native renderer loads only the known CryptoDoodz GLB path for IDs 1–1000, never arbitrary metadata animation URLs. Models are static, normalized to human scale, cached as bounded source bytes and instantiated with independently disposable GPU resources. External-resource GLBs, oversized responses and failed loads fall back to the existing NFT representation. Existing external NFTs retain safe image rendering. Characters are visible in neighboring parcels and the NFT showcase. They do not move or have AI in this release.
+
+
+## Placement previews and foundation support
+
+Choose **Place chest · choose a spot**, or approve an NFT then select
+**Choose placement in world**. Move the pointer over the world to preview its
+position, press R to rotate, click to submit placement, or Esc to cancel.
+Existing attached NFTs also offer **Reposition in world**. A cancelled preview
+never sends a custody transaction. Container storage retains the existing controls.
+
+The deployed NFT/chest location schema stores X/Z and rotation, not Y. The runtime
+therefore derives their support height from the highest foundation under that X/Z,
+falling back to terrain. The same rule is used in preview, saved world rendering,
+and the marketplace/homepage showcase. Heights update after foundation state loads
+or changes; removing the foundation lowers the asset to remaining support/terrain.
+Roofs do not become support surfaces for these assets. Independent floor selection
+at overlapping X/Z requires a future location schema with elevation or a support ID.

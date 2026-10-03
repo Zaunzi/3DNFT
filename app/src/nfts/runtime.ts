@@ -1,3 +1,4 @@
+import {AssetPlacement} from './placement.ts';
 import {characterAsset} from './characters.ts';
 import { localPoint } from '../objects/building.ts';
 import { getGroundHeight } from '../world/terrain.ts';
@@ -8,13 +9,17 @@ import type { createBackend } from '../blockchain/backend.ts';
 import { MockWallet } from '../blockchain/mockWallet.ts';
 import { worldToObjectPosition, objectToWorldPosition } from '../objects/model.ts';
 import { InteractionController } from '../interactions/controller.ts';
-import { NFTLayer, NFTRepresentationRegistry } from './rendering.ts';
-import { MetadataCache } from './metadata.ts';
+import { NFTLayer, NFTRepresentationRegistry, createNFTArtwork, disposeEntity } from './rendering.ts';
+import { MetadataCache, loadSafeImage } from './metadata.ts';
 import { assetKey, type NFTAsset, type NFTSnapshot, type AttachedLocation, type NFTAttachment, type WorldContainer, type WorldDoor, type AccessRequirement } from './model.ts';
 import { MOCK_ITEMS, MOCK_NFT_COLLECTION } from './mock.ts';
 interface Options {
     backend: Awaited<ReturnType<typeof createBackend>>;
     scene: THREE.Scene;
+    canvas: HTMLCanvasElement;
+    surfaces():THREE.Object3D[];
+    height(x:number,z:number):number;
+    canPlace():boolean;
     camera: THREE.Camera;
     seed: bigint;
     ids(): Iterable<number>;
@@ -33,6 +38,8 @@ export class NFTRuntime {
     readonly layer: NFTLayer;
     readonly cache: MetadataCache;
     open = false;
+    private placement:AssetPlacement|null=null;
+    get placing(){return this.placement!==null;}
     busy = false;
     openContainer = 0;
     accessResult = '—';
@@ -103,11 +110,32 @@ export class NFTRuntime {
         root.traverse(o => { if (o.name === 'door-panel')
             {o.visible = true;o.rotation.y=0;} }); }
     setOpen(open: boolean, reset = true) { if (this.busy && open)
-        return; this.open = open; this.panel.hidden = !open; if (open && reset) {
+        return; if(open)this.cancelPlacement(); this.open = open; this.panel.hidden = !open; if (open && reset) {
         this.parcel = this.options.token();
         this.openContainer = 0;
     } this.options.modal(open); if (open)
         void this.refresh(); }
+    cancelPlacement() {if(!this.placement)return;this.placement.dispose();this.placement=null;this.options.modal(false);}
+    private async beginPlacement(asset?:NFTAsset,move=false) {
+        const o=this.options, token=o.token();
+        if(!o.canPlace())throw new Error('Visit a parcel you own to place assets.');
+        const registry=new NFTRepresentationRegistry(o.native);
+        let preview:THREE.Group;
+        try {
+            if(asset){const metadata=await this.cache.get(asset);preview=await registry.loadCharacter(asset)??registry.create(asset,metadata);
+                if(metadata.image&&!preview.userData.characterModel)try{preview.add(createNFTArtwork(await loadSafeImage(metadata.image)));}catch{/* Pedestal remains usable. */}
+            }else preview=registry.container();
+        }finally{registry.dispose();}
+        if(!this.open||token!==o.token()||!o.canPlace()){disposeEntity(preview);return;}
+        this.setOpen(false);
+        this.placement=new AssetPlacement({canvas:o.canvas,camera:o.camera,scene:o.scene,surfaces:o.surfaces,height:o.height,token,preview,valid:()=>o.canPlace()&&o.token()===token,
+            cancel:()=>this.cancelPlacement(),place:t=>{
+                if(this.busy)return;
+                this.cancelPlacement();
+                void this.run(async()=>{if(asset){const location={kind:'parcel' as const,parcelId:token,...t};if(move)await o.backend.nfts.move(asset,location);else await o.backend.nfts.attach(asset,location);}else await o.backend.nfts.createContainer(token,t,16);});
+            }});
+        o.modal(true);
+    }
     private text(parent: HTMLElement, text: string, tag = 'p') { const node = document.createElement(tag); node.textContent = text; parent.append(node); return node; }
     private action(parent: HTMLElement, text: string, fn: () => Promise<void>) { const b = document.createElement('button'); b.textContent = text; b.disabled = this.busy; b.onclick = () => { void this.run(fn); }; parent.append(b); return b; }
     private input(parent: HTMLElement, label: string, value: string) { const wrapper = document.createElement('label'); wrapper.textContent = label; const input = document.createElement('input'); input.value = value; wrapper.append(input); parent.append(wrapper); return input; }
@@ -119,10 +147,10 @@ export class NFTRuntime {
         await fn();
         await this.refreshWorld();
         this.options.changed();
-        this.status.textContent = 'Confirmed.';
+        this.status.textContent = 'Confirmed.';if(!this.open&&!this.placing)this.options.report('Asset change confirmed.');
     }
     catch (error) {
-        this.status.textContent = error instanceof Error ? error.message.slice(0, 300) : String(error);
+        this.status.textContent = error instanceof Error ? error.message.slice(0, 300) : String(error);if(!this.open)this.options.report(this.status.textContent);
     }
     finally {
         this.busy = false;
@@ -198,19 +226,20 @@ export class NFTRuntime {
                 if (custodian?.toLowerCase() === account?.toLowerCase()) {
                     const character=!!o.native&&asset.contractAddress.toLowerCase()===o.native.toLowerCase();
                     this.action(this.content, character?'1. Approve character':'1. Approve this NFT only', () => o.backend.nfts.approve(asset));
-                    if(character&&controlled&&this.parcel===o.token())this.action(this.content,'2. Place character near me',()=>o.backend.nfts.attach(asset,{kind:'parcel',parcelId:o.token(),...this.ahead()}));
+                    if(controlled&&this.parcel===o.token())this.action(this.content,'2. Choose placement in world',()=>this.beginPlacement(asset));
                     if(character&&!controlled)this.text(this.content,'Visit a parcel you own to place this character.');
                     if (controlled)
                         this.action(this.content, '2. Attach NFT at destination', () => o.backend.nfts.attach(asset, target()));
                 }
                 if (attached && controlled) {
+                    if(this.parcel===o.token())this.action(this.content,'Reposition in world',()=>this.beginPlacement(asset,true));
                     this.action(this.content, 'Move / store at destination', () => o.backend.nfts.move(asset, target()));
                     this.action(this.content, 'Detach into my wallet', () => o.backend.nfts.detach(asset));
                 }
             }
             this.text(this.content, 'Containers', 'h3');
             if (controlled)
-                this.action(this.content, 'Place chest ahead (16 asset slots)', () => o.backend.nfts.createContainer(o.token(), this.ahead(), 16));
+                this.action(this.content, 'Place chest · choose a spot', () => this.beginPlacement());
             for (const c of snapshot.containers) {
                 this.action(this.content, `Open chest #${c.id} · ${c.occupied}/${c.capacity}`, async () => { this.near(c); this.openContainer = c.id; });
                 if (controlled)
@@ -277,7 +306,7 @@ export class NFTRuntime {
     }
     async refreshWorld() { this.openedDoors.clear(); this.restoreDoors(); await Promise.all([...this.options.ids()].map(id => this.layer.refresh(id))); }
     sync() { this.layer.sync(this.options.ids()); }
-    update() { this.interactions.update(); for (const root of this.layer.roots())
+    update() { this.placement?.update();this.layer.updateGrounding(this.options.height); this.interactions.update(); for (const root of this.layer.roots())
         root.traverse(o => { if (o.userData.kind === 'door') {
             const door = o.userData.entity as WorldDoor;
             const panel = o.getObjectByName('door-panel');
@@ -294,5 +323,5 @@ export class NFTRuntime {
                 return true;
         } return false; }
     debug() { const snapshots = [...this.layer.parcels.values()].map(e => e.snapshot); const attachments = snapshots.flatMap(s => s.attachments); const focused = attachments.find(a => assetKey(a.asset) === this.interactions.focused?.id); const container = snapshots.flatMap(s => s.containers).find(c => c.id === this.openContainer); return `\nATTACHED721 ${attachments.length}\nNFT ENTITIES ${attachments.filter(a => a.location.kind === 'parcel').length}\nNFT FOCUS   ${focused ? assetKey(focused.asset) : 'none'}\nCUSTODY     ${focused ? 'WorldNFTState escrow' : '—'}\nCANONICAL   ${focused ? `${focused.location.kind} / #${focused.location.parcelId}` : '—'}\nCONTAINER   ${this.openContainer || 'none'} · ${container?.occupied ?? 0} assets\nACCESS      ${this.accessResult}\nMETA CACHE  ${this.cache.hits} hits / ${this.cache.misses} misses`; }
-    dispose() { this.request++; this.stopWallet(); this.abort.abort(); this.interactions.dispose(); this.layer.dispose(); this.panel.remove(); this.button.remove(); this.label.remove(); }
+    dispose() { this.cancelPlacement();this.request++; this.stopWallet(); this.abort.abort(); this.interactions.dispose(); this.layer.dispose(); this.panel.remove(); this.button.remove(); this.label.remove(); }
 }

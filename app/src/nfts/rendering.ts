@@ -150,6 +150,10 @@ export class NFTLayer {
             this.report(`NFT state #${id}: ${String(error).slice(0, 180)}`);
         }
     }
+    updateGrounding(height:(x:number,z:number)=>number) {
+        for(const entry of this.parcels.values())for(const batch of entry.group.children)for(const entity of batch.children)
+            if(entity.userData.kind==='container'||entity.userData.kind==='nft')entity.position.y=height(entity.position.x,entity.position.z);
+    }
     roots() { return [...this.parcels.values()].map(e => e.group); }
     count() { return [...this.parcels.values()].reduce((n, e) => n + e.snapshot.attachments.length, 0); }
     focusedIdentity(object: THREE.Object3D) { return object.userData.kind === 'nft' ? assetKey(object.userData.entity.asset) : ''; }
