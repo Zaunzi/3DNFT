@@ -25,6 +25,20 @@ export function disposeEntity(group: THREE.Object3D) { group.traverse(o => { if(
     }
 } }); group.removeFromParent(); group.clear(); }
 const box = (w: number, h: number, d: number, color: number, y: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color })); m.position.y = y; return m; };
+/** Two outward-facing pictures clear the opaque frame; the rear image is not mirrored. */
+export function createNFTArtwork(bitmap: ImageBitmap) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+        -.65, -.65, .071, .65, -.65, .071, .65, .65, .071, -.65, .65, .071,
+        .65, -.65, -.071, -.65, -.65, -.071, -.65, .65, -.071, .65, .65, -.071,
+    ], 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,1,0,0,1,0,1,1,0,1], 2));
+    geometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
+    const texture = new THREE.Texture(bitmap); texture.needsUpdate = true; texture.colorSpace = THREE.SRGBColorSpace;
+    const image = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({map: texture}));
+    image.position.y = 1.4;
+    return image;
+}
 export class NFTRepresentationRegistry {
     private renderers: NFTRepresentation[] = [];
     private characters=new CharacterModels();
@@ -125,10 +139,10 @@ export class NFTLayer {
                     void loadSafeImage(metadata.image).then(bitmap => { if (this.parcels.get(id) !== entry || request !== entry.request) {
                         bitmap.close();
                         return;
-                    } const texture = new THREE.Texture(bitmap); texture.needsUpdate = true; texture.colorSpace = THREE.SRGBColorSpace; const image = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })); image.position.set(0, 1.4, .071); if (mesh.parent === ownedGroup)
+                    } const image = createNFTArtwork(bitmap); if (mesh.parent === ownedGroup)
                         mesh.add(image);
                     else {
-                        texture.dispose();
+                        image.material.map!.dispose();
                         bitmap.close();
                         image.geometry.dispose();
                         (image.material as THREE.Material).dispose();
