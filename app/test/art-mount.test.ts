@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Group} from 'three';
+import {wallMount,setArtMounted} from '../src/nfts/artMount.ts';
+import {NFTRepresentationRegistry,disposeEntity} from '../src/nfts/rendering.ts';
+test('art snaps to both wall faces and survives centimeter encoding on rotated walls',()=>{for(const angle of [0,Math.PI/2,Math.PI])for(const side of [-1,1]){const wall=new Group();wall.userData={kind:'persistent',objectType:8};wall.position.set(96,4,32);wall.rotation.y=angle;wall.updateMatrixWorld();const mount=wallMount(96+side*.2*Math.sin(angle),32+side*.2*Math.cos(angle),0,[wall],true)!;assert.ok(mount);const restored=wallMount(Math.round(mount.x*100)/100,Math.round(mount.z*100)/100,mount.rotation,[wall]);assert.ok(restored);assert.equal(restored.y,4.15);assert.equal(wallMount(mount.x,mount.z,mount.rotation,[]),undefined);}});
+test('wall mounting hides only podium and restores it when detached',()=>{const registry=new NFTRepresentationRegistry();const art=registry.create({chainId:8453,contractAddress:'0x1111111111111111111111111111111111111111',tokenId:1n},{name:'Art',description:'',attributes:[]});setArtMounted(art,true);assert.equal(art.children.find(c=>c.userData.artPodium)!.visible,false);assert.equal(art.children[1].visible,true);setArtMounted(art,false);assert.equal(art.children[0].visible,true);disposeEntity(art);registry.dispose();});

@@ -119,7 +119,7 @@ async function start() {
     const dt=Math.min((now-last)/1000,0.1);last=now;if(!paused)angle+=dt*0.055;
     if(now-fitAt>1000){bounds.setFromObject(parcel.group);for(const group of [...objectLayer.roots(),...itemLayer.roots(),...trinketLayer.roots(),...nftLayer.roots()])bounds.expandByObject(group);bounds.min.y=Math.min(bounds.min.y,bottom);bounds.getCenter(target);bounds.getBoundingSphere(sphere);const fov=Math.min(THREE.MathUtils.degToRad(camera.fov),2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*camera.aspect));distance=sphere.radius/Math.sin(fov/2)*1.12;fitAt=now;}
     const viewDistance=distance*zoom;
-    camera.position.set(target.x+Math.cos(angle)*viewDistance*Math.cos(elevation),target.y+viewDistance*Math.sin(elevation),target.z+Math.sin(angle)*viewDistance*Math.cos(elevation));camera.lookAt(target);nftLayer.updateGrounding((x,z)=>objectLayer.assetHeight(x,z));objectLayer.updateLighting(camera.position);renderer.render(scene,camera);
+    camera.position.set(target.x+Math.cos(angle)*viewDistance*Math.cos(elevation),target.y+viewDistance*Math.sin(elevation),target.z+Math.sin(angle)*viewDistance*Math.cos(elevation));camera.lookAt(target);nftLayer.updateGrounding((x,z)=>objectLayer.assetHeight(x,z),objectLayer.roots());objectLayer.updateLighting(camera.position);renderer.render(scene,camera);
   });
   disposers.push(()=>{renderer.setAnimationLoop(null);renderer.dispose();});
   const timer=window.setInterval(()=>{if(!document.hidden){void trinketLayer.refresh(id);void objectLayer.refresh(id);void itemLayer.refresh(id);void nftLayer.refresh(id);}},60000);disposers.push(()=>clearInterval(timer));

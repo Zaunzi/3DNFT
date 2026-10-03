@@ -1,3 +1,4 @@
+import {wallMount,setArtMounted} from './artMount.ts';
 import {CharacterModels} from './characters.ts';
 import { createLockedDoor } from '../objects/door.ts';
 import * as THREE from 'three';
@@ -50,7 +51,7 @@ export class NFTRepresentationRegistry {
         this.register({ supports: (a, metadata) => !metadata.image && a.contractAddress.toLowerCase() === nativeCollection.toLowerCase() && a.tokenId === 1n, createObject: () => { const g = new THREE.Group(); g.add(box(.8, 1.2, .5, 0x517d98, .8)); const head = new THREE.Mesh(new THREE.SphereGeometry(.35, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd8b48a })); head.position.y = 1.75; g.add(head); return g; } }); }
     register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
-        return specific.createObject(asset, metadata); const group = new THREE.Group(); group.add(box(1.5, .55, 1, 0x687684, .275)); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); group.scale.setScalar(1.5); return group; }
+        return specific.createObject(asset, metadata); const group = new THREE.Group(); group.userData.artDisplay=true;const podium=box(1.5, .55, 1, 0x687684, .275);podium.userData.artPodium=true;group.add(podium); group.add(box(1.45, 1.5, .12, 0xb7a876, 1.4)); group.scale.setScalar(1.5); return group; }
     container() { return createChest(); }
     door() { return createLockedDoor(); }
 }
@@ -62,12 +63,12 @@ interface Entry {
 export class NFTLayer {
     readonly parcels = new Map<number, Entry>();
     private scene: THREE.Scene;
-    private provider: NFTStateProvider;
+    private provider: Pick<NFTStateProvider,'snapshot'>;
     private registry: NFTRepresentationRegistry;
     private seed: bigint;
     private cache: MetadataCache;
     private report: (message: string) => void;
-    constructor(scene: THREE.Scene, provider: NFTStateProvider, registry: NFTRepresentationRegistry, seed: bigint, cache: MetadataCache, report: (message: string) => void) { this.scene = scene; this.provider = provider; this.registry = registry; this.seed = seed; this.cache = cache; this.report = report; }
+    constructor(scene: THREE.Scene, provider: Pick<NFTStateProvider,'snapshot'>, registry: NFTRepresentationRegistry, seed: bigint, cache: MetadataCache, report: (message: string) => void) { this.scene = scene; this.provider = provider; this.registry = registry; this.seed = seed; this.cache = cache; this.report = report; }
     sync(ids: Iterable<number>) { const wanted = new Set(ids); for (const [id, e] of this.parcels)
         if (!wanted.has(id)) {
             disposeEntity(e.group);
@@ -150,9 +151,9 @@ export class NFTLayer {
             this.report(`NFT state #${id}: ${String(error).slice(0, 180)}`);
         }
     }
-    updateGrounding(height:(x:number,z:number)=>number) {
+    updateGrounding(height:(x:number,z:number)=>number,surfaces:THREE.Object3D[]=[]) {
         for(const entry of this.parcels.values())for(const batch of entry.group.children)for(const entity of batch.children)
-            if(entity.userData.kind==='container'||entity.userData.kind==='nft')entity.position.y=height(entity.position.x,entity.position.z);
+            if(entity.userData.kind==='container'||entity.userData.kind==='nft'){const mount=entity.userData.artDisplay?wallMount(entity.position.x,entity.position.z,Math.round(entity.rotation.y*180/Math.PI*100),surfaces):undefined;entity.position.y=mount?.y??height(entity.position.x,entity.position.z);setArtMounted(entity,!!mount);}
     }
     roots() { return [...this.parcels.values()].map(e => e.group); }
     count() { return [...this.parcels.values()].reduce((n, e) => n + e.snapshot.attachments.length, 0); }

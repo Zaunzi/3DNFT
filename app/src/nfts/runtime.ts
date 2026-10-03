@@ -315,7 +315,7 @@ export class NFTRuntime {
     }
     async refreshWorld() { this.openedDoors.clear(); this.restoreDoors(); await Promise.all([...this.options.ids()].map(id => this.layer.refresh(id))); }
     sync() { this.layer.sync(this.options.ids()); }
-    update() { this.placement?.update();this.layer.updateGrounding(this.options.height); this.interactions.update(); for (const root of this.layer.roots())
+    update() { this.placement?.update();this.layer.updateGrounding(this.options.height,this.options.surfaces()); this.interactions.update(); for (const root of this.layer.roots())
         root.traverse(o => { if (o.userData.kind === 'door') {
             const door = o.userData.entity as WorldDoor;
             const panel = o.getObjectByName('door-panel');
