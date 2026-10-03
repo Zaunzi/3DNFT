@@ -102,7 +102,7 @@ export class NFTRuntime {
     private restoreDoors() { for (const root of this.layer.roots())
         root.traverse(o => { if (o.name === 'door-panel')
             {o.visible = true;o.rotation.y=0;} }); }
-    setOpen(open: boolean, reset = true) { if (this.busy)
+    setOpen(open: boolean, reset = true) { if (this.busy && open)
         return; this.open = open; this.panel.hidden = !open; if (open && reset) {
         this.parcel = this.options.token();
         this.openContainer = 0;
@@ -115,7 +115,7 @@ export class NFTRuntime {
         throw new Error('Approach within 5 units to open this container'); }
     private ahead() { const direction = this.options.camera.getWorldDirection(new THREE.Vector3()); direction.y = 0; direction.normalize(); const p = this.options.camera.position.clone().addScaledVector(direction, 3); return { ...worldToObjectPosition(this.options.token(), p.x, p.z), rotation: Math.round((Math.atan2(-direction.x, -direction.z) * 180 / Math.PI + 360) % 360 * 100) % 36000 }; }
     private async run(fn: () => Promise<void>) { if (this.busy)
-        return; this.busy = true; this.panel.querySelectorAll('button').forEach(b => b.disabled = true); this.status.textContent = 'Pending — confirm the wallet transaction if requested.'; try {
+        return; this.busy = true; this.content.querySelectorAll('button').forEach(b => b.disabled = true); this.status.textContent = 'Pending — confirm the wallet transaction if requested.'; try {
         await fn();
         await this.refreshWorld();
         this.options.changed();
