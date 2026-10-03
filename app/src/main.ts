@@ -13,7 +13,6 @@ import { ObjectRegistry } from './objects/registry.ts';
 import { objectToWorldPosition } from './objects/model.ts';
 import { PersistentObjectLayer } from './objects/persistentLayer.ts';
 import { BuildController } from './build/buildController.ts';
-import { updateDebug } from './debug/hud.ts';
 import { ItemPortalRuntime } from './items/runtime.ts';
 import { NFTRuntime } from './nfts/runtime.ts';
 import { NFTRepresentationRegistry } from './nfts/rendering.ts';
@@ -28,7 +27,7 @@ root.innerHTML = `<canvas aria-label="Interactive procedural parcel world"></can
 <section class="management"><button id="wallet-connect">Connect wallet</button><button id="wallet-disconnect" hidden>Disconnect</button><p id="wallet-state">Exploring anonymously</p><p id="permission">Connect wallet to manage this parcel</p><button id="build-toggle" disabled>Build [B]</button><button id="refresh-state">Refresh state</button><p id="state-message" role="status"></p></section>
 <div id="toast" role="status"></div><div class="crosshair">+</div>
 <section class="entry" id="entry"><div class="eyebrow">ONE WORLD. 5,000 PLACES.</div><h2>A place, not a picture.</h2><p>Walk beyond the border.<br>The next NFT is already here.</p><button id="enter">Enter world <span>↗</span></button><small>WASD move · Space jump · Mouse look · Shift sprint · Tab mouse · Esc release</small><p id="notice" role="status"></p></section>
-<button id="resume-controls" hidden>Mouse released · Tab to resume movement</button><aside><label><input id="borders" type="checkbox" checked> Parcel borders</label><label><input id="debug-toggle" type="checkbox" checked> Diagnostics</label><pre id="debug"></pre></aside>
+<button id="resume-controls" hidden>Mouse released · Tab to resume movement</button>
 <footer><span>DETERMINISTIC TERRAIN <b>/ V1</b></span><span>64 × 64 UNITS <b>·</b> N = −Z <b>·</b> E = +X</span><span id="heading">N</span></footer>`;
 const el = (id: string) => document.getElementById(id)!;
 async function start() {
@@ -136,10 +135,8 @@ async function start() {
   },{capture:true,signal:inputEvents.signal});
   player.controls.addEventListener('lock',()=>inputMode.locked());
   player.controls.addEventListener('unlock',()=>inputMode.unlocked());
-  el('borders').addEventListener('change', e => world.setBorders((e.target as HTMLInputElement).checked));
-  el('debug-toggle').addEventListener('change', e => { el('debug').hidden = !(e.target as HTMLInputElement).checked; });
   const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }; window.addEventListener('resize', resize);
-  let previous = performance.now(), hudTime = 0, frames = 0, elapsed = 0;
+  let previous = performance.now(), hudTime = 0;
   const direction = new THREE.Vector3();
   await experience.initializeSpawn();
   renderer.setAnimationLoop(now => {
@@ -148,9 +145,8 @@ async function start() {
     if (next !== token) { token = next; world.update(token); layer.sync(world.parcels.keys());experience.sync();assets?.sync(); void enterParcel(token); const url = new URL(location.href); url.searchParams.set('tokenId', String(token)); history.replaceState(null, '', url); }
     layer.updateLighting(camera.position);
     builder.update();experience.update();assets?.update();harvesting?.update();
-    frames++; elapsed += dt; hudTime += dt;
-    if (hudTime > 0.2) { updateDebug(el('debug'), token, camera.position.x, camera.position.z, identity.seed, [...world.parcels.keys()].sort((a,b) => a-b), frames / elapsed); camera.getWorldDirection(direction); const degrees = (Math.atan2(direction.x, -direction.z) * 180 / Math.PI + 360) % 360; el('heading').textContent = `${['N', 'E', 'S', 'W'][Math.round(degrees / 90) % 4]} ${degrees.toFixed(0)}°`; hudTime = 0; frames = 0; elapsed = 0; }
-    if(el('debug').textContent&&!el('debug').textContent!.includes('ATTACHED721'))el('debug').textContent+=experience.debug()+assets?.debug();
+    hudTime += dt;
+    if (hudTime > 0.2) { camera.getWorldDirection(direction); const degrees = (Math.atan2(direction.x, -direction.z) * 180 / Math.PI + 360) % 360; el('heading').textContent = `${['N', 'E', 'S', 'W'][Math.round(degrees / 90) % 4]} ${degrees.toFixed(0)}°`; hudTime = 0; }
     sun.position.set(camera.position.x-40,camera.position.y+70,camera.position.z+25);sun.target.position.set(camera.position.x,camera.position.y-2,camera.position.z);
     renderer.render(scene, camera);
   });
