@@ -21,6 +21,7 @@ interface Options {
     height(x:number,z:number):number;
     canPlace():boolean;
     camera: THREE.Camera;
+    playerPosition?:()=>THREE.Vector3;
     seed: bigint;
     ids(): Iterable<number>;
     token(): number;
@@ -75,7 +76,7 @@ export class NFTRuntime {
         document.getElementById('app')!.append(this.button, this.panel);
         this.label.className = 'nft-interaction-label';
         document.getElementById('app')!.append(this.label);
-        this.interactions = new InteractionController({ camera: options.camera, roots: () => this.layer.roots(), occluders: options.occluders, context: () => ({ connected: options.backend.wallet.snapshot.isConnected, canEdit: () => false }), enabled: () => options.enabled() && !this.open, label: this.label, report: options.report, resolve: object => {
+        this.interactions = new InteractionController({ camera: options.camera, origin:options.playerPosition, roots: () => this.layer.roots(), occluders: options.occluders, context: () => ({ connected: options.backend.wallet.snapshot.isConnected, canEdit: () => false }), enabled: () => options.enabled() && !this.open, label: this.label, report: options.report, resolve: object => {
                 const kind = object.userData.kind;
                 if (kind === 'nft') {
                     const a = object.userData.entity as NFTAttachment;
@@ -139,7 +140,7 @@ export class NFTRuntime {
     private text(parent: HTMLElement, text: string, tag = 'p') { const node = document.createElement(tag); node.textContent = text; parent.append(node); return node; }
     private action(parent: HTMLElement, text: string, fn: () => Promise<void>) { const b = document.createElement('button'); b.textContent = text; b.disabled = this.busy; b.onclick = () => { void this.run(fn); }; parent.append(b); return b; }
     private input(parent: HTMLElement, label: string, value: string) { const wrapper = document.createElement('label'); wrapper.textContent = label; const input = document.createElement('input'); input.value = value; wrapper.append(input); parent.append(wrapper); return input; }
-    private near(c: WorldContainer) { const p = objectToWorldPosition(c.parcelId, c); if (Math.hypot(p.x - this.options.camera.position.x, p.z - this.options.camera.position.z) > 5)
+    private near(c: WorldContainer) { const p = objectToWorldPosition(c.parcelId, c); if (Math.hypot(p.x - (this.options.playerPosition?.()??this.options.camera.position).x, p.z - (this.options.playerPosition?.()??this.options.camera.position).z) > 5)
         throw new Error('Approach within 5 units to open this container'); }
     private ahead() { const direction = this.options.camera.getWorldDirection(new THREE.Vector3()); direction.y = 0; direction.normalize(); const p = this.options.camera.position.clone().addScaledVector(direction, 3); return { ...worldToObjectPosition(this.options.token(), p.x, p.z), rotation: Math.round((Math.atan2(-direction.x, -direction.z) * 180 / Math.PI + 360) % 360 * 100) % 36000 }; }
     private async run(fn: () => Promise<void>) { if (this.busy)

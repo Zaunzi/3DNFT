@@ -22,3 +22,11 @@ test('left click plays nearby instruments for visitors, but drag, right click, d
  mesh.position.z=-10;mesh.updateMatrixWorld();click();assert.equal(played,1);
  }finally{controller.dispose();mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();wall.geometry.dispose();(wall.material as THREE.Material).dispose();Reflect.deleteProperty(globalThis,'window');}
 });
+
+test('third-person reach is measured from the player, not the trailing camera',()=>{
+ const events=new EventTarget();Object.defineProperty(globalThis,'window',{value:events,configurable:true});
+ const camera=new THREE.PerspectiveCamera();camera.position.z=4.5;
+ const player=new THREE.Vector3(),mesh=new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshBasicMaterial());mesh.position.z=-3;mesh.updateMatrixWorld();
+ const label={textContent:''};const controller=new InteractionController({camera,origin:()=>player,roots:()=>[mesh],occluders:()=>[],enabled:()=>true,context:()=>({connected:true,canEdit:()=>true}),label:label as HTMLElement,report:()=>{},resolve:()=>({id:'test',type:'NFT',getInteractionLabel:()=> 'Inspect',canInteract:()=>true,interact:async()=>{}})});
+ try{controller.update();assert.match(label.textContent,/Inspect/);camera.position.z=7;controller.update();assert.match(label.textContent,/Inspect/);player.z=5;controller.update();assert.equal(label.textContent,'');}finally{controller.dispose();mesh.geometry.dispose();mesh.material.dispose();Reflect.deleteProperty(globalThis,'window');}
+});
