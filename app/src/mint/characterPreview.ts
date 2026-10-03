@@ -100,9 +100,11 @@ export function characterPreview(host: HTMLElement, id: number, initialClip: Cha
     note.textContent = 'Unable to load this preview. Try another character or reload.';
     host.dataset.ready = 'error';
   });
-  const clock = new THREE.Clock();
+  const timer = new THREE.Timer();
+  timer.connect(document);
   renderer.setAnimationLoop(() => {
-    const delta = Math.min(clock.getDelta(), .05);
+    timer.update();
+    const delta = Math.min(timer.getDelta(), .05);
     if (document.hidden) return;
     mixer?.update(delta);
     controls.update();
@@ -111,6 +113,7 @@ export function characterPreview(host: HTMLElement, id: number, initialClip: Cha
   return { play, dispose() {
     disposed = true;
     observer.disconnect();
+    timer.dispose();
     renderer.setAnimationLoop(null);
     controls.dispose();
     mixer?.stopAllAction();

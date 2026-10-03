@@ -48,7 +48,7 @@ async function start() {
   el('mode').textContent = state.mode;
   const canvas = document.querySelector('canvas')!, renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0xb8c9c6); scene.fog = new THREE.Fog(0xb8c9c6, 55, 122);
   scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 1.4));
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
