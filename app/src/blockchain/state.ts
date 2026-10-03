@@ -4,11 +4,12 @@ export interface WorldIdentity { seed: bigint; generatorVersion: number }
 export interface ParcelState { version: number; owner: string | null }
 // Future adapters can resolve buildings/messages from a content hash, and portals
 // from a chainId + contractAddress + tokenId reference. No rendering types belong here.
-export interface WorldStateProvider { readonly mode: string; getWorld(): Promise<WorldIdentity>; getParcel(tokenId: number): Promise<ParcelState> }
+export interface WorldStateProvider { readonly mode: string; ownedParcels?(owner:string):Promise<number[]>; getWorld(): Promise<WorldIdentity>; getParcel(tokenId: number): Promise<ParcelState> }
 export class MockWorldState implements WorldStateProvider {
   readonly mode = 'MOCK STATE';
   private ownerFor?: (id: number) => string;
   constructor(ownerFor?: (id: number) => string) { this.ownerFor = ownerFor; }
+  async ownedParcels(owner:string) {const ids:number[]=[];for(let id=0;id<5000;id++){if((await this.getParcel(id)).owner?.toLowerCase()===owner.toLowerCase())ids.push(id);}return ids;}
   async getWorld() { return { seed: DEFAULT_SEED, generatorVersion: GENERATOR_VERSION }; }
   async getParcel(tokenId: number) { tokenIdToCoordinate(tokenId); return { version: 0, owner: this.ownerFor?.(tokenId) ?? `0x${BigInt(tokenId + 1).toString(16).padStart(40, '0')}` }; }
 }

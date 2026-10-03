@@ -22,7 +22,7 @@ test('WASD crosses #742 to #743, follows ground, pauses and clamps finite edges'
     key('keyup','KeyW'); const x=camera.position.x; player.update(1/60); assert.equal(camera.position.x,x);
     key('keydown','KeyW'); key('keydown','KeyD'); const start=camera.position.clone(); player.update(.05);
     assert.ok(Math.abs(Math.hypot(camera.position.x-start.x,camera.position.z-start.z)-.4)<1e-9);
-    key('keyup','KeyD'); key('keydown','ShiftLeft'); const sprint=camera.position.x; player.update(.05); assert.ok(Math.abs(camera.position.x-sprint-1.1)<1e-9);
+    key('keyup','KeyD'); key('keydown','ShiftLeft'); const sprint=camera.position.x; player.update(.05); assert.ok(Math.abs(camera.position.x-sprint-.9)<1e-9);
     player.active=false; const paused=camera.position.x; player.update(.05); assert.equal(camera.position.x,paused);
     camera.position.set(7000,0,-20); player.update(0); assert.equal(camera.position.x,6399.99); assert.equal(camera.position.z,.01);
     events.dispatchEvent(new Event('blur')); player.active=true; const afterBlur=camera.position.x; player.update(.05); assert.equal(camera.position.x,afterBlur);

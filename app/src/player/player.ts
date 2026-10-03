@@ -34,6 +34,7 @@ export class Player {
   surface?: (x:number,z:number,feet:number)=>number;
   obstructed?: (position:Vector3)=>boolean;
   ceiling?: (x:number,z:number,feet:number)=>number;
+  get animation(): 'Idle'|'Walk'|'Run'|'Jump' {if(!this.grounded)return 'Jump';if(!this.active||!['KeyW','KeyA','KeyS','KeyD'].some(k=>this.keys.has(k)))return 'Idle';return this.keys.has('ShiftLeft')||this.keys.has('ShiftRight')?'Run':'Walk';}
   resetVertical(){this.verticalSpeed=0;this.grounded=true;this.jumpQueued=false;}
   update(dt: number) {
     const delta=Math.max(0,Math.min(dt,.05));

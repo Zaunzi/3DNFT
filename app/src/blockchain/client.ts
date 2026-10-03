@@ -1,4 +1,4 @@
-import { BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, fallback, http, type Address, type Hex } from 'viem';
+import { getAddress, parseAbi, BaseError, ContractFunctionRevertedError, createPublicClient, decodeErrorResult, defineChain, fallback, http, type Address, type Hex } from 'viem';
 import { base } from 'viem/chains';
 import { landAbi, stateAbi, stateV2Abi } from './contracts.ts';
 import type { WorldStateProvider } from './state.ts';
@@ -23,6 +23,20 @@ export class OnchainParcelStateProvider implements WorldStateProvider, ParcelSta
     // Other chains keep the existing behavior and do not assume Multicall exists.
     this.client = createPublicClient({ chain, transport: chainId === base.id && rpc === 'https://base-rpc.publicnode.com' ? fallback([http(rpc),http('https://mainnet.base.org')]) : http(rpc), batch: { multicall: chainId === base.id ? { wait: 40, batchSize: 16384 } : false }, pollingInterval: 4000 });
     this.land = land; this.state = state; this.chainId = chainId; this.wallet = wallet;
+  }
+  async ownedParcels(owner:string) {
+    const account=getAddress(owner),abi=parseAbi(['function balanceOf(address) view returns(uint256)','function ownerOf(uint256) view returns(address)']);
+    const balance=await this.client.readContract({address:this.land,abi,functionName:'balanceOf',args:[account]});
+    const found:number[]=[];if(balance===0n)return found;
+    // Bounded collection scan works without an indexer or ERC721Enumerable.
+    for(let first=0;first<5000;first+=128){
+      const ids=Array.from({length:Math.min(128,5000-first)},(_,i)=>first+i);
+      const rows=await this.client.multicall({contracts:ids.map(id=>({address:this.land,abi,functionName:'ownerOf' as const,args:[BigInt(id)] as const}))});
+      rows.forEach((row,i)=>{if(row.status==='success'&&typeof row.result==='string'&&row.result.toLowerCase()===account.toLowerCase())found.push(ids[i]);});
+      if(BigInt(found.length)>=balance)break;
+    }
+    if(BigInt(found.length)!==balance)throw new Error('Could not resolve all owned parcels. Please refresh.');
+    return found;
   }
   async getWorld() {
     if (await this.client.getChainId() !== this.chainId) throw new Error('RPC chain does not match configured chain');

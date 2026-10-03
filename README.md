@@ -140,3 +140,15 @@ Open **Inventory [I] > Collection > Trinkets**, select an instrument, approve it
 ## Place Doodverse Characters
 
 Open **Inventory → Place Doodverse Characters**, enter your character token ID, select it, approve it, and choose **Place character near me** on a parcel you own. Its actual CryptoDoodz model appears on the terrain. E inspects it; the current parcel owner can move, store, or detach it. Characters stay attached when land transfers. See [character placement and custody](docs/NFT_ATTACHMENTS.md#place-doodverse-characters).
+
+## Play as your CryptoDood
+
+World entry now opens a character selection screen before the world starts. Connect your wallet to list wallet-held CryptoDoodz, or choose **Guest Dood** without a wallet. Guest uses a random #1–#5000 appearance per visit without claiming NFT ownership. Choosing a character does not approve, transfer, or escrow it. Ownership is checked again before entry. Escrowed/displayed characters are excluded.
+
+A third-person follow camera shows your animated character. WASD moves, Shift sprints and Space jumps; Idle, Walk, Run (sprint) and Jump clips follow the player movement state. The camera pulls forward around terrain and buildings. This is a local player avatar, not multiplayer replication. Disconnecting/changing wallets falls back to Guest; periodic ownership reconciliation also handles a selected NFT leaving the wallet.
+
+For the known non-enumerable CryptoDoodz contract, discovery batches ownerOf across the bounded 1–5000 ID range and stops when the wallet balance is satisfied. No external wallet indexer is required. Discovery failures leave guest entry available. The homepage includes both a live parcel and animated CryptoDoodz preview.
+
+## Multiplayer presence
+
+See [Multiplayer setup](docs/MULTIPLAYER.md) for the local server, Railway deployment and Vercel configuration. Presence is optional; solo play continues without a connection.

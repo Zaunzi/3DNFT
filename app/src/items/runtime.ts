@@ -47,10 +47,10 @@ export class ItemPortalRuntime {
     this.navigation=new PortalNavigator({current:()=>this.location(),currentURL:()=>new URL(location.href),prepare:id=>this.prepare(id),commit:(location,spawn,url)=>{o.commit(location,spawn,url);this.sync();}},o.world.seed);
     this.inventory=new InventoryUI({characters:o.openCharacters,store,trinkets:{store:o.backend.trinkets,definitions:TRINKET_DEFINITIONS,drop:async(itemType,quantity)=>{
       if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach trinkets.');
-      const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.camera.position.clone().addScaledVector(direction,4);
+      const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.player.camera.position.clone().addScaledVector(direction,4);
       const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateTrinket(item);await o.backend.trinkets.placeItem(o.token(),item);
     }},wallet:o.backend.wallet,report:o.report,onMode:active=>{if(active)this.instrumentPlayer.close();if(active&&o.builder()?.active)o.builder()!.setActive(false);o.modalChanged(active);},
-      drop:async(itemType,quantity)=>{if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach items.');const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.camera.position.clone().addScaledVector(direction,3);const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateItemPlacement(item);await store.placeItem(o.token(),item);},
+      drop:async(itemType,quantity)=>{if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach items.');const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.player.camera.position.clone().addScaledVector(direction,3);const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateItemPlacement(item);await store.placeItem(o.token(),item);},
       use:item=>{if(item===5){this.lanternOn=!this.lanternOn;o.report(this.lanternOn?'Lantern on':'Lantern off');}else o.report(itemDefinition(item).description);},changed:()=>this.refresh(),
     });
     this.toolbar.querySelector('#open-inventory')!.addEventListener('click',()=>this.inventory.setOpen(!this.inventory.open));

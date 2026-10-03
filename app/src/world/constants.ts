@@ -9,7 +9,7 @@ export const GENERATOR_VERSION = 1;
 export const DEFAULT_SEED = 7422026n;
 export const EYE_HEIGHT = 1.75;
 export const WALK_SPEED = 8;
-export const SPRINT_SPEED = 22;
+export const SPRINT_SPEED = 18;
 
 export const JUMP_SPEED = 7;
 export const GRAVITY = 20;

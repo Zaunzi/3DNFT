@@ -1,0 +1,16 @@
+{
+  "name": "doodverse-multiplayer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test server.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ws": "8.18.3",
+    "viem": "2.56.9"
+  }
+}

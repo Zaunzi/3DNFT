@@ -76,6 +76,7 @@ export interface NFTStateProvider {
     ownerOf(asset: NFTAsset): Promise<Address>;
     tokenURI(asset: NFTAsset): Promise<string>;
     knownAssets(): NFTAsset[];
+    ownedCharacters?(owner: Address): Promise<NFTAsset[]>;
     approve(asset: NFTAsset): Promise<void>;
     attach(asset: NFTAsset, location: AttachedLocation): Promise<void>;
     move(asset: NFTAsset, location: AttachedLocation): Promise<void>;

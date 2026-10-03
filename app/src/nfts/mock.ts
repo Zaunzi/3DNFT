@@ -40,6 +40,7 @@ export class MockNFTProvider implements NFTStateProvider {
     private epochFor: (id:number)=>number;
     private owns: (id: number) => boolean;
     constructor(ledger: MockInventoryProvider, chain: number, initial: Address, owns: (id: number) => boolean, ownerFor?: (id:number)=>Address, epochFor:(id:number)=>number=()=>0) { this.ledger = ledger; this.chain = chain; this.initial = initial; this.owns = owns; this.ownerFor=ownerFor;this.epochFor=epochFor; }
+    async ownedCharacters(owner:Address) { const rows=await Promise.all(this.knownAssets().map(async asset=>({asset,owner:await this.ownerOf(asset)})));return rows.filter(row=>row.owner.toLowerCase()===owner.toLowerCase()).map(row=>row.asset); }
     knownAssets() { return [1n, 2n, 77n, 12n].map(tokenId => ({ chainId: this.chain, contractAddress: MOCK_NFT_COLLECTION, tokenId })); }
     private data(data: Data): NFTData { return data.nftState ??= { schema: 1, assets: Object.fromEntries(this.knownAssets().map(a => [assetKey(a), { owner: this.initial }])), containers: [], doors: [], requirements: {}, items: {}, nextContainer: 0, nextDoor: 0 }; }
     private check(id: number) { if (!this.owns(id))

@@ -45,6 +45,22 @@ export class OnchainNFTProvider implements NFTStateProvider {
     async createKeyedDoor(parcel:number,t:LocalTransform & {y?:number}) { if(!this.lockKeys)throw new Error('Distinct keys are not configured');await this.write(this.addresses.world,nftStateV2Abi,'createKeyedDoor',[parcel,t.x,t.z,t.rotation,t.y??0]); }
     async rekeyDoor(parcel:number,id:number){await this.write(this.addresses.world,nftStateV2Abi,'rekeyDoor',[parcel,id]);}
     async issueKeyCopies(id:bigint,to:Address,quantity:bigint){await this.write(this.lockKeys,parseAbi(['function issueCopies(uint256,address,uint256)']),'issueCopies',[id,to,quantity]);}
+    async ownedCharacters(owner:Address) {
+        const address=this.addresses.characters;if(!address)return [];
+        const abi=parseAbi(['function balanceOf(address) view returns(uint256)','function ownerOf(uint256) view returns(address)']);
+        const balance=await this.client.readContract({address,abi,functionName:'balanceOf',args:[owner]});
+        if(balance===0n)return [];
+        const found:NFTAsset[]=[];
+        // This known collection has a bounded 1..5000 ID space. Batched ownerOf
+        // works for both older non-enumerable deployments and the public mint.
+        for(let first=1;first<=5000;first+=128){
+            const ids=Array.from({length:Math.min(128,5001-first)},(_,i)=>BigInt(first+i));
+            const rows=await this.client.multicall({contracts:ids.map(tokenId=>({address,abi,functionName:'ownerOf' as const,args:[tokenId] as const}))});
+            rows.forEach((row,i)=>{if(row.status==='success'&&typeof row.result==='string'&&row.result.toLowerCase()===owner.toLowerCase())found.push({chainId:this.client.chain.id,contractAddress:address,tokenId:ids[i]});});
+            if(BigInt(found.length)>=balance)break;
+        }
+        return found;
+    }
     knownAssets() { return this.addresses.characters ? [{ chainId: this.client.chain.id, contractAddress: this.addresses.characters, tokenId: 1n }] : []; }
     private asset(asset: NFTAsset) { assetKey(asset); if (asset.chainId !== this.client.chain.id)
         throw new Error('Cross-chain attachment unsupported'); }

@@ -33,3 +33,5 @@ test('distinct lock keys survive refresh, rekey and parcel ownership epochs',asy
  owner=alice;epoch++;account=alice;assert.equal(await p.canOpen(a,bob),false);
  await p.removeDoor(742,a.id);assert.equal(await p.canOpen(a,alice),false);
 });
+
+test('playable characters include only wallet-held assets, never parcel custody',async()=>{const s=setup(),p=s.create();const original=await p.ownedCharacters(alice);assert.equal(original.length,4);assert.equal((await p.ownedCharacters(bob)).length,0);await p.attach(original[0],floor);assert.equal((await p.ownedCharacters(alice)).length,3);assert.ok(!(await p.ownedCharacters(alice)).some(a=>assetKey(a)===assetKey(original[0])));await p.detach(original[0]);assert.equal((await p.ownedCharacters(alice)).length,4);});

@@ -135,7 +135,7 @@ export class BuildController {
     while(hitRoot&&hitRoot.userData.kind!=='persistent')hitRoot=hitRoot.parent;
     const target=hitRoot?.userData.tokenId===token?{id:hitRoot.userData.objectId as number,hitY:Math.round(hit.point.y*100)}:undefined;
     const snapped=manualXZ?null:snapStructure(this.type,placement.x,placement.z,entry.objects,target);
-    if(snapped){placement.x=snapped.x;placement.z=snapped.z;placement.rotation=snapped.rotation;}
+    if(snapped){placement.x=snapped.x;placement.z=snapped.z;placement.rotation=this.type===15?(snapped.rotation+this.rotation)%36000:snapped.rotation;}
     const world = objectToWorldPosition(token, placement);
     const heightInput=this.panel.querySelector<HTMLInputElement>('#build-height');
     const ground=getGroundHeight(world.x,world.z,o.world.seed);
