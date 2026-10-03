@@ -1,3 +1,4 @@
+import {walletIdentityChanged} from './player/walletIdentity.ts';
 import {Multiplayer} from './multiplayer/client.ts';
 import {GUEST_DOOD_ID} from './player/identity.ts';
 import {updateFollowCamera} from './player/followCamera.ts';
@@ -119,8 +120,8 @@ async function start() {
       el('owner').textContent = `${backend.config.mode === 'mock' ? 'Mock owner' : 'Owner'}: ${owner}`; el('owner').title = parcel.owner ?? 'Unminted'; updatePermissions();
     } catch { if (request === ownershipRequest) { parcelOwner = null; el('owner').textContent = 'Ownership unavailable — RPC request failed'; updatePermissions(); } }
   }
-  let initialWalletNotification=true;
-  const stopWallet = backend.wallet.subscribe(() => { if(!initialWalletNotification&&selectedAsset){avatar.dispose();avatar=new PlayerAvatar(scene,GUEST_DOOD_ID);selectedAsset=undefined;multiplayer?.useGuest();} initialWalletNotification=false; updatePermissions(); void refreshOwnership(); });
+  let previousWallet=backend.wallet.snapshot;
+  const stopWallet = backend.wallet.subscribe(wallet => { if(walletIdentityChanged(previousWallet,wallet)&&selectedAsset){avatar.dispose();avatar=new PlayerAvatar(scene,GUEST_DOOD_ID);selectedAsset=undefined;multiplayer?.useGuest();} previousWallet=wallet; updatePermissions(); void refreshOwnership(); });
   el('wallet-connect').addEventListener('click', async () => { try { await backend.wallet.connect(); report(''); } catch (error) { report(error instanceof Error ? error.message : String(error)); } });
   el('wallet-disconnect').addEventListener('click', () => backend.wallet.disconnect());
   el('build-toggle').addEventListener('click', () => builder.toggle());
