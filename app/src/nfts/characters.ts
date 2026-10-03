@@ -30,7 +30,13 @@ export class CharacterModels {
       // Skinned bounds can retain the imported rig pose while its parcel parent
       // moves far from the origin. Parcel streaming already bounds visibility.
       if(o instanceof THREE.SkinnedMesh)o.frustumCulled=false;});
-    const group=new THREE.Group();group.add(model);group.userData.characterModel=true;return group;
+    const group=new THREE.Group();group.add(model);
+    // Inspect the stable character envelope rather than relying on skinned
+    // triangle raycasts, whose cached bounds can miss translated rigs.
+    const height=size.y*scale;
+    const target=new THREE.Mesh(new THREE.BoxGeometry(Math.max(.8,size.x*scale),height,Math.max(.6,size.z*scale)),new THREE.MeshBasicMaterial({visible:false}));
+    target.position.y=height/2;target.userData.characterInteractionTarget=true;group.add(target);
+    group.userData.characterModel=true;return group;
   }
   private async fetch(id:bigint){
     const response=await fetch(characterModelURL(id),{signal:AbortSignal.timeout(20000),credentials:'omit',redirect:'error'});
