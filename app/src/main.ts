@@ -40,16 +40,34 @@ async function start() {
   let token = parseTokenId(new URLSearchParams(location.search).get('tokenId'));
   const backend = await createBackend(import.meta.env), state = backend.world;
   locationFromURL(new URL(location.href), {chainId:backend.config.chainId,contractAddress:backend.config.land??'0x0000000000000000000000000000000000000000'});
-  const chosenCharacter = await chooseCharacter(backend,token);
+  const identity = await state.getWorld();
+  const scene = new THREE.Scene();
+  let multiplayer:Multiplayer|undefined;
+  const chosenCharacter = await chooseCharacter(backend,token,async chosen=>{
+    multiplayer?.dispose();
+    const loginWallet=backend.wallet.snapshot;
+  const multiplayerURL=import.meta.env.VITE_MULTIPLAYER_URL||(import.meta.env.DEV?'ws://127.0.0.1:8787':'');
+  multiplayer=multiplayerURL?new Multiplayer(scene,multiplayerURL,`${backend.config.mode}:${backend.config.chainId}:${(backend.config.land??'0x0000000000000000000000000000000000000000').toLowerCase()}:${identity.seed}:${identity.generatorVersion}`,chosen.asset&&backend.config.mode==='onchain'?async message=>{
+    const ethereum=(window as Window & {ethereum?:{request:(request:{method:string;params:unknown[]})=>Promise<unknown>}}).ethereum;
+    const address=backend.wallet.snapshot.connectedAddress,asset=chosen.asset;
+    if(!ethereum||!address||!asset)throw Error('Guest session');
+    const signature=await ethereum.request({method:'personal_sign',params:[stringToHex(message),address]});
+    if(typeof signature!=='string'||backend.wallet.snapshot.connectedAddress!==address||chosen.asset!==asset)throw Error('Wallet changed');
+    return {address,character:Number(asset.tokenId),signature};
+  }:undefined,Number(chosen.asset?.tokenId??GUEST_DOOD_ID)):undefined;
+    if(chosen.asset&&backend.config.mode==='onchain'){
+      if(!multiplayer)throw Error('Multiplayer login is unavailable. Please choose Guest or retry later.');
+      try{await multiplayer.ready;if(walletIdentityChanged(loginWallet,backend.wallet.snapshot))throw Error('Wallet changed. Please choose your character again.');}catch(error){multiplayer.dispose();throw error;}
+    }
+  });
   token=chosenCharacter.parcelId;
   const entryURL=new URL(location.href);entryURL.searchParams.set('tokenId',String(token));history.replaceState(null,'',entryURL);
-  const identity = await state.getWorld();
   if (![1,2].includes(identity.generatorVersion)) throw new Error('Unsupported generator version');
   el('mode').textContent = state.mode;
   const canvas = document.querySelector('canvas')!, renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0xb8c9c6); scene.fog = new THREE.Fog(0xb8c9c6, 55, 122);
+  scene.background = new THREE.Color(0xb8c9c6); scene.fog = new THREE.Fog(0xb8c9c6, 55, 122);
   scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 1.4));
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
   sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.12;sun.shadow.bias=-.00015;scene.add(sun.target);
@@ -58,7 +76,6 @@ async function start() {
   const world = new WorldManager(scene, identity.seed); world.update(token);
   const anchor=camera.clone();anchor.rotation.order='YXZ';anchor.rotation.x=-.12;
   const player = new Player(anchor, canvas, identity.seed); player.update(0);
-  let multiplayer:Multiplayer|undefined;
   let avatar = new PlayerAvatar(scene,chosenCharacter.asset?.tokenId??GUEST_DOOD_ID);
   let selectedAsset=chosenCharacter.asset;
   el('notice').textContent=`Playing as ${chosenCharacter.name}`;
@@ -157,15 +174,6 @@ async function start() {
   const direction = new THREE.Vector3();
   await experience.initializeSpawn();
   anchor.position.copy(camera.position);
-  const multiplayerURL=import.meta.env.VITE_MULTIPLAYER_URL||(import.meta.env.DEV?'ws://127.0.0.1:8787':'');
-  multiplayer=multiplayerURL?new Multiplayer(scene,multiplayerURL,`${backend.config.mode}:${backend.config.chainId}:${(backend.config.land??'0x0000000000000000000000000000000000000000').toLowerCase()}:${identity.seed}:${identity.generatorVersion}`,selectedAsset&&backend.config.mode==='onchain'?async message=>{
-    const ethereum=(window as Window & {ethereum?:{request:(request:{method:string;params:unknown[]})=>Promise<unknown>}}).ethereum;
-    const address=backend.wallet.snapshot.connectedAddress,asset=selectedAsset;
-    if(!ethereum||!address||!asset)throw Error('Guest session');
-    const signature=await ethereum.request({method:'personal_sign',params:[stringToHex(message),address]});
-    if(typeof signature!=='string'||backend.wallet.snapshot.connectedAddress!==address||selectedAsset!==asset)throw Error('Wallet changed');
-    return {address,character:Number(asset.tokenId),signature};
-  }:undefined,Number(chosenCharacter.asset?.tokenId??GUEST_DOOD_ID)):undefined;
   renderer.setAnimationLoop(now => {
     const dt = Math.min((now - previous) / 1000, 0.1); previous = now; player.update(dt);
     const c = worldToParcel(anchor.position.x, anchor.position.z), next = coordinateToTokenId(c.x, c.z)!;
