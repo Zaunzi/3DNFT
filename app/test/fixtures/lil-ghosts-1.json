@@ -1,0 +1,39 @@
+{
+  "name": "Lil Ghosts #1",
+  "description": "Small spirits. A softer afterlife. 500 Lil Ghosts, composed from eight SVG layers and stored entirely on-chain.",
+  "image": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MDAgNjAwIiBmaWxsPSJub25lIj48cGF0aCBmaWxsPSIjRjhDQUIyIiBkPSJNMCAwaDYwMHY2MDBIMHoiLz48Y2lyY2xlIGN4PSIzMDAiIGN5PSIyODUiIHI9IjIxNSIgZmlsbD0iI0VFQTc4OSIgb3BhY2l0eT0iLjUiLz48ZWxsaXBzZSBjeD0iMzA1IiBjeT0iNTEwIiByeD0iMTE4IiByeT0iMTYiIGZpbGw9IiMyODI0M2MiIG9wYWNpdHk9Ii4xMyIvPjxwYXRoIGQ9Ik0xNzAgMzE3Yy05LTM0LTctNjQgMS05MCAxNy01NyA2Mi05MSAxMjctOTEgNzMgMCAxMjQgNDMgMTM1IDEwOCA2IDMyIDAgNTYtMyA3MyAxMiAzMCAzNyA0OSA0NSA3NyA5IDI5LTQgNDgtMjQgNDgtMjIgMC0zNS0yNS00OC0yMS0xNCA0LTkgNDUtMzUgNDgtMjggNC0zNy0zMC01NS0yNy0xOSAzLTE5IDQyLTQ2IDQwLTI4LTItMjctNDEtNDQtNDUtMTUtNC0zMyAyNS01NiAxNS0yMS0xMC0xNS0zOC0zLTY0IDEwLTIyIDE0LTQ1IDYtNzFaIiBmaWxsPSIjRkZGOUVDIiBzdHJva2U9IiMyODI0M2MiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0zOTggMjU1YzEyIDY4LTIzIDEzMyA2IDE2NC0xNS0yLTI0IDM1LTM5IDM4LTE4IDMtMjktMjQtNDItMjYgNzItNDMgNzctMTE3IDc1LTE3NloiIGZpbGw9IiNFNkRCQzgiIG9wYWNpdHk9Ii41NSIvPjxwYXRoIGQ9Ik0xOTMgMjQzYzctMzUgMjYtNTkgNTQtNjkiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii41IiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48ZyBmaWxsPSIjMjgyNDNjIj48ZWxsaXBzZSBjeD0iMjUwIiBjeT0iMjg0IiByeD0iMTMiIHJ5PSIyMSIvPjxlbGxpcHNlIGN4PSIzNTAiIGN5PSIyODQiIHJ4PSIxMyIgcnk9IjIxIi8+PC9nPjxnIGZpbGw9IiNmZmYiPjxjaXJjbGUgY3g9IjI1NCIgY3k9IjI3NyIgcj0iNCIvPjxjaXJjbGUgY3g9IjM1NCIgY3k9IjI3NyIgcj0iNCIvPjwvZz48cGF0aCBkPSJNMjc5IDMzMHExMSAxNiAyMSAwIDExIDE2IDIxIDAiIHN0cm9rZT0iIzI4MjQzYyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMzY5IDE2OXEtNC0zOCAyMS01NG0xNCA1OXEwLTQwLTE0LTU5IiBzdHJva2U9IiMyODI0M2MiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTM4OSAxMjBxLTI3IDUtMzQtMTcgMjUtOSAzNCAxN1oiIGZpbGw9IiM5MkJEOTIiIHN0cm9rZT0iIzI4MjQzYyIgc3Ryb2tlLXdpZHRoPSI0Ii8+PGcgZmlsbD0iI0RGODk5RSIgc3Ryb2tlPSIjMjgyNDNjIiBzdHJva2Utd2lkdGg9IjUiPjxjaXJjbGUgY3g9IjM2NyIgY3k9IjE3NCIgcj0iMTYiLz48Y2lyY2xlIGN4PSI0MDUiIGN5PSIxODEiIHI9IjE2Ii8+PC9nPjxwYXRoIGQ9Im0zNjIgMTY4IDQtM20zNCAxMCA0LTMiIHN0cm9rZT0iI0ZGRDlFMiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=",
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Apricot"
+    },
+    {
+      "trait_type": "Atmosphere",
+      "value": "Quiet"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "None"
+    },
+    {
+      "trait_type": "Body",
+      "value": "Marshmallow"
+    },
+    {
+      "trait_type": "Cheeks",
+      "value": "Bare"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Button"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Cat"
+    },
+    {
+      "trait_type": "Headwear",
+      "value": "Cherry Pair"
+    }
+  ]
+}

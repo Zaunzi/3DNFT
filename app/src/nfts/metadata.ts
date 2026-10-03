@@ -1,4 +1,5 @@
 import { assetKey, type NFTAsset } from './model.ts';
+import { decodeSVGDataURL, rasterizeSVG } from './svg.ts';
 export interface SafeMetadata {
     name: string;
     description: string;
@@ -37,8 +38,10 @@ export function parseMetadata(text: string, gateway: string): SafeMetadata {
     const str = (value: unknown, max: number) => typeof value === 'string' ? value.slice(0, max) : '';
     let image: string | undefined;
     try {
-        if (typeof obj.image === 'string')
-            image = resolveURL(obj.image, gateway);
+        if (typeof obj.image === 'string') {
+            if (obj.image.startsWith('data:')) { decodeSVGDataURL(obj.image); image = obj.image; }
+            else image = resolveURL(obj.image, gateway);
+        }
     }
     catch { /* Unsupported media never becomes an executable resource. */ }
     return { name: str(obj.name, 120) || 'Unknown NFT', description: str(obj.description, 1000), image, attributes: Array.isArray(obj.attributes) ? obj.attributes.slice(0, 32).flatMap(a => a && typeof a === 'object' && typeof a.trait_type === 'string' && ['string', 'number', 'boolean'].includes(typeof a.value) ? [{ trait_type: str(a.trait_type, 80), value: String(a.value).slice(0, 160) }] : []) : [] };
@@ -119,9 +122,11 @@ export class MetadataCache {
         return record.value;
     }
 }
-/** Only raster PNG/JPEG. Reject SVG/HTML regardless of URL extension or metadata claims. */
+/** PNG/JPEG or a strictly validated static SVG rasterized into a bounded texture. */
 export async function loadSafeImage(url: string): Promise<ImageBitmap> {
-    const { bytes, type } = await boundedFetch(url, MAX_IMAGE);
+    if (url.startsWith('data:')) return rasterizeSVG(decodeSVGDataURL(url));
+    const { bytes, type } = await boundedFetch(resolveURL(url, 'https://ipfs.io/ipfs/'), MAX_IMAGE);
+    if (type === 'image/svg+xml') return rasterizeSVG(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     const png = type === 'image/png' && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
     const jpeg = type === 'image/jpeg' && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
     if (!png && !jpeg)
@@ -154,7 +159,7 @@ export async function loadSafeImage(url: string): Promise<ImageBitmap> {
     if (width < 1 || height < 1 || width > 4096 || height > 4096 || width * height > 8000000)
         throw new Error('Unsupported image dimensions');
     // Decode to a bounded output texture; the compressed download is capped as well.
-    const bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type }), { resizeWidth: 512, resizeHeight: 512, resizeQuality: 'low' });
+    const bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type }), { imageOrientation: 'flipY', resizeWidth: 512, resizeHeight: 512, resizeQuality: 'low' });
     if (bitmap.width > 2048 || bitmap.height > 2048) {
         bitmap.close();
         throw new Error('Image too large');
