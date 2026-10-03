@@ -1,3 +1,4 @@
+import {nftTransferErrors,explainNFTTransferError} from './transferErrors.ts';
 import { parseAbi, type Address, type Abi } from 'viem';
 import type { OnchainParcelStateProvider } from '../blockchain/client.ts';
 import type { InjectedWallet } from '../blockchain/wallet.ts';
@@ -65,7 +66,7 @@ export class OnchainNFTProvider implements NFTStateProvider {
     private asset(asset: NFTAsset) { assetKey(asset); if (asset.chainId !== this.client.chain.id)
         throw new Error('Cross-chain attachment unsupported'); }
     private async write(address: Address | undefined, abi: Abi, functionName: string, args: readonly unknown[]) { if (!this.enabled || !address)
-        throw new Error('NFT custody is not configured'); const wallet = await this.wallet.forChain(this.client.chain.id); const { request } = await this.client.simulateContract({ address, abi, functionName, args, account: wallet.account }); const fresh = await this.wallet.forChain(this.client.chain.id); if (fresh.account.address !== wallet.account.address)
+        throw new Error('NFT custody is not configured'); const wallet = await this.wallet.forChain(this.client.chain.id); const { request } = await this.client.simulateContract({ address, abi:[...abi,...nftTransferErrors], functionName, args, account: wallet.account }).catch(error=>{throw explainNFTTransferError(error);}); const fresh = await this.wallet.forChain(this.client.chain.id); if (fresh.account.address !== wallet.account.address)
         throw new Error('Wallet changed'); const hash = await fresh.writeContract({ ...request, chain: this.client.chain }); if ((await this.client.waitForTransactionReceipt({ hash })).status !== 'success')
         throw new Error('Transaction reverted'); }
     async ownerOf(asset: NFTAsset) { this.asset(asset); return this.client.readContract({ address: asset.contractAddress, abi: nftAbi, functionName: 'ownerOf', args: [asset.tokenId] }); }
