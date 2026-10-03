@@ -46,7 +46,7 @@ export function parseMetadata(text: string, gateway: string): SafeMetadata {
     catch { /* Unsupported media never becomes an executable resource. */ }
     return { name: str(obj.name, 120) || 'Unknown NFT', description: str(obj.description, 1000), image, attributes: Array.isArray(obj.attributes) ? obj.attributes.slice(0, 32).flatMap(a => a && typeof a === 'object' && typeof a.trait_type === 'string' && ['string', 'number', 'boolean'].includes(typeof a.value) ? [{ trait_type: str(a.trait_type, 80), value: String(a.value).slice(0, 160) }] : []) : [] };
 }
-async function boundedFetch(url: string, limit: number): Promise<{
+async function fetchSingle(url: string, limit: number): Promise<{
     bytes: Uint8Array;
     type: string;
 }> {
@@ -78,6 +78,20 @@ async function boundedFetch(url: string, limit: number): Promise<{
         offset += part.length;
     }
     return { bytes, type: response.headers.get('content-type')?.split(';')[0].toLowerCase() ?? '' };
+}
+/** Retry content-addressed IPFS resources, never arbitrary website URLs.
+ * Every attempt retains the same byte limits, timeouts and no-redirect policy. */
+export function ipfsCandidates(url:string):string[]{
+    const parsed=new URL(url),match=/^\/ipfs\/([a-zA-Z0-9]+(?:\/[a-zA-Z0-9._~-]+)*)$/.exec(parsed.pathname);
+    if(parsed.protocol!=='https:'||parsed.username||parsed.password||!match||parsed.search||parsed.hash)return [url];
+    return [...new Set([url,...['https://gateway.pinata.cloud/ipfs/','https://ipfs.filebase.io/ipfs/'].map(base=>base+match[1])])];
+}
+async function boundedFetch(url:string,limit:number){
+    let failure:unknown;
+    for(const candidate of ipfsCandidates(url)){
+        try{return await fetchSingle(candidate,limit);}catch(error){failure=error;}
+    }
+    throw failure;
 }
 export async function loadMetadata(uri: string, gateway: string): Promise<SafeMetadata> {
     if (uri.length > MAX_JSON * 3)

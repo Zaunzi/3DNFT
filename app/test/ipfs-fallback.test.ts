@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {loadMetadata,ipfsCandidates} from '../src/nfts/metadata.ts';
+test('IPFS metadata retries failed gateways and retains the artwork content path',async()=>{const original=globalThis.fetch,seen:string[]=[];globalThis.fetch=async url=>{seen.push(String(url));return seen.length===1?new Response('Unavailable',{status:429}):new Response(JSON.stringify({name:'Chiplet #4410',image:'ipfs://bafyimage/4410.png'}));};try{const result=await loadMetadata('ipfs://bafymetadata/4410','https://ipfs.io/ipfs/');assert.equal(result.name,'Chiplet #4410');assert.equal(seen[1],'https://gateway.pinata.cloud/ipfs/bafymetadata/4410');assert.ok(ipfsCandidates(result.image!).includes('https://ipfs.filebase.io/ipfs/bafyimage/4410.png'));}finally{globalThis.fetch=original;}});
+test('ordinary HTTPS URLs are not sent to IPFS gateways and duplicates are eliminated',()=>{assert.deepEqual(ipfsCandidates('https://example.com/nft/4410'),['https://example.com/nft/4410']);assert.equal(ipfsCandidates('https://gateway.pinata.cloud/ipfs/bafytest/1').length,2);});
