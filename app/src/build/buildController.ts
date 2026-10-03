@@ -30,7 +30,6 @@ export class BuildController {
   private type: WorldObjectType | 6 | 13 = 4;
   private rotation = 0;
   private selecting = false;
-  private removalKey = "";
   private preview: THREE.Group;
   private candidate: (LocalTransform & {y?:number}) | null = null;
   private selected: { tokenId: number; objectId: number; kind:'primitive'|'portal' } | null = null;
@@ -40,7 +39,7 @@ export class BuildController {
     this.preview = options.registry.create(4, true); this.preview.visible = false; options.scene.add(this.preview);
     this.highlight.visible = false; options.scene.add(this.highlight);
     this.panel = document.createElement('section'); this.panel.className = 'build-panel'; this.panel.hidden = true;
-    this.panel.innerHTML = `<div class="eyebrow">BUILD MODE</div><div class="object-types"><button id="select-build-object">Select / Remove</button>${Object.entries(OBJECT_TYPES).filter(([id])=>Number(id)>=4&&(options.modular||Number(id)<7)).map(([id, def]) => `<button data-object="${id}">${Number(id)<6?'['+id+'] ':''}${def.name}</button>`).join('')}</div><p class="build-help">R rotate · Click to place · Select / Remove to edit<br>Delete remove · B exit · Esc clear selection</p><p id="build-status" role="status"></p><button id="remove-object">Remove object...</button><section id="object-removal" hidden><label>Saved object <select id="removal-choice"></select></label><p>Choose from the list or click an object in the world. The chosen object is highlighted.</p><button id="confirm-removal" disabled>Remove chosen object</button><button id="cancel-removal">Back to placement</button></section>`;
+    this.panel.innerHTML = `<div class="build-heading"><div><div class="menu-kicker">PARCEL WORKSHOP</div><h2>Build your place.</h2></div><button id="close-build" aria-label="Exit build mode">×</button></div><div class="object-types"><button id="select-build-object">Select / Remove</button>${Object.entries(OBJECT_TYPES).filter(([id])=>Number(id)>=4&&(options.modular||Number(id)<7)).map(([id, def]) => `<button data-object="${id}">${Number(id)<6?'['+id+'] ':''}${def.name}</button>`).join('')}</div><p class="build-help">R rotate · Click to place · Select / Remove to edit<br>Delete remove · B exit · Esc clear selection</p><p id="build-status" role="status"></p><button id="remove-object">Remove object</button>`;
     document.getElementById('app')!.append(this.panel);
     if(options.portals){this.panel.querySelector('.object-types')!.insertAdjacentHTML('beforeend','<button data-object="6">[6] Portal</button>');const label=document.createElement('label');label.id='portal-destination-label';label.hidden=true;label.innerHTML='Destination token ID <input id="portal-destination" type="number" min="0" max="4999" placeholder="Minted parcel ID">';this.panel.append(label);const hint=document.createElement('small');hint.textContent='Destination must be minted. Portal Cores are not required or consumed.';label.append(hint);}
     if(options.modular){
@@ -49,16 +48,24 @@ export class BuildController {
       for(const axis of ['x','z']){const row=document.createElement('label');row.innerHTML=`Local ${axis.toUpperCase()} (meters, blank = cursor) <input id="build-${axis}" type="number" min="0" max="64" step="0.5">`;this.panel.append(row);}
       const note=document.createElement('p');note.className='build-help';note.textContent='4m modules · 0.5m grid · 90° turns. Walls snap to foundation edges; roofs snap to wall layouts. Manual X/Z disables snapping. Unsnapped pieces follow local ground; only manual height overrides this. Place walls at foundation edges; doorway and locked door at the same point. Placement takes priority over existing pieces. Leave manual height blank for automatic grounding. Lanterns are scenery, not ERC-1155 items.';this.panel.append(note);
     }
+    const palette=this.panel.querySelector('.object-types')!;
+    for(const [title, ids] of [['Structure',[7,8,9,10,11,14,15]],['Scenery',[4,5,12]],['Interactive',[6,13]]] as const){
+      const group=document.createElement('div');group.className='build-group';
+      const heading=document.createElement('h3');heading.textContent=title;group.append(heading);
+      for(const id of ids){const button=palette.querySelector(`[data-object="${id}"]`);if(button)group.append(button);}
+      if(group.children.length>1)palette.append(group);
+    }
+    const advanced=document.createElement('details');advanced.className='build-advanced';
+    const summary=document.createElement('summary');summary.textContent='Precise placement';advanced.append(summary);
+    for(const input of Array.from(this.panel.querySelectorAll<HTMLInputElement>('#build-height,#build-x,#build-z')))advanced.append(input.parentElement!);
+    if(advanced.children.length>1){const notes=this.panel.querySelectorAll('.build-help');if(notes.length>1)advanced.append(notes[notes.length-1]);this.panel.append(advanced);}
+    const removal=this.panel.querySelector<HTMLButtonElement>('#remove-object')!;removal.disabled=true;
+    const actions=document.createElement('div');actions.className='build-actions';actions.append(removal);this.panel.append(actions);
     const signal = this.abort.signal;
     this.panel.querySelector('#select-build-object')!.addEventListener('click',()=>this.openRemoval(),{signal});
     this.panel.querySelectorAll<HTMLButtonElement>('[data-object]').forEach(button => button.addEventListener('click', () => this.choose(Number(button.dataset.object) as WorldObjectType|6|13), { signal }));
-    this.panel.querySelector('#remove-object')!.addEventListener('click', () => this.openRemoval(), { signal });
-    this.panel.querySelector('#confirm-removal')!.addEventListener('click',()=>{void this.remove();},{signal});
-    this.panel.querySelector('#cancel-removal')!.addEventListener('click',()=>this.choose(this.type),{signal});
-    this.panel.querySelector('#removal-choice')!.addEventListener('change',()=>{
-      const value=(this.panel.querySelector('#removal-choice') as HTMLSelectElement).value;
-      const [kind,id]=value.split(':');this.selected=value?{tokenId:this.options.currentToken(),objectId:Number(id),kind:kind as 'primitive'|'portal'}:null;
-    },{signal});
+    this.panel.querySelector('#remove-object')!.addEventListener('click', () => { void this.remove(); }, { signal });
+    this.panel.querySelector('#close-build')!.addEventListener('click', () => this.toggle(), { signal });
     window.addEventListener('keydown', event => {
       if (event.repeat || (event.target instanceof Element && event.target.matches('input,textarea,select'))) return;
       if (event.code === 'KeyB') { event.preventDefault(); this.toggle(); return; }
@@ -92,7 +99,6 @@ export class BuildController {
     if(type>=7&&!this.options.modular)return;
     if(type===13&&!this.options.lockedDoor)return;
     if(type>=7)this.rotation=Math.round(this.rotation/9000)*9000%36000;
-    (this.panel.querySelector('#object-removal') as HTMLElement).hidden=true;
     this.selecting=false;this.panel.querySelector('#select-build-object')!.classList.remove('chosen');
     this.releasePreview();
     this.type = type; this.selected = null; this.preview = type===13?this.options.lockedDoor!.createPreview():type===6?this.options.portals!.createPreview():this.options.registry.create(type, true); this.preview.visible = false; this.options.scene.add(this.preview);
@@ -105,18 +111,16 @@ export class BuildController {
     const o = this.options, token = o.currentToken();
     if (!o.canBuild(token)) { this.setActive(false); o.report('Build permissions changed. Reconnect or return to a parcel you own.'); return; }
     this.candidate = null; this.preview.visible = false; this.highlight.visible = false;
-    (this.panel.querySelector('#remove-object') as HTMLButtonElement).disabled = this.pending;
-    (this.panel.querySelector('#confirm-removal') as HTMLButtonElement).disabled = !this.selected || this.pending;
-    if(this.selecting)this.updateRemovalList();
+    (this.panel.querySelector('#remove-object') as HTMLButtonElement).disabled = !this.selected || this.pending;
     if (this.pending) { this.status('Saving… approve the wallet request if prompted, then wait for confirmation.'); return; }
     const entry = o.layer.parcels.get(token);
     if (!entry?.ready) { this.status('Loading persistent state… use Refresh state if a read failed.'); return; }
     if (this.selected) {
       const object = this.selected.kind==='portal'?o.portals?.find(this.selected.tokenId,this.selected.objectId):o.layer.find(this.selected.tokenId, this.selected.objectId);
-      if (object) { this.highlight.setFromObject(object); this.highlight.visible = true; this.status(`Selected object #${this.selected.objectId} · Delete to remove · Esc deselect`); return; }
+      if (object) { this.highlight.setFromObject(object); this.highlight.visible = true; this.status(`Selected object #${this.selected.objectId} · Remove object or Delete · Esc deselect`); return; }
       this.selected = null;
     }
-    if(this.selecting){this.status('Select / Remove: click a saved object, then Delete. Choose a piece to resume placement.');return;}
+    if(this.selecting){this.status('Select / Remove: click an object, then Remove object or Delete. Choose a piece to resume placement.');return;}
     this.status(`${this.type===13?'Locked door':this.type===6?'Portal':OBJECT_TYPES[this.type].name} · ${(this.rotation / 100).toFixed(0)}° · ${this.type===6?`${o.portals!.count(token)}/16 portals`:`${entry.objects.length}/${MAX_OBJECTS} objects`}`);
     if (!this.hasPointer) return;
     o.camera.updateMatrixWorld(); o.scene.updateMatrixWorld(true); this.ray.setFromCamera(this.pointer, o.camera);
@@ -170,19 +174,8 @@ export class BuildController {
   private openRemoval() {
     if(this.pending)return;
     this.selecting=true;this.preview.visible=false;this.candidate=null;
-    (this.panel.querySelector('#object-removal') as HTMLElement).hidden=false;
     this.panel.querySelectorAll('[data-object]').forEach(b=>b.classList.remove('chosen'));
     this.panel.querySelector('#select-build-object')!.classList.add('chosen');
-    this.removalKey='';this.updateRemovalList();
-  }
-  private updateRemovalList() {
-    const token=this.options.currentToken(),entry=this.options.layer.parcels.get(token);
-    const choices=(entry?.objects??[]).map(o=>({value:`primitive:${o.id}`,label:`${OBJECT_TYPES[o.objectType].name} #${o.id} - X ${o.x/100}, Z ${o.z/100}`}));
-    for(const root of this.options.portals?.roots()??[])root.traverse(o=>{if(o.userData.kind==='portal'&&o.userData.entity.parcelTokenId===token){const p=o.userData.entity;choices.push({value:`portal:${p.id}`,label:`Portal #${p.id} - to parcel #${p.destinationTokenId}`});}});
-    const select=this.panel.querySelector('#removal-choice') as HTMLSelectElement,key=JSON.stringify([token,choices]);
-    if(key!==this.removalKey){select.replaceChildren(new Option(choices.length?'Choose an object...':'No saved objects in this parcel',''));for(const c of choices)select.add(new Option(c.label,c.value));this.removalKey=key;}
-    select.value=this.selected?`${this.selected.kind}:${this.selected.objectId}`:'';
-    select.disabled=this.pending;
   }
   private async remove() {
     if (!this.active || this.pending || !this.selected) return;
