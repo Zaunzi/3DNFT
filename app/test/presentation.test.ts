@@ -30,3 +30,11 @@ test('showcase dragging changes both angles and cannot flip below terrain or ove
   assert.equal(dragOrbit(0,.68,0,-10000).elevation,.15);
   assert.equal(dragOrbit(0,.68,0,10000).elevation,1.35);
 });
+
+import {zoomOrbit} from '../src/viewer/orbit.ts';
+test('parcel zoom moves both ways, reverses and stays bounded',()=>{
+  const near=zoomOrbit(1,-120);assert.ok(near<1);assert.ok(zoomOrbit(1,120)>1);
+  assert.ok(Math.abs(zoomOrbit(near,120)-1)<1e-12);
+  assert.equal(zoomOrbit(.25,-500),.25);assert.equal(zoomOrbit(2,500),2);
+  assert.equal(zoomOrbit(1,0),1);
+});
