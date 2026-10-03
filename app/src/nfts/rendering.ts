@@ -120,20 +120,6 @@ export class NFTLayer {
                 const mesh = character ?? this.registry.create(a.asset, metadata);
                 mesh.userData = { ...mesh.userData, kind: 'nft', entity: a, metadata };
                 place(mesh, a.location);
-                if (typeof document !== 'undefined') {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 512;
-                    canvas.height = 64;
-                    const ctx = canvas.getContext('2d')!;
-                    ctx.fillStyle = '#e6ead9';
-                    ctx.font = '24px sans-serif';
-                    ctx.fillText(`${metadata.name} · #${a.asset.tokenId}`.slice(0, 60), 8, 38);
-                    const texture = new THREE.CanvasTexture(canvas);
-                    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
-                    label.scale.set(2.8, .35, 1);
-                    label.position.y = 2.5;
-                    mesh.add(label);
-                }
                 if (metadata.image && !mesh.userData.characterModel) {
                     const ownedGroup = group;
                     void loadSafeImage(metadata.image).then(bitmap => { if (this.parcels.get(id) !== entry || request !== entry.request) {
