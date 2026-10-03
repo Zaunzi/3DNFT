@@ -26,7 +26,10 @@ export class CharacterModels {
     const model=gltf.scene, bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
     const scale=Math.min(2.2/Math.max(size.y,.001),2.6/Math.max(size.x,size.z,.001));
     model.scale.setScalar(scale);model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
-    model.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}});
+    model.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}
+      // Skinned bounds can retain the imported rig pose while its parcel parent
+      // moves far from the origin. Parcel streaming already bounds visibility.
+      if(o instanceof THREE.SkinnedMesh)o.frustumCulled=false;});
     const group=new THREE.Group();group.add(model);group.userData.characterModel=true;return group;
   }
   private async fetch(id:bigint){

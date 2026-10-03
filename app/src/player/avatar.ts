@@ -8,7 +8,7 @@ export class PlayerAvatar {
  constructor(scene:THREE.Scene,id:bigint){this.scene=scene;void new GLTFLoader().loadAsync(`/cryptodoodz/models/${String(id).padStart(4,'0')}.glb`).then(gltf=>{
   if(this.disposed){this.release(gltf.scene);return;}
   const model=gltf.scene,bounds=new THREE.Box3().setFromObject(model),height=bounds.max.y-bounds.min.y,scale=1.8/Math.max(height,.001);model.scale.setScalar(scale);model.position.y=-bounds.min.y*scale;
-  this.root=new THREE.Group();this.root.add(model);scene.add(this.root);this.mixer=new THREE.AnimationMixer(model);gltf.animations.forEach(clip=>this.actions.set(clip.name,this.mixer!.clipAction(clip)));model.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}});
+  this.root=new THREE.Group();this.root.add(model);scene.add(this.root);this.mixer=new THREE.AnimationMixer(model);gltf.animations.forEach(clip=>this.actions.set(clip.name,this.mixer!.clipAction(clip)));model.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;if(o instanceof THREE.SkinnedMesh)o.frustumCulled=false;}});
  }).catch(()=>{/* A failed cosmetic model must never prevent exploration. */});}
  update(camera:THREE.PerspectiveCamera,dt:number,clip:'Idle'|'Walk'|'Run'|'Jump',distance:number){
   if(!this.root)return;this.root.position.set(camera.position.x,camera.position.y-EYE_HEIGHT,camera.position.z);this.root.rotation.y=camera.rotation.y+Math.PI;this.root.visible=distance>.65;

@@ -16,6 +16,7 @@ test('native model loads once, grounds independent copies and disposes their GPU
  const bytes=await readFile('app/public/cryptodoodz/models/0001.glb'),fetchOriginal=globalThis.fetch;let calls=0;
  globalThis.fetch=async()=>{calls++;return new Response(bytes,{status:200});};
  const models=new CharacterModels();try{const first=await models.load(1n),second=await models.load(1n);assert.equal(calls,1);assert.notEqual(first,second);
+ let skinned=0;first.traverse(o=>{if(o instanceof THREE.SkinnedMesh){skinned++;assert.equal(o.frustumCulled,false);}});assert.ok(skinned>0);
  const bounds=new THREE.Box3().setFromObject(first),size=bounds.getSize(new THREE.Vector3());assert.ok(Math.abs(bounds.min.y)<.0001);assert.ok(size.y<=2.201);assert.ok(size.x<=2.601&&size.z<=2.601);
  let disposed=0;first.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.addEventListener('dispose',()=>disposed++);});disposeEntity(first);assert.ok(disposed>0);assert.ok(second.children.length>0);disposeEntity(second);
  }finally{models.clear();globalThis.fetch=fetchOriginal;}
