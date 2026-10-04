@@ -24,7 +24,7 @@ contract DoodverseKeys is ERC1155, CollectionControls, ReentrancyGuard {
         emit MetadataURIUpdated(value);
     }
     error Unauthorized();error InvalidKey();error InvalidQuantity();
-    constructor(address landAddress,address authority) ERC1155('data:application/json;utf8,{"name":"Key","description":"A Doodverse lock key. Access may expire on rekey or parcel transfer."}') CollectionControls(authority){require(landAddress.code.length>0);land=KeyLand(landAddress);}
+    constructor(address landAddress,address authority) ERC1155('data:application/json;utf8,{"name":"Key","description":"A Doodverse lock key. Access may expire on rekey or parcel transfer.","image":"https://www.doodverse.xyz/art/v1/key.png"}') CollectionControls(authority){require(landAddress.code.length>0);land=KeyLand(landAddress);}
     function bindWorld(address target) external onlyOwner {require(world==address(0)&&target.code.length>0&&KeyWorld(target).land()==address(land));world=target;emit WorldBound(target);}
     function create(uint16 parcel,address controller) external whenMintingOpen nonReentrant returns(uint256 id){
         if(msg.sender!=world||land.ownerOf(parcel)!=controller)revert Unauthorized();

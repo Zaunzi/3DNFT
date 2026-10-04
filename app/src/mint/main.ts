@@ -9,8 +9,8 @@ type MintKind = Exclude<AllMintKind, 'item'>;
 document.querySelector('#app')!.innerHTML = `<nav><a class="wordmark" href="/">◈ DOODVERSE</a><a href="/?tokenId=1">Enter world ↗</a></nav>
 <header><p class="eyebrow">THE COLLECTIONS / BASE</p><h1>A place. A personality.<br>A little noise.</h1><p>Claim your corner of Doodverse. Bring a character. Make it your own.</p></header>
 <div class="collection-buttons" role="group" aria-label="Choose a collection">
-<button type="button" data-kind="parcel" aria-pressed="true"><span>01 / LAND</span><strong>Parcels</strong><small>5,000 places. One shared world.</small></button>
-<button type="button" data-kind="character" aria-pressed="false"><span>02 / PEOPLE</span><strong>Characters</strong><small>Meet your next world resident.</small></button>
+<button type="button" data-kind="parcel" aria-pressed="true"><span>01 / LAND</span><strong>Parcels</strong><small>5,000 places. One shared world.</small><small id="parcel-supply-card" class="supply-card">Loading supply…</small></button>
+<button type="button" data-kind="character" aria-pressed="false"><span>02 / PEOPLE</span><strong>Characters</strong><small>Meet your next world resident.</small><small id="character-supply-card" class="supply-card">Loading supply…</small></button>
 <button type="button" data-kind="trinket" aria-pressed="false"><span>03 / PLAY</span><strong>Trinkets</strong><small>Five instruments. Your soundtrack.</small></button>
 </div>
 <div class="mint-layout"><section class="preview" aria-label="Asset preview"><div id="preview-media"></div>
@@ -18,7 +18,7 @@ document.querySelector('#app')!.innerHTML = `<nav><a class="wordmark" href="/">�
 <div class="preview-caption"><span id="preview-name">Parcel #1</span><span id="preview-note">Example parcel · minted IDs are assigned automatically</span></div></section>
 <div class="mint-details"><section class="wallet"><div class="wallet-top"><span class="eyebrow">YOUR WALLET</span><button id="connect">Connect wallet</button><button id="switch" hidden>Switch to Base</button></div><p id="wallet">Connect to mint directly to your wallet.</p><p id="setup" role="status">Checking deployment…</p></section>
 <form id="mint"><p class="eyebrow">MAKE IT YOURS</p><h2 id="form-title">Mint Parcels</h2><label hidden>Asset<select id="kind"><option value="parcel">Parcel</option><option value="character">Character</option><option value="trinket">Trinket</option></select></label>
-<p id="help"></p><label id="id-label">Character ID<input id="token-id" value="1" inputmode="numeric"></label>
+<div id="supply" class="supply" role="status" aria-live="polite"><span class="eyebrow">COLLECTION SUPPLY</span><strong id="supply-count">Loading supply…</strong><progress id="supply-progress" aria-label="Collection minted supply" hidden></progress><small id="supply-note"></small></div><p id="help"></p><label id="id-label">Character ID<input id="token-id" value="1" inputmode="numeric"></label>
 <label id="item-label" hidden>Instrument<select id="item"></select></label><label id="quantity-label">Quantity<input id="quantity" value="1" inputmode="numeric" required></label>
 <p id="authority"></p><button id="submit" type="submit" disabled>Mint parcel</button><p class="muted" id="mint-policy"></p><details><summary>Contract details</summary><p id="contract"></p></details></form>
 <section class="transaction"><p class="eyebrow">TRANSACTION</p><p id="status" role="status">Your mint will appear here.</p><div id="result"></div></section></div></div>
@@ -27,7 +27,7 @@ const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElem
 const input = (id: string) => el<HTMLInputElement>(id).value.trim();
 const provider = (window as Window & { ethereum?: InjectedProvider }).ethereum;
 const wallet = new InjectedWallet(provider);
-const abi = parseAbi(['event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)', 'function PUBLIC_MINT() view returns(bool)', 'function mintedBy(address) view returns(uint256)', 'function minted(address,uint256) view returns(bool)', 'function mint(uint256)', 'function owner() view returns(address)', 'function mint(address,uint256)', 'function mint(address,uint256,uint256)']);
+const abi = parseAbi(['event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)', 'function totalSupply() view returns(uint256)', 'function MAX_SUPPLY() view returns(uint256)', 'function PUBLIC_MINT() view returns(bool)', 'function mintedBy(address) view returns(uint256)', 'function minted(address,uint256) view returns(bool)', 'function mint(uint256)', 'function owner() view returns(address)', 'function mint(address,uint256)', 'function mint(address,uint256,uint256)']);
 let busy = false, ready = false, publicParcels = true;
 let publicCharacters=false, characterMinted:bigint|undefined;
 let publicTrinkets=false, trinketClaimed:boolean|undefined;
@@ -46,7 +46,49 @@ const owners = new Map<MintKind, Address>();
 const client = createPublicClient({ chain: base, transport: http(import.meta.env.VITE_RPC_URL || 'https://base-rpc.publicnode.com'), batch: { multicall: { wait: 40 } } });
 const kind = () => input('kind') as MintKind;
 const message = (error: unknown) => error instanceof Error ? ('shortMessage' in error ? String(error.shortMessage) : error.message) : 'Request failed. Please retry.';
+type SupplyKind = 'parcel' | 'character';
+const supplies: Partial<Record<SupplyKind, { minted: bigint; maximum: bigint }>> = {};
+const supplyErrors = new Set<SupplyKind>();
+let supplyRequest: Promise<void> | undefined;
+function renderSupply() {
+  for (const k of ['parcel', 'character'] as const) {
+    const supply = supplies[k];
+    el(`${k}-supply-card`).textContent = supply
+      ? `${supply.minted.toLocaleString()} / ${supply.maximum.toLocaleString()} minted${supplyErrors.has(k) ? ' · last known' : ''}`
+      : supplyErrors.has(k) ? 'Supply unavailable' : 'Loading supply…';
+  }
+  const k = kind();
+  el('supply').hidden = k === 'trinket';
+  if (k === 'trinket') return;
+  const supply = supplies[k], failed = supplyErrors.has(k);
+  el('supply-count').textContent = el(`${k}-supply-card`).textContent;
+  const progress = el<HTMLProgressElement>('supply-progress');
+  progress.hidden = !supply;
+  if (supply) { progress.max = Number(supply.maximum); progress.value = Number(supply.minted); }
+  el('supply-note').textContent = failed ? 'Unable to refresh. Retrying automatically.' : supply
+    ? `${(supply.maximum - supply.minted).toLocaleString()} remaining · Updates every 15 seconds`
+    : 'Reading supply from Base…';
+}
+function refreshSupply(): Promise<void> {
+  if (supplyRequest) return supplyRequest;
+  supplyRequest = Promise.all((['parcel', 'character'] as const).map(async k => {
+    const address = addresses?.[k];
+    if (!address) { supplyErrors.add(k); return; }
+    try {
+      const [minted, maximum] = await Promise.all([
+        client.readContract({ address, abi, functionName: 'totalSupply' }),
+        client.readContract({ address, abi, functionName: 'MAX_SUPPLY' })
+      ]);
+      supplies[k] = { minted, maximum }; supplyErrors.delete(k);
+    } catch { supplyErrors.add(k); }
+  })).then(() => { renderSupply(); }).finally(() => { supplyRequest = undefined; });
+  return supplyRequest;
+}
+const supplyTimer = window.setInterval(() => { if (!document.hidden && ready) void refreshSupply(); }, 15_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ready) void refreshSupply(); });
+addEventListener('pagehide', event => { if (!event.persisted) window.clearInterval(supplyTimer); });
 function render() {
+  renderSupply();
   const k = kind(), account = wallet.snapshot.connectedAddress;
   const labels: Record<MintKind, string> = {parcel:'Parcels',trinket:'Trinkets',character:'Characters'};
   el('form-title').textContent = `Mint ${labels[k]}`;
@@ -110,6 +152,8 @@ el('mint').onsubmit = async event => {
     el('status').textContent = 'Submitted. Waiting for confirmation…';
     const receipt = await client.waitForTransactionReceipt({ hash, confirmations: 1 });
     if (receipt.status !== 'success') throw new Error('Transaction reverted. No asset was minted.');
+    await supplyRequest;
+    await refreshSupply();
     el('status').textContent = publicMint ? `Mint confirmed: ${quantity} ${k}(s) to your wallet. See the transaction for assigned IDs.` : `Mint confirmed: ${k} #${value.id}${(k === 'trinket') ? ` × ${value.quantity}` : ''} → ${value.recipient}`;
     if (publicMint) {
       const ids: bigint[] = [];
@@ -134,8 +178,8 @@ async function init() {
     try { publicParcels=await client.readContract({address:addresses.parcel!,abi,functionName:'PUBLIC_MINT'}); } catch { publicParcels=false; }
     if(addresses.trinket){try{publicTrinkets=await client.readContract({address:addresses.trinket,abi,functionName:'PUBLIC_MINT'});}catch{publicTrinkets=false;}}
     if(addresses.character){try{publicCharacters=await client.readContract({address:addresses.character,abi,functionName:'PUBLIC_MINT'});}catch{publicCharacters=false;}}
-    ready = true; void refreshAllowance(); el('setup').textContent = 'Base mainnet · deployed contracts verified for mint authority';
-  } catch (e) { el('setup').textContent = message(e); } render();
+    ready = true; void refreshSupply(); void refreshAllowance(); el('setup').textContent = 'Base mainnet · deployed contracts verified for mint authority';
+  } catch (e) { el('setup').textContent = message(e); supplyErrors.add('parcel'); supplyErrors.add('character'); } render();
 }
 void init();
 

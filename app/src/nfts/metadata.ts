@@ -11,7 +11,7 @@ export interface SafeMetadata {
     }[];
 }
 export const FALLBACK: SafeMetadata = { name: 'Unknown NFT', description: 'Metadata unavailable or unsupported', attributes: [] };
-const MAX_JSON = 128 * 1024, MAX_IMAGE = 4 * 1024 * 1024;
+const MAX_JSON = 128 * 1024, MAX_IMAGE = 10 * 1024 * 1024;
 export function resolveURL(value: string, gateway: string): string {
     if (value.length > 2048)
         throw new Error('URL too long');
@@ -27,6 +27,20 @@ export function resolveURL(value: string, gateway: string): string {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.username || url.password)
         throw new Error('Unsupported URL');
+    // Arweave redirects transaction URLs to a deterministic, isolated subdomain.
+    // Resolve that address directly so arbitrary redirects remain disallowed.
+    if (url.hostname === 'arweave.net' && /^\/[A-Za-z0-9_-]{43}$/.test(url.pathname)) {
+        const id = url.pathname.slice(1);
+        const bytes = Uint8Array.from(atob(id.replace(/-/g, '+').replace(/_/g, '/') + '='), c => c.charCodeAt(0));
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz234567';
+        let bits = 0, value = 0, host = '';
+        for (const byte of bytes) {
+            value = (value << 8) | byte; bits += 8;
+            while (bits >= 5) { bits -= 5; host += alphabet[(value >>> bits) & 31]; }
+        }
+        if (bits) host += alphabet[(value << (5 - bits)) & 31];
+        url.hostname = `${host}.arweave.net`;
+    }
     return url.href;
 }
 export function parseMetadata(text: string, gateway: string): SafeMetadata {
@@ -45,6 +59,14 @@ export function parseMetadata(text: string, gateway: string): SafeMetadata {
         }
     }
     catch { /* Unsupported media never becomes an executable resource. */ }
+    // Some art collections publish display-sized images alongside print originals.
+    if (Array.isArray(obj.attributes)) {
+        const thumbnail = obj.attributes.find(a => a && a.trait_type === 'Thumbnail Link');
+        const mime = obj.attributes.find(a => a && a.trait_type === 'Thumbnail MIME Type');
+        if (typeof thumbnail?.value === 'string' && ['image/png', 'image/jpeg', 'image/gif'].includes(mime?.value)) {
+            try { image = resolveURL(thumbnail.value, gateway); } catch { /* Retain the main image. */ }
+        }
+    }
     return { name: str(obj.name, 120) || 'Unknown NFT', description: str(obj.description, 1000), image, attributes: Array.isArray(obj.attributes) ? obj.attributes.slice(0, 32).flatMap(a => a && typeof a === 'object' && typeof a.trait_type === 'string' && ['string', 'number', 'boolean'].includes(typeof a.value) ? [{ trait_type: str(a.trait_type, 80), value: String(a.value).slice(0, 160) }] : []) : [] };
 }
 async function fetchSingle(url: string, limit: number): Promise<{
@@ -138,14 +160,15 @@ export class MetadataCache {
         return record.value;
     }
 }
-/** PNG/JPEG or a strictly validated static SVG rasterized into a bounded texture. */
+/** PNG/JPEG, the first frame of GIF, or a validated static SVG, as a bounded texture. */
 export async function loadSafeImage(url: string): Promise<ImageBitmap> {
     if (url.startsWith('data:')) return rasterizeSVG(decodeSVGDataURL(url));
     const { bytes, type } = await boundedFetch(resolveURL(url, 'https://ipfs.io/ipfs/'), MAX_IMAGE);
     if (type === 'image/svg+xml') return rasterizeSVG(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     const png = type === 'image/png' && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
     const jpeg = type === 'image/jpeg' && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-    if (!png && !jpeg)
+    const gif = type === 'image/gif' && bytes.length >= 10 && /^GIF8[79]a$/.test(new TextDecoder().decode(bytes.subarray(0, 6)));
+    if (!png && !jpeg && !gif)
         throw new Error('Unsupported image');
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let width = 0, height = 0;
@@ -153,6 +176,7 @@ export async function loadSafeImage(url: string): Promise<ImageBitmap> {
         width = view.getUint32(16);
         height = view.getUint32(20);
     }
+    if (gif) { width = view.getUint16(6, true); height = view.getUint16(8, true); }
     if (jpeg) {
         let offset = 2;
         while (offset + 4 < bytes.length) {

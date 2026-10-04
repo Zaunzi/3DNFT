@@ -321,6 +321,9 @@ export class NFTRuntime {
                 if(controlled)balances.forEach((balance,i)=>{if(balance>0n)this.action(this.content,`Recover previously stored item #${i+1} × ${balance}`,()=>{this.near(opened);return o.backend.nfts.retrieveItem(opened.id,i+1,balance);});});
             }
             this.heading('Doors & keys','keys');
+            const keyArt=document.createElement('img');
+            keyArt.className='inventory-art-preview';keyArt.src='/art/v1/key.png';keyArt.alt='Gold Doodverse key with a teal jewel';keyArt.width=180;keyArt.height=180;
+            this.content.append(keyArt);
             if (controlled) {
                 this.text(this.content,'Place locked doors through Build. Manage their keys here.');
                 for (const d of snapshot.doors) {
