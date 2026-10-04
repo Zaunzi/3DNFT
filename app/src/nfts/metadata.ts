@@ -1,3 +1,4 @@
+import {basePaintRelayURL} from './basepaint.ts';
 import { assetKey, type NFTAsset } from './model.ts';
 import { decodeSVGDataURL, rasterizeSVG } from './svg.ts';
 export interface SafeMetadata {
@@ -88,7 +89,8 @@ export function ipfsCandidates(url:string):string[]{
 }
 async function boundedFetch(url:string,limit:number){
     let failure:unknown;
-    for(const candidate of ipfsCandidates(url)){
+    const relay=basePaintRelayURL(url,import.meta.env?.VITE_MULTIPLAYER_URL);
+    for(const candidate of relay?[relay,...ipfsCandidates(url)]:ipfsCandidates(url)){
         try{return await fetchSingle(candidate,limit);}catch(error){failure=error;}
     }
     throw failure;

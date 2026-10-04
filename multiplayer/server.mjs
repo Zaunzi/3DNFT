@@ -1,3 +1,4 @@
+import {createBasePaintRelay} from './basepaint.mjs';
 import {createPublicClient,http,parseAbi,verifyMessage} from 'viem';
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
@@ -14,7 +15,8 @@ export function createPresenceServer({origins=['http://127.0.0.1:5177'],maxPlaye
   if(await client.getChainId()!==chainId)return false;
   const owner=await client.readContract({address:collection,abi:parseAbi(['function ownerOf(uint256) view returns(address)']),functionName:'ownerOf',args:[BigInt(auth.character)]});return owner.toLowerCase()===auth.address.toLowerCase();
  });
- const server=createServer((req,res)=>{res.writeHead(req.url==='/health'?200:404,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:req.url==='/health'}));});
+ const media=createBasePaintRelay({origins});
+ const server=createServer(async(req,res)=>{if(await media(req,res))return;res.writeHead(req.url==='/health'?200:404,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:req.url==='/health'}));});
  const wss=new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false});
  server.on('upgrade',(req,socket,head)=>{if(!origins.includes(req.headers.origin)||peers.size>=maxPlayers||req.url!=='/'){socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');socket.destroy();return;}wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws));});
  wss.on('connection',ws=>{

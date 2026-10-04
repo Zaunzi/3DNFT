@@ -24,3 +24,9 @@ Guests receive a random cosmetic appearance from #1–#5000 per visit. This appe
 This is presence, not an authoritative game simulation: finite positions and bounds are validated, but movement is client-reported and portal-sized teleports are permitted. There is no combat, player collision, shared mock/localStorage building state, or secure proximity-based rewards. Do not use these positions to authorize assets or harvesting. Origin restrictions, 2 KiB payloads, per-connection rate limits, 100 connections, heartbeat cleanup and slow-client eviction bound the initial service. An origin header is not authentication or DDoS protection. Multiple replicas require shared room routing/state before scaling.
 
 The production service runs on Railway. Integration tests cover two-player synchronization, separation, distance filtering, disconnects, rejected inputs and login resumption, including room binding, expiry and ownership changes.
+
+## BasePaint media
+
+The existing presence service also exposes `GET /media/basepaint/:decimalTokenId/metadata` and `/image`. These routes fetch only the official BasePaint endpoints, whose responses currently lack cross-origin browser permissions. They do not affect token custody. The frontend derives their HTTPS origin from `VITE_MULTIPLAYER_URL` and uses them only for exact official BasePaint metadata/image URLs. Other collections retain direct metadata loading.
+
+The relay checks allowed origins, rejects redirects and arbitrary URLs, requires JSON metadata or PNG bytes, caps each download (128 KiB / 4 MiB), times out after 6.5 seconds, limits concurrent upstream fetches to four and cache misses to 120/minute, deduplicates in-flight requests, and caches at most 128 entries / 16 MiB for five minutes. No database, snapshots, authentication or API keys are involved. Existing client image/JSON validation still applies. Temporary BasePaint outages return 502 and are not cached.

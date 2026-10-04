@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs"
+    "test": "node --test server.test.mjs basepaint.test.mjs"
   },
   "engines": {
     "node": ">=22"
