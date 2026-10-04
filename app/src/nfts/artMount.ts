@@ -13,9 +13,12 @@ export function wallMount(x:number,z:number,rotation:number,roots:Object3D[],sna
   const yaw=((Math.round(r)+(side<0?18000:0))%36000+36000)%36000;
   const diff=Math.abs(((rotation-yaw+54000)%36000)-18000);
   if(!snap&&diff>2)return;
-  const u=Math.max(-.9,Math.min(.9,q.x)),v=side*OFFSET;
+  // Center new placements across the wall. Both the 3.2m wall panel and
+  // the 1.5x art frame have their visual center 2.1m above their group origin.
+  const u=snap?0:Math.max(-.9,Math.min(.9,q.x)),v=side*OFFSET;
+  const y=p.y+(target||snap?0:.15);
   const px=p.x+u*Math.cos(angle)+v*Math.sin(angle),pz=p.z-u*Math.sin(angle)+v*Math.cos(angle),distance=Math.hypot(x-px,z-pz);
-  if(!best||distance<best.distance-.001||Math.abs(distance-best.distance)<.001&&p.y+.15>best.y)best={x:px,z:pz,y:p.y+.15,rotation:yaw,distance};
+  if(!best||distance<best.distance-.001||Math.abs(distance-best.distance)<.001&&y>best.y)best={x:px,z:pz,y,rotation:yaw,distance};
  });return best;
 }
 /** A ray can hit a trim/board child. Resolve its persistent parent before snapping. */
