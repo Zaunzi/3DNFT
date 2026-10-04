@@ -17,11 +17,9 @@ Characters: free public mint, sequential IDs 1–5000, five lifetime mints per w
 
 Trinkets: free public mint, one of each ID per wallet for life. Five initial IDs. The owner can append new IDs with `addTrinket()`; publish their metadata and runtime models when adding them. Mint pause and metadata base URI updates are owner-only in both collections. Pausing mint does not stop transfers or withdrawals.
 
-## Existing collections
+## Active collections
 
-The mint page uses the new addresses. Original Characters still render and appear in wallet character selection. Multiplayer validates the selected collection against an explicit allowlist containing both deployed Character collections. `CHARACTER_ADDRESSES` can override the comma-separated additional allowlist; the existing Railway `CHARACTER_ADDRESS` remains supported.
-
-Original placed Trinkets remain visible and withdrawable. The inventory sums balances of both known Trinket collections, prefers the new collection for placement/transfers, and uses the original collection when it holds the requested quantity. Amounts are never silently split into multiple transfers. Approval may require separate transactions for both collections when both have wallet balances. Original escrow instance IDs use a separate client-only namespace; writes always route back to the originating contract with its original ID.
+Only the current public Characters and Trinkets deployments above are supported as native collections. Character selection, avatars, multiplayer authentication, native character models and trinket inventory use these addresses exclusively. The old collection environment variables are no longer read. Previously deployed contracts still exist; old trinket escrow withdrawals remain available directly through that contract, but its inventory and placed instances are no longer loaded by the app.
 
 ## External ERC-1155 placement
 
@@ -35,4 +33,4 @@ Rendering uses the existing bounded metadata/image loader. Collection transfer r
 
 `node --env-file=.env scripts/deploy-public-collections.mjs` simulates and estimates; `--broadcast` resumes its nonce-bound journal without duplicating deployments. The signer is never exported. Deployment verifies runtime bytecode and immutable bindings. Run `node --env-file=.env scripts/verify-public-collections.mjs` with `FORGE_BIN` and `ETHERSCAN_API_KEY` for BaseScan verification. Results are saved separately from deployment receipts.
 
-Vercel's existing build command loads the public address configuration in `docs/deployments/doodverse-base.env.example`. No Vercel environment changes or vercel.json are required. Railway redeploys the updated presence server; its existing owner/collection setting remains compatible.
+Vercel's existing build command loads the public address configuration in `docs/deployments/doodverse-base.env.example`. No Vercel environment changes or vercel.json are required. Railway redeploys the updated presence server; it uses the latest character collection directly and ignores obsolete CHARACTER_ADDRESS / CHARACTER_ADDRESSES settings.

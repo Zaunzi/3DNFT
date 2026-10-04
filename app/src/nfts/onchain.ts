@@ -1,3 +1,4 @@
+import type {OnchainArtMounts} from './mountState.ts';
 import {nftTransferErrors,explainNFTTransferError} from './transferErrors.ts';
 import { parseAbi, type Address, type Abi } from 'viem';
 import type { OnchainParcelStateProvider } from '../blockchain/client.ts';
@@ -26,6 +27,7 @@ export const containerItemAbi = parseAbi(['function world() view returns(address
 export class OnchainNFTProvider implements NFTStateProvider {
     readonly enabled: boolean;
     schemaVersion=1;
+    mounts?:OnchainArtMounts;
     lockKeys?: Address;
     private client: OnchainParcelStateProvider['client'];
     private wallet: InjectedWallet;
@@ -34,7 +36,7 @@ export class OnchainNFTProvider implements NFTStateProvider {
         world?: Address;
         containers?: Address;
         items?: Address;
-        characters?: Address; legacyCharacters?:Address;
+        characters?: Address;
     };
     constructor(client: OnchainParcelStateProvider['client'], wallet: InjectedWallet, addresses: OnchainNFTProvider['addresses']) { this.client = client; this.wallet = wallet; this.addresses = addresses; this.enabled = !!(addresses.world && addresses.containers && addresses.items); }
     async validateDeployment() { const a = this.addresses; if (!a.world && !a.containers)
@@ -47,7 +49,7 @@ export class OnchainNFTProvider implements NFTStateProvider {
     async rekeyDoor(parcel:number,id:number){await this.write(this.addresses.world,nftStateV2Abi,'rekeyDoor',[parcel,id]);}
     async issueKeyCopies(id:bigint,to:Address,quantity:bigint){await this.write(this.lockKeys,parseAbi(['function issueCopies(uint256,address,uint256)']),'issueCopies',[id,to,quantity]);}
     async ownedCharacters(owner:Address) {
-        const addresses=[this.addresses.characters,this.addresses.legacyCharacters].filter((a):a is Address=>!!a);
+        const addresses=[this.addresses.characters].filter((a):a is Address=>!!a);
         return (await Promise.all(addresses.map(address=>this.ownedCollection(owner,address)))).flat();
     }
     private async ownedCollection(owner:Address,address:Address){
@@ -75,11 +77,12 @@ export class OnchainNFTProvider implements NFTStateProvider {
     async ownerOf(asset: NFTAsset) { this.asset(asset); return this.client.readContract({ address: asset.contractAddress, abi: nftAbi, functionName: 'ownerOf', args: [asset.tokenId] }); }
     async tokenURI(asset: NFTAsset) { this.asset(asset); return this.client.readContract({ address: asset.contractAddress, abi: nftAbi, functionName: 'tokenURI', args: [asset.tokenId] }); }
     async snapshot(parcelId: number): Promise<NFTSnapshot> { if (!this.enabled)
-        return { attachments: [], containers: [], doors: [] }; const [assets, containers, doors] = await Promise.all([this.client.readContract({ address: this.addresses.world!, abi: nftStateAbi, functionName: 'getAttachments', args: [BigInt(parcelId)] }), this.client.readContract({ address: this.addresses.world!, abi: nftStateAbi, functionName: 'getContainers', args: [BigInt(parcelId)] }), this.client.readContract({ address: this.addresses.world!, abi: this.schemaVersion===2?nftStateV2Abi:nftStateAbi, functionName: 'getDoors', args: [BigInt(parcelId)] })]); return { attachments: assets.map(a => ({ asset: { chainId: this.client.chain.id, contractAddress: a.collection, tokenId: a.tokenId }, depositor: a.depositor, location: a.location.containerId ? { kind: 'container', parcelId: a.location.parcelId, containerId: a.location.containerId } : { kind: 'parcel', parcelId: a.location.parcelId, x: a.location.x, z: a.location.z, rotation: a.location.rotation } })), containers: [...containers], doors: doors.map(d => ({ ...d, y:'y' in d&&d.y!==-2147483648?Number(d.y):undefined, requirement: d.kind === 1 ? { kind: 'erc1155', contractAddress: d.collection, tokenId: d.tokenId, minimum: d.minimum, mode: 'CHECK_ONLY' } : { kind: 'erc721', contractAddress: d.collection, tokenId: d.tokenId, mode: 'CHECK_ONLY' } })) }; }
+        return { attachments: [], containers: [], doors: [] }; const [assets, containers, doors] = await Promise.all([this.client.readContract({ address: this.addresses.world!, abi: nftStateAbi, functionName: 'getAttachments', args: [BigInt(parcelId)] }), this.client.readContract({ address: this.addresses.world!, abi: nftStateAbi, functionName: 'getContainers', args: [BigInt(parcelId)] }), this.client.readContract({ address: this.addresses.world!, abi: this.schemaVersion===2?nftStateV2Abi:nftStateAbi, functionName: 'getDoors', args: [BigInt(parcelId)] })]); const attachments=await Promise.all(assets.map(async a => ({ asset: { chainId: this.client.chain.id, contractAddress: a.collection, tokenId: a.tokenId }, depositor: a.depositor, location: a.location.containerId ? { kind: 'container', parcelId: a.location.parcelId, containerId: a.location.containerId } : { kind: 'parcel', parcelId: a.location.parcelId, x: a.location.x, z: a.location.z, rotation: a.location.rotation, mountWallId:await this.mounts?.read({chainId:this.client.chain.id,contractAddress:a.collection,tokenId:a.tokenId}) } }))); return {attachments:attachments as NFTSnapshot['attachments'], containers: [...containers], doors: doors.map(d => ({ ...d, y:'y' in d&&d.y!==-2147483648?Number(d.y):undefined, requirement: d.kind === 1 ? { kind: 'erc1155', contractAddress: d.collection, tokenId: d.tokenId, minimum: d.minimum, mode: 'CHECK_ONLY' } : { kind: 'erc721', contractAddress: d.collection, tokenId: d.tokenId, mode: 'CHECK_ONLY' } })) }; }
     async approve(asset: NFTAsset) { this.asset(asset); await this.write(asset.contractAddress, nftAbi, 'approve', [this.addresses.world, asset.tokenId]); }
     private location(location: AttachedLocation) { validateLocation(location); return location.kind === 'parcel' ? { parcelId: location.parcelId, containerId: 0, x: location.x, z: location.z, rotation: location.rotation } : { parcelId: location.parcelId, containerId: location.containerId, x: 0, z: 0, rotation: 0 }; }
-    async attach(asset: NFTAsset, location: AttachedLocation) { this.asset(asset); await this.write(this.addresses.world, nftStateAbi, 'attach', [asset.contractAddress, asset.tokenId, this.location(location)]); }
-    async move(asset: NFTAsset, location: AttachedLocation) { this.asset(asset); await this.write(this.addresses.world, nftStateAbi, 'move', [asset.contractAddress, asset.tokenId, this.location(location)]); }
+    private checkMount(l:AttachedLocation){if(l.kind==='parcel'&&l.mountWallId&&!this.mounts)throw new Error('Configure the art mount contract before placing art on walls.');}
+    async attach(asset: NFTAsset, location: AttachedLocation) { this.asset(asset); this.checkMount(location); await this.write(this.addresses.world, nftStateAbi, 'attach', [asset.contractAddress, asset.tokenId, this.location(location)]); if(location.kind==='parcel')await this.mounts?.save(asset,location); }
+    async move(asset: NFTAsset, location: AttachedLocation) { this.asset(asset); this.checkMount(location); await this.write(this.addresses.world, nftStateAbi, 'move', [asset.contractAddress, asset.tokenId, this.location(location)]); if(location.kind==='parcel')await this.mounts?.save(asset,location); }
     async detach(asset: NFTAsset) { this.asset(asset); await this.write(this.addresses.world, nftStateAbi, 'detach', [asset.contractAddress, asset.tokenId]); }
     async createContainer(parcel: number, t: LocalTransform, capacity: number) { await this.write(this.addresses.world, nftStateAbi, 'createContainer', [parcel, t.x, t.z, t.rotation, capacity]); }
     async removeContainer(id: number) { await this.write(this.addresses.world, nftStateAbi, 'removeContainer', [id]); }

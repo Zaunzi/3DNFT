@@ -1,6 +1,6 @@
 import {assetKey,validateLocation,type NFTAsset} from '../nfts/model.ts';
 import type {LocalTransform} from '../items/model.ts';
-export interface EditionLocation extends LocalTransform {parcelId:number}
+export interface EditionLocation extends LocalTransform {parcelId:number;mountWallId?:number}
 export interface EditionAttachment {id:bigint;asset:NFTAsset;quantity:bigint;depositor:string;location:EditionLocation}
 export interface EditionProvider {
     enabled:boolean;

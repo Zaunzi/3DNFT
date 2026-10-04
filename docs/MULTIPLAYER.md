@@ -9,7 +9,7 @@ Run `node multiplayer/server.mjs` with repository dependencies installed, or `cd
 ## Railway + Vercel
 
 1. Create a Railway service from this repository; set its root directory to `/multiplayer`. The included Dockerfile installs the isolated locked dependencies and starts the service. Keep a single replica and disable sleeping/serverless mode.
-2. Set `ALLOWED_ORIGINS=https://atlas-mu-lime.vercel.app` (comma-separated exact origins for additional sites), `CHARACTER_ADDRESS` to the same CryptoDoodz contract as the website and `RPC_URL` to a Base RPC. No private key is needed. Railway supplies PORT.
+2. Set `ALLOWED_ORIGINS=https://atlas-mu-lime.vercel.app` (comma-separated exact origins for additional sites), `RPC_URL` to a Base RPC. The server supports only the current public CryptoDoodz deployment (`0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f`); old collection environment settings are ignored. No private key is needed. Railway supplies PORT.
 3. Set healthcheck path `/health`. Generate a public domain.
 4. In the Doodverse Vercel project only, set `VITE_MULTIPLAYER_URL=wss://YOUR-SERVICE.up.railway.app/` and redeploy. Keep existing build command/output and the legacy project's settings. No vercel.json is required.
 

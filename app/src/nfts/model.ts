@@ -12,6 +12,8 @@ export type AssetLocation = {
 } | ({
     kind: 'parcel';
     parcelId: number;
+    /** undefined = legacy automatic mount, 0 = ground, otherwise exact persistent wall ID. */
+    mountWallId?: number;
 } & LocalTransform) | {
     kind: 'container';
     parcelId: number;

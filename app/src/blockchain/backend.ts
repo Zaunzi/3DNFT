@@ -49,12 +49,15 @@ export async function createBackend(env: Record<string, string | undefined>) {
     const {OnchainTrinketProvider}=await import('../trinkets/onchain.ts');
     const trinketProvider=new OnchainTrinketProvider(provider.client,injected,{land:config.land!,items:env.VITE_DOODVERSE_TRINKETS_ADDRESS?getAddress(env.VITE_DOODVERSE_TRINKETS_ADDRESS):undefined,worldItems:env.VITE_WORLD_TRINKET_STATE_ADDRESS?getAddress(env.VITE_WORLD_TRINKET_STATE_ADDRESS):undefined});
     await trinketProvider.validateDeployment();trinkets=trinketProvider;
-    if(env.VITE_LEGACY_TRINKETS_ADDRESS&&env.VITE_LEGACY_TRINKET_STATE_ADDRESS){
-      const legacy=new OnchainTrinketProvider(provider.client,injected,{land:config.land!,items:getAddress(env.VITE_LEGACY_TRINKETS_ADDRESS),worldItems:getAddress(env.VITE_LEGACY_TRINKET_STATE_ADDRESS)});await legacy.validateDeployment();
-      const {TrinketCollections}=await import('../trinkets/collections.ts');trinkets=new TrinketCollections(trinketProvider,legacy,()=>wallet.snapshot.connectedAddress);
-    }
     const {OnchainNFTProvider}=await import('../nfts/onchain.ts');
-    const nftProvider=new OnchainNFTProvider(provider.client,injected,{land:config.land!,world:env.VITE_WORLD_NFT_STATE_ADDRESS?getAddress(env.VITE_WORLD_NFT_STATE_ADDRESS):undefined,containers:env.VITE_CONTAINER_ITEM_STATE_ADDRESS?getAddress(env.VITE_CONTAINER_ITEM_STATE_ADDRESS):undefined,items:env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(env.VITE_ATLAS_ITEMS_ADDRESS):undefined,legacyCharacters:env.VITE_LEGACY_CHARACTERS_ADDRESS?getAddress(env.VITE_LEGACY_CHARACTERS_ADDRESS):undefined,characters:env.VITE_ATLAS_CHARACTERS_ADDRESS?getAddress(env.VITE_ATLAS_CHARACTERS_ADDRESS):undefined});await nftProvider.validateDeployment();nfts=nftProvider;
+    const nftProvider=new OnchainNFTProvider(provider.client,injected,{land:config.land!,world:env.VITE_WORLD_NFT_STATE_ADDRESS?getAddress(env.VITE_WORLD_NFT_STATE_ADDRESS):undefined,containers:env.VITE_CONTAINER_ITEM_STATE_ADDRESS?getAddress(env.VITE_CONTAINER_ITEM_STATE_ADDRESS):undefined,items:env.VITE_ATLAS_ITEMS_ADDRESS?getAddress(env.VITE_ATLAS_ITEMS_ADDRESS):undefined,characters:env.VITE_ATLAS_CHARACTERS_ADDRESS?getAddress(env.VITE_ATLAS_CHARACTERS_ADDRESS):undefined});await nftProvider.validateDeployment();nfts=nftProvider;
+    if(env.VITE_ART_MOUNTS_ADDRESS){
+      const {OnchainArtMounts}=await import('../nfts/mountState.ts');
+      const mounts=new OnchainArtMounts(provider.client,injected,getAddress(env.VITE_ART_MOUNTS_ADDRESS));
+      await mounts.validate({land:config.land!,parcels:config.state!,nfts:getAddress(env.VITE_WORLD_NFT_STATE_ADDRESS!),editions:getAddress(env.VITE_WORLD_EDITION_STATE_ADDRESS!)});
+      nftProvider.mounts=mounts;editionProvider.mounts=mounts;
+    }
+
   }
   return { editions, economy, config, wallet, world, objects, experience, trinkets, nfts, transferMockParcel, supportsModular:config.mode==='mock'||('schemaVersion' in objects&&objects.schemaVersion===2), supportsElevatedDoors:config.mode==='mock'||('schemaVersion' in nfts&&nfts.schemaVersion===2), supportsBuild: config.mode === 'mock' || !!config.state };
 }

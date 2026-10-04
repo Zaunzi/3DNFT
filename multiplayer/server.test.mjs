@@ -1,3 +1,5 @@
+import {privateKeyToAccount} from 'viem/accounts';
+import {createServer} from 'node:http';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WebSocket} from 'ws';
@@ -21,3 +23,21 @@ async function sessionSetup(t,sessionTTL=60000){let owned=true,checks=0;const ap
 test('reconnect resumes signed identity without another signature and still checks ownership',async t=>{const s=await sessionSetup(t);s.first.close();const ws=await s.join();ws.send(JSON.stringify({type:'resume',token:s.resumeToken}));assert.equal((await message(ws,'authenticated')).resumeToken,s.resumeToken);assert.equal(s.checks(),2);s.revoke();const next=await s.join();next.send(JSON.stringify({type:'resume',token:s.resumeToken}));await message(next,'authFailed');});
 test('resume is room-bound, rejects unknown tokens and guest reset revokes token',async t=>{const s=await sessionSetup(t);const wrong=await s.join(room.replace('mock:','onchain:').replace(':7422026:',':99:'));wrong.send(JSON.stringify({type:'resume',token:s.resumeToken}));await message(wrong,'authFailed');const ws=await s.join();ws.send(JSON.stringify({type:'resume',token:'unknown'}));await message(ws,'authFailed');s.first.send(JSON.stringify({type:'guest'}));s.first.send(JSON.stringify(pose));await message(s.first,'snapshot');ws.send(JSON.stringify({type:'resume',token:s.resumeToken}));await message(ws,'authFailed');});
 test('expired resume tokens cannot authenticate',async t=>{const s=await sessionSetup(t,-1);const ws=await s.join();ws.send(JSON.stringify({type:'resume',token:s.resumeToken}));await message(ws,'authFailed');});
+
+test('production character authentication accepts only the latest collection despite obsolete environment values',async t=>{
+ const latest='0x16E9432a0a09c903e70ca8467Ce3bfE77b3Dc56f',original='0x03847D61A017731A843109F0b6BC637AF8a3f7e0';
+ const account=privateKeyToAccount('0x'+'12'.repeat(32));let calls=0;
+ const rpc=createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;const q=JSON.parse(body);calls++;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({jsonrpc:'2.0',id:q.id,result:q.method==='eth_chainId'?'0x2105':'0x'+account.address.slice(2).toLowerCase().padStart(64,'0')}));});
+ await new Promise(r=>rpc.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>rpc.close(r)));
+ const old=process.env.CHARACTER_ADDRESS,oldList=process.env.CHARACTER_ADDRESSES;process.env.CHARACTER_ADDRESS=original;process.env.CHARACTER_ADDRESSES=original;
+ const app=createPresenceServer({rpc:`http://127.0.0.1:${rpc.address().port}`});
+ if(old===undefined)delete process.env.CHARACTER_ADDRESS;else process.env.CHARACTER_ADDRESS=old;
+ if(oldList===undefined)delete process.env.CHARACTER_ADDRESSES;else process.env.CHARACTER_ADDRESSES=oldList;
+ await new Promise(r=>app.server.listen(0,'127.0.0.1',r));t.after(()=>app.close());
+ for(const collection of [original,latest]){
+  const ws=await connect(`ws://127.0.0.1:${app.server.address().port}`);ws.send(JSON.stringify({type:'join',room:room.replace('mock:','onchain:')}));const welcome=await message(ws,'welcome');
+  const signature=await account.signMessage({message:welcome.message});ws.send(JSON.stringify({type:'authenticate',address:account.address,character:1,collection,signature}));
+  await message(ws,collection===original?'authFailed':'authenticated');
+  if(collection===original)assert.equal(calls,0);else assert.ok(calls>=2);ws.close();
+ }
+});

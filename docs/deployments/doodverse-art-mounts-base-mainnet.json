@@ -1,0 +1,25 @@
+{
+  "chainId": 8453,
+  "owner": "0xdB6882db2a406bc1541988715842906dfd4fd590",
+  "land": "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+  "addresses": {
+    "DoodverseArtMounts": "0xfc8Df48F0DEf23EFC233Fe25bfEa9356988aaD6a"
+  },
+  "constructorArgs": {
+    "DoodverseArtMounts": [
+      "0x383891F3537627Fb9E235f0242D874fe00Ca6443",
+      "0xe5F118e3edB6d22263e93809f0E89b13cebC2CDE",
+      "0xA04562e822D0DA48804A4A1F395BeC4E0fF7C2aE",
+      "0xbAf278f2F6268a92745804a44154750d1eBe5D63"
+    ]
+  },
+  "transactions": [
+    {
+      "name": "DoodverseArtMounts",
+      "hash": "0x130b858abbdf33c26f570623ce62998893191e78a5bfb4b88b025c4d90c16802",
+      "blockNumber": 52142190,
+      "gasUsed": "799413"
+    }
+  ],
+  "minting": "none"
+}

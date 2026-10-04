@@ -65,7 +65,7 @@ async function start() {
   const trinketLayer=new ExperienceLayer(scene,backend.trinkets,trinkets,identity.seed,()=>report('trinkets',true),'trinket');
   const itemLayer = new ExperienceLayer(scene,backend.experience,items,identity.seed,()=>report('items',true));
   const cache = new MetadataCache(a=>backend.nfts.tokenURI(a),import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/');
-  const nftLayer = new NFTLayer(scene,backend.nfts,new NFTRepresentationRegistry(backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS,import.meta.env.VITE_LEGACY_CHARACTERS_ADDRESS),identity.seed,cache,()=>report('nfts',true));
+  const nftLayer = new NFTLayer(scene,backend.nfts,new NFTRepresentationRegistry(backend.config.mode==='mock'?MOCK_NFT_COLLECTION:import.meta.env.VITE_ATLAS_CHARACTERS_ADDRESS),identity.seed,cache,()=>report('nfts',true));
   const editionLayer=new EditionLayer(scene,backend.editions,identity.seed,new MetadataCache(a=>backend.editions.uri(a),import.meta.env.VITE_IPFS_GATEWAY??'https://ipfs.io/ipfs/'),()=>report('editions',true));editionLayer.sync([id]);disposers.push(()=>editionLayer.dispose());
   disposers.push(()=>{objectLayer.dispose();trinketLayer.dispose();trinkets.dispose();itemLayer.dispose();nftLayer.dispose();objects.dispose();items.dispose();});
   trinketLayer.sync([id]);objectLayer.sync([id]); itemLayer.sync([id]); nftLayer.sync([id]);

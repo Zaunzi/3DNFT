@@ -43,11 +43,11 @@ export function createNFTArtwork(bitmap: ImageBitmap) {
 export class NFTRepresentationRegistry {
     private renderers: NFTRepresentation[] = [];
     private characters=new CharacterModels();
-    private nativeCollection?:string;private legacyCollection?:string;
-    character(asset:NFTAsset){return !!this.nativeCollection&&[this.nativeCollection,this.legacyCollection].some(c=>c?.toLowerCase()===asset.contractAddress.toLowerCase())&&asset.tokenId>=1n&&asset.tokenId<=5000n;}
+    private nativeCollection?:string;
+    character(asset:NFTAsset){return !!this.nativeCollection&&this.nativeCollection.toLowerCase()===asset.contractAddress.toLowerCase()&&asset.tokenId>=1n&&asset.tokenId<=5000n;}
     async loadCharacter(asset:NFTAsset){return this.character(asset)?this.characters.load(asset.tokenId).catch(()=>null):null;}
     dispose(){this.characters.clear();}
-    constructor(nativeCollection?: string,legacyCollection?:string) { this.nativeCollection=nativeCollection;this.legacyCollection=legacyCollection; if (nativeCollection)
+    constructor(nativeCollection?: string) { this.nativeCollection=nativeCollection; if (nativeCollection)
         this.register({ supports: (a, metadata) => !metadata.image && a.contractAddress.toLowerCase() === nativeCollection.toLowerCase() && a.tokenId === 1n, createObject: () => { const g = new THREE.Group(); g.add(box(.8, 1.2, .5, 0x517d98, .8)); const head = new THREE.Mesh(new THREE.SphereGeometry(.35, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd8b48a })); head.position.y = 1.75; g.add(head); return g; } }); }
     register(renderer: NFTRepresentation) { this.renderers.unshift(renderer); }
     create(asset: NFTAsset, metadata: SafeMetadata) { const specific = this.renderers.find(r => r.supports(asset, metadata)); if (specific)
@@ -153,7 +153,7 @@ export class NFTLayer {
     }
     updateGrounding(height:(x:number,z:number)=>number,surfaces:THREE.Object3D[]=[]) {
         for(const entry of this.parcels.values())for(const batch of entry.group.children)for(const entity of batch.children)
-            if(entity.userData.kind==='container'||entity.userData.kind==='nft'||entity.userData.kind==='edition'){const mount=entity.userData.artDisplay?wallMount(entity.position.x,entity.position.z,Math.round(entity.rotation.y*180/Math.PI*100),surfaces):undefined;entity.position.y=mount?.y??height(entity.position.x,entity.position.z);setArtMounted(entity,!!mount);}
+            if(entity.userData.kind==='container'||entity.userData.kind==='nft'||entity.userData.kind==='edition'){const mount=entity.userData.artDisplay?wallMount(entity.position.x,entity.position.z,Math.round(entity.rotation.y*180/Math.PI*100),surfaces,false,entity.userData.entity?.location?.mountWallId===undefined?undefined:{parcelId:entity.userData.entity.location.parcelId,wallId:entity.userData.entity.location.mountWallId}):undefined;entity.position.y=mount?.y??height(entity.position.x,entity.position.z);setArtMounted(entity,!!mount);}
     }
     roots() { return [...this.parcels.values()].map(e => e.group); }
     count() { return [...this.parcels.values()].reduce((n, e) => n + e.snapshot.attachments.length, 0); }

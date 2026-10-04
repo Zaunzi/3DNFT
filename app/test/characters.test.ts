@@ -26,11 +26,11 @@ test('native model loads once, grounds independent copies and disposes their GPU
  }finally{models.clear();globalThis.fetch=fetchOriginal;}
 });
 
-test('both configured character collections retain native models without admitting arbitrary collections',()=>{
+test('only the current character collection receives native character support',()=>{
  const original='0x1111111111111111111111111111111111111111';
- const registry=new NFTRepresentationRegistry(collection,original);
+ const registry=new NFTRepresentationRegistry(collection);
  assert.equal(registry.character(characterAsset(8453,collection,'1')),true);
- assert.equal(registry.character(characterAsset(8453,original,'1')),true);
+ assert.equal(registry.character(characterAsset(8453,original,'1')),false);
  assert.equal(registry.character(characterAsset(8453,'0x2222222222222222222222222222222222222222','1')),false);
  registry.dispose();
 });

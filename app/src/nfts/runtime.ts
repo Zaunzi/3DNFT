@@ -1,3 +1,4 @@
+import {MountSaveError} from './mountState.ts';
 import {EditionLayer} from '../editions/rendering.ts';
 import {AssetPlacement} from './placement.ts';
 import {characterAsset} from './characters.ts';
@@ -32,7 +33,7 @@ interface Options {
     changed(): void;
     occluders(): THREE.Object3D[];
     gateway: string;
-    native?: string; legacyNative?:string;
+    native?: string;
     items?: Address;
 }
 /** DOM controls and interactables live here, not inside the render loop. */
@@ -40,6 +41,7 @@ export class NFTRuntime {
     readonly layer: NFTLayer;
     readonly cache: MetadataCache;
     readonly editions:EditionLayer;
+    private mountRetry?:()=>Promise<void>;
     readonly editionCache:MetadataCache;
     private selectedEdition:NFTAsset|null=null;
     private editionQuantity="1";
@@ -66,7 +68,7 @@ export class NFTRuntime {
         this.options = options;
         this.parcel = options.token();
         this.cache = new MetadataCache(a => options.backend.nfts.tokenURI(a), options.gateway);
-        this.layer = new NFTLayer(options.scene, options.backend.nfts, new NFTRepresentationRegistry(options.native,options.legacyNative), options.seed, this.cache, options.report);
+        this.layer = new NFTLayer(options.scene, options.backend.nfts, new NFTRepresentationRegistry(options.native), options.seed, this.cache, options.report);
         this.editionCache=new MetadataCache(a=>options.backend.editions.uri(a),options.gateway);
         this.editions=new EditionLayer(options.scene,options.backend.editions,options.seed,this.editionCache,options.report);
         this.button.textContent = 'Characters / NFTs / Containers';
@@ -127,8 +129,9 @@ export class NFTRuntime {
     cancelPlacement() {if(!this.placement)return;this.placement.dispose();this.placement=null;this.options.modal(false);}
     private async beginPlacement(asset?:NFTAsset,move=false,edition?:{quantity:bigint;id?:bigint}) {
         const o=this.options, token=o.token();
+        if(this.mountRetry)throw new Error('Finish saving the pending art mount before starting another placement.');
         if(!o.canPlace())throw new Error('Visit a parcel you own to place assets.');
-        const registry=new NFTRepresentationRegistry(edition?undefined:o.native,edition?undefined:o.legacyNative);
+        const registry=new NFTRepresentationRegistry(edition?undefined:o.native);
         let preview:THREE.Group;
         try {
             if(asset){const metadata=await (edition?this.editionCache:this.cache).get(asset);preview=await registry.loadCharacter(asset)??registry.create(asset,metadata);
@@ -137,7 +140,7 @@ export class NFTRuntime {
         }finally{registry.dispose();}
         if(!this.open||token!==o.token()||!o.canPlace()){disposeEntity(preview);return;}
         this.setOpen(false);
-        this.placement=new AssetPlacement({canvas:o.canvas,camera:o.camera,scene:o.scene,surfaces:o.surfaces,height:o.height,token,preview,valid:()=>o.canPlace()&&o.token()===token,
+        this.placement=new AssetPlacement({canvas:o.canvas,camera:o.camera,scene:o.scene,surfaces:o.surfaces,height:o.height,token,preview,onchainMount:o.backend.config.mode==='onchain',valid:()=>o.canPlace()&&o.token()===token,
             cancel:()=>this.cancelPlacement(),place:t=>{
                 if(this.busy)return;
                 this.cancelPlacement();
@@ -159,6 +162,7 @@ export class NFTRuntime {
         this.status.textContent = 'Confirmed.';if(!this.open&&!this.placing)this.options.report('Asset change confirmed.');
     }
     catch (error) {
+        if(error instanceof MountSaveError){this.mountRetry=error.retry;await this.refreshWorld();this.options.changed();}
         this.status.textContent = error instanceof Error ? error.message.slice(0, 300) : String(error);if(!this.open)this.options.report(this.status.textContent);
     }
     finally {
@@ -177,6 +181,11 @@ export class NFTRuntime {
             if (request !== this.request)
                 return;
             this.content.replaceChildren();
+            if(this.mountRetry){
+                this.text(this.content,'The NFT is already placed. Finish saving its mount, or discard this pending mount and reposition it.');
+                this.action(this.content,'Finish saving art mount',async()=>{await this.mountRetry!();this.mountRetry=undefined;});
+                this.action(this.content,'Discard pending mount',async()=>{this.mountRetry=undefined;});
+            }
             this.text(this.content, `NFT ASSETS · PARCEL #${this.parcel}`, 'h2');
             this.text(this.content, `Controller: ${owner ?? 'unminted'} · Wallet: ${account ?? 'disconnected'}`);
 
