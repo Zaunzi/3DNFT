@@ -58,6 +58,12 @@ export function snapStructure(type:number,x:number,z:number,objects: readonly im
     if(best)return best;
   }
   if(type===15){
+    const support=objects.find(o=>o.id===target?.id&&o.objectType===11&&o.y!==undefined);
+    if(support){
+      // Roof Y is the storey's base; the walkable slab top is 3.9m above it.
+      // Start the next flight on that exact slab, even with roofs stacked below.
+      return {x:support.x,z:support.z,y:support.y!+390,rotation:support.rotation,distance:0};
+    }
     for(const roof of objects.filter(o=>o.objectType===11&&o.y!==undefined)){
       const a=roof.rotation/100*Math.PI/180;
       for(const [dx,dz,r] of [[0,400,0],[0,-400,18000],[400,0,9000],[-400,0,27000]])offer(roof.x+dx*Math.cos(a)+dz*Math.sin(a),roof.z-dx*Math.sin(a)+dz*Math.cos(a),roof.y!+50,roof.rotation+r,250);

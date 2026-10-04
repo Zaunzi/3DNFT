@@ -133,3 +133,15 @@ test('independent placements follow local ground without inheriting the previous
 });
 
 test('wider storey staircase supports its full three-meter tread width',()=>{assert.notEqual(storeyStairTop(1.49,0,0),null);assert.notEqual(storeyStairTop(-1.49,0,0),null);assert.equal(storeyStairTop(1.51,0,0),null);});
+
+
+test('storey stairs start on the targeted roof at any storey and retain quarter-turn orientation',()=>{
+ const roofs=[0,340,680].map((y,i)=>({id:i+1,objectType:11 as const,x:3200,z:3200,y:150+y,rotation:9000}));
+ for(const roof of roofs){
+  const stairs=snapStructure(15,3250,3150,roofs,{id:roof.id,hitY:roof.y+390})!;
+  assert.equal(stairs.x,roof.x);assert.equal(stairs.z,roof.z);
+  assert.equal(stairs.y,roof.y+390);assert.equal(stairs.rotation,9000);
+  assert.ok(Math.abs(storeyStairTop(0,-1.999,stairs.y/100)!-(roof.y+730)/100)<1e-9);
+  for(const turn of [0,9000,18000,27000])validatePlacement({objectType:15,...stairs,rotation:(stairs.rotation+turn)%36000});
+ }
+});
