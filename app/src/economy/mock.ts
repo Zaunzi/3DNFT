@@ -7,8 +7,8 @@ import {BUILD_COSTS,replenish,RESOURCE_ITEM,HARVEST_COOLDOWN_MS,type HarvestProv
 export interface EconomyData {schema:1;resources:Record<string,ParcelResources>;builds:Record<string,ReturnType<typeof decodeMockParcel>>}
 /** Materials, resource allowances and migrated buildings commit in one inventory-ledger write. */
 export class MockEconomy implements ParcelStateStore,HarvestProvider {
- private ledger:MockInventoryProvider;private legacy:LocalStorageLike;private owns:(id:number)=>boolean;private now:()=>number;
- constructor(ledger:MockInventoryProvider,legacy:LocalStorageLike,owns:(id:number)=>boolean,now=Date.now){this.ledger=ledger;this.legacy=legacy;this.owns=owns;this.now=now;}
+ private ledger:MockInventoryProvider;private legacy:LocalStorageLike;private owns:(id:number)=>boolean;private now:()=>number;private chargeMaterials:boolean;
+ constructor(ledger:MockInventoryProvider,legacy:LocalStorageLike,owns:(id:number)=>boolean,now=Date.now,chargeMaterials=true){this.chargeMaterials=chargeMaterials;this.ledger=ledger;this.legacy=legacy;this.owns=owns;this.now=now;}
  private state(data:Data){return data.economy??={schema:1,resources:{},builds:{}};}
  private check(id:number){tokenIdToCoordinate(id);if(!this.owns(id))throw new Error('Only the current parcel owner may harvest or build here.');}
  private readReserve(data:Data,id:number){tokenIdToCoordinate(id);const previous=data.economy?.resources[id],now=this.now();return {wood:replenish(previous?.wood,now),stone:replenish(previous?.stone,now),nextHarvestAt:previous?.nextHarvestAt??0};}
@@ -18,8 +18,8 @@ export class MockEconomy implements ParcelStateStore,HarvestProvider {
  private parcel(data:Data,id:bigint){tokenIdToCoordinate(Number(id));const state=this.state(data);return state.builds[String(id)]??=decodeMockParcel(this.legacy.getItem(`${MOCK_STORAGE_PREFIX}${id}`));}
  async getObjects(id:bigint){return this.parcel(this.ledger.read(),id).objects;}
  async addObject(id:bigint,placement:ObjectPlacement){validatePlacement(placement);await this.ledger.mutate((data,owner)=>{this.check(Number(id));const parcel=this.parcel(data,id);if(parcel.objects.length>=MAX_OBJECTS||parcel.nextId===0xffffffff)throw new Error('Parcel object capacity reached');const cost=BUILD_COSTS[placement.objectType];
- for(const resource of ['wood','stone'] as const){const balance=BigInt(data.balances[owner.toLowerCase()]?.[RESOURCE_ITEM[resource]]??'0');if(balance<BigInt(cost[resource]))throw new Error(`Need ${cost.wood} wood + ${cost.stone} stone. Harvest nearby trees and rocks first.`);}
- this.ledger.credit(data,owner,RESOURCE_ITEM.wood,-BigInt(cost.wood));this.ledger.credit(data,owner,RESOURCE_ITEM.stone,-BigInt(cost.stone));parcel.objects.push({...placement,id:++parcel.nextId});});}
+ if(this.chargeMaterials){for(const resource of ['wood','stone'] as const){const balance=BigInt(data.balances[owner.toLowerCase()]?.[RESOURCE_ITEM[resource]]??'0');if(balance<BigInt(cost[resource]))throw new Error(`Need ${cost.wood} wood + ${cost.stone} stone. Harvest nearby trees and rocks first.`);}
+ this.ledger.credit(data,owner,RESOURCE_ITEM.wood,-BigInt(cost.wood));this.ledger.credit(data,owner,RESOURCE_ITEM.stone,-BigInt(cost.stone));}parcel.objects.push({...placement,id:++parcel.nextId});});}
  async removeObject(id:bigint,objectId:number){await this.ledger.mutate(data=>{this.check(Number(id));const parcel=this.parcel(data,id),index=parcel.objects.findIndex(o=>o.id===objectId);if(index<0)throw new Error('Object no longer exists');parcel.objects.splice(index,1);});}
  subscribe(listener:(id:bigint)=>void){return this.ledger.subscribe(()=>{for(const id of Object.keys(this.ledger.read().economy?.builds??{}))listener(BigInt(id));});}
 }

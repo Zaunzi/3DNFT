@@ -15,7 +15,7 @@ export class AssetPlacement {
     private abort = new AbortController();
     private panel = document.createElement('div');
     private bounds: THREE.BoxHelper;
-    constructor(private o: {canvas:HTMLCanvasElement;camera:THREE.Camera;scene:THREE.Scene;surfaces():THREE.Object3D[];height(x:number,z:number):number;token:number;valid():boolean;preview:THREE.Group;onchainMount?:boolean;place(t:LocalTransform & {mountWallId?:number}):void;cancel():void}) {
+    constructor(private o: {canvas:HTMLCanvasElement;camera:THREE.Camera;scene:THREE.Scene;surfaces():THREE.Object3D[];height(x:number,z:number):number;token:number;valid():boolean;preview:THREE.Group;onchainMount?:boolean;validate?(t:LocalTransform):void;place(t:LocalTransform & {mountWallId?:number}):void;cancel():void}) {
         o.scene.add(o.preview);o.preview.visible=false;
         this.bounds=new THREE.BoxHelper(o.preview,0xcceca0);o.scene.add(this.bounds);this.bounds.visible=false;
         this.panel.className='asset-placement';
@@ -46,7 +46,7 @@ export class AssetPlacement {
         const {x,z}=objectToWorldPosition(this.o.token,t);
         const mount=this.o.preview.userData.artDisplay?wallMount(x,z,t.rotation,this.o.surfaces(),false,{parcelId:this.o.token,wallId:t.mountWallId??0}):undefined;setArtMounted(this.o.preview,!!mount);
         this.o.preview.position.set(x,mount?.y??this.o.height(x,z),z);this.o.preview.rotation.y=t.rotation/100*Math.PI/180;this.o.preview.visible=true;
-        let valid=true;try{validateLocation({kind:'parcel',parcelId:this.o.token,...t});}catch{valid=false;}
+        let valid=true;try{validateLocation({kind:'parcel',parcelId:this.o.token,...t});this.o.validate?.(t);}catch{valid=false;}
         this.bounds.setFromObject(this.o.preview);this.bounds.visible=true;(this.bounds.material as THREE.LineBasicMaterial).color.set(valid?0xcceca0:0xff7766);
         if(valid)this.candidate=t;
         this.panel.querySelector('strong')!.textContent=valid?'Click to place':'Keep the object inside your parcel';

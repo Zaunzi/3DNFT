@@ -37,3 +37,12 @@ test('one harvest collects the full partially replenished reserve without affect
  assert.equal(p.reserves(742).stone.available,0);assert.equal(p.reserves(742).wood.available,40);
  assert.equal(await s.ledger.getBalance(alice,1n),47n);
 });
+
+test('current-contract mock building needs no resources and retains existing saved builds',async()=>{
+ const s=setup();const storage={getItem:(k:string)=>s.map.get(k)??null,setItem:(k:string,v:string)=>{s.map.set(k,v);}};
+ const current=new MockEconomy(s.ledger,storage,id=>id===742,Date.now,false);
+ await current.addObject(742n,foundation);assert.equal((await current.getObjects(742n)).length,1);
+ assert.equal(await s.ledger.getBalance(alice,1n),0n);assert.equal(await s.ledger.getBalance(alice,2n),0n);
+ const reloaded=new MockEconomy(s.ledger,storage,id=>id===742,Date.now,false);
+ assert.deepEqual(await reloaded.getObjects(742n),await current.getObjects(742n));await assert.rejects(current.addObject(743n,foundation),/owner/);
+});

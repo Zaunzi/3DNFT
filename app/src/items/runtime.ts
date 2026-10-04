@@ -23,6 +23,7 @@ import { resolveInternalDestination, type NFTWorldLocation } from '../portals/lo
 interface RuntimeOptions {
   backend:Awaited<ReturnType<typeof createBackend>>;scene:THREE.Scene;camera:THREE.PerspectiveCamera;world:WorldManager;objects:PersistentObjectLayer;player:Player;
   openCharacters?():void;
+  placeTrinket?(itemType:number,quantity:bigint):Promise<void>;
   token():number;canEdit(tokenId:number):boolean;builder():BuildController|undefined;
   commit(location:NFTWorldLocation,position:{x:number;y:number;z:number},url:string):void;
   report(message:string):void;modalChanged(active:boolean):void; blocked?():boolean;extraOccluders?():THREE.Object3D[];extraObstacles?(tokenId:number):Promise<{x:number;z:number;radius:number}[]>;
@@ -46,6 +47,7 @@ export class ItemPortalRuntime {
     document.getElementById('app')!.append(this.toolbar);this.label=document.createElement('div');this.label.className='interaction-label';this.label.setAttribute('role','status');document.getElementById('app')!.append(this.label);
     this.navigation=new PortalNavigator({current:()=>this.location(),currentURL:()=>new URL(location.href),prepare:id=>this.prepare(id),commit:(location,spawn,url)=>{o.commit(location,spawn,url);this.sync();}},o.world.seed);
     this.inventory=new InventoryUI({characters:o.openCharacters,store,trinkets:{store:o.backend.trinkets,definitions:TRINKET_DEFINITIONS,drop:async(itemType,quantity)=>{
+      if(o.placeTrinket)return o.placeTrinket(itemType,quantity);
       if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach trinkets.');
       const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.player.camera.position.clone().addScaledVector(direction,4);
       const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateTrinket(item);await o.backend.trinkets.placeItem(o.token(),item);
@@ -53,7 +55,7 @@ export class ItemPortalRuntime {
       drop:async(itemType,quantity)=>{if(!o.canEdit(o.token()))throw new Error('Only the parcel owner may attach items.');const direction=o.camera.getWorldDirection(new THREE.Vector3());direction.y=0;direction.normalize();const position=o.player.camera.position.clone().addScaledVector(direction,3);const item={itemType,quantity,...worldToObjectPosition(o.token(),position.x,position.z),rotation:0};validateItemPlacement(item);await store.placeItem(o.token(),item);},
       use:item=>{if(item===5){this.lanternOn=!this.lanternOn;o.report(this.lanternOn?'Lantern on':'Lantern off');}else o.report(itemDefinition(item).description);},changed:()=>this.refresh(),
     });
-    this.toolbar.querySelector('#open-inventory')!.addEventListener('click',()=>this.inventory.setOpen(!this.inventory.open));
+    this.toolbar.querySelector('#open-inventory')!.addEventListener('click',()=>o.openCharacters?.());
     this.toolbar.querySelector('#portal-back')!.addEventListener('click',()=>{void this.travelBack();});
     this.interactions=new InteractionController({canvas:o.player.controls.domElement instanceof HTMLCanvasElement ? o.player.controls.domElement : undefined,camera:o.camera,origin:()=>o.player.camera.position,roots:()=>[...this.layer.roots(),...this.trinketLayer.roots()],occluders:()=>[...[...o.world.parcels.values()].map(p=>p.terrain),...o.objects.roots(),...(o.extraOccluders?.()??[])],context:()=>({connected:o.backend.wallet.snapshot.isConnected,canEdit:o.canEdit}),enabled:()=>o.player.active&&!o.builder()?.active&&!this.open&&!this.navigation.busy&&!o.blocked?.(),
       label:this.label,report:o.report,resolve:object=>{
