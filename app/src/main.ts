@@ -68,7 +68,7 @@ async function start() {
   scene.background = new THREE.Color(0xb8c9c6); scene.fog = new THREE.Fog(0xb8c9c6, 55, 122);
   scene.add(new THREE.HemisphereLight(0xddece8, 0x69734b, 1.4));
   const sun = new THREE.DirectionalLight(0xffe9c2, 2.5); sun.position.set(-70, 110, 40); scene.add(sun);
-  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.12;sun.shadow.bias=-.00015;scene.add(sun.target);
+  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.035;sun.shadow.bias=-.00005;scene.add(sun.target);
   const camera = createPlayerCamera(innerWidth / innerHeight);
   const spawn = parcelToWorld(tokenIdToCoordinate(token), PARCEL_SIZE / 2, PARCEL_SIZE / 2); camera.position.set(spawn.x, 0, spawn.z);
   const world = new WorldManager(scene, identity.seed); world.update(token);

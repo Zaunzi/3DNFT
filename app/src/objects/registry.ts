@@ -21,7 +21,8 @@ export class ObjectRegistry {
     this.definitions.set(3, [part(new THREE.CylinderGeometry(.68,.76,4.6,20),stone,2.5),part(new THREE.CylinderGeometry(.8,.8,.4,20),stone,.2),part(new THREE.CylinderGeometry(.8,.8,.4,20),stone,4.8)]);
     const foliage=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}),rock=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1});this.materials.push(foliage,rock);
     this.definitions.set(4, [part(new THREE.CylinderGeometry(0.14, 0.3, 3.6, 10), wood, 1.8), part(pineGeometry(), foliage, 0)]);
-    this.definitions.set(5, [part(rockGeometry(1.2), rock, .87)]);
+    // Embed the rounded base slightly so placed rocks sit firmly in the terrain.
+    this.definitions.set(5, [part(rockGeometry(1.2), rock, .65)]);
   }
   create(type: WorldObjectType, preview = false) {
     const template=this.buildings.get(type);
