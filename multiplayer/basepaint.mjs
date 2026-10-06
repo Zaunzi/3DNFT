@@ -19,9 +19,9 @@ export function createBasePaintRelay({origins,fetchResource=fetch,clock=Date.now
  return async(req,res)=>{
   if(!req.url?.startsWith('/media/basepaint/'))return false;
   res.setHeader('Vary','Origin');res.setHeader('X-Content-Type-Options','nosniff');
-  const origin=req.headers.origin;
-  if(origin&&!origins.includes(origin)){res.writeHead(403);res.end();return true;}
-  if(origin)res.setHeader('Access-Control-Allow-Origin',origin);
+  // These are public, credential-free artwork bytes. Marketplace sandboxes can
+  // send Origin: null; do not apply the multiplayer login origin allowlist here.
+  res.setHeader('Access-Control-Allow-Origin','*');
   if(req.method!=='GET'){res.writeHead(405,{Allow:'GET'});res.end();return true;}
   const match=/^\/media\/basepaint\/([1-9][0-9]{0,77})\/(metadata|image)$/.exec(req.url);
   if(!match||BigInt(match[1])>=1n<<256n){res.writeHead(400);res.end();return true;}

@@ -7,13 +7,12 @@ async function setup(t,options){const relay=createBasePaintRelay({origins:[origi
 const path='/media/basepaint/14/metadata';
 test('metadata is fetched by token ID with CORS, cached and refreshed after TTL',async t=>{
  let now=0,calls=0;const url=await setup(t,{clock:()=>now,fetchResource:async(u,options)=>{calls++;assert.equal(u,'https://basepaint.xyz/api/art/'+'e'.padStart(64,'0'));assert.equal(options.redirect,'error');return Response.json({name:'BasePaint Day #14',image:'https://basepaint.xyz/api/art/image?day=14'});}});
- const r=await fetch(url+path,{headers:{Origin:origin}});assert.equal(r.status,200);assert.equal(r.headers.get('access-control-allow-origin'),origin);assert.equal((await r.json()).name,'BasePaint Day #14');
+ const r=await fetch(url+path,{headers:{Origin:origin}});assert.equal(r.status,200);assert.equal(r.headers.get('access-control-allow-origin'),'*');assert.equal((await r.json()).name,'BasePaint Day #14');
  await (await fetch(url+path)).text();assert.equal(calls,1);now=300001;await (await fetch(url+path)).text();assert.equal(calls,2);
 });
-test('relay rejects arbitrary URLs, oversized IDs, untrusted origins and write methods without fetching',async t=>{
+test('relay rejects arbitrary URLs, oversized IDs and write methods without fetching',async t=>{
  let calls=0;const url=await setup(t,{fetchResource:async()=>{calls++;return Response.json({});}});
  for(const suffix of ['/media/basepaint/14/metadata?url=https://evil.example','/media/basepaint/14/other','/media/basepaint/0/image','/media/basepaint/'+(1n<<256n)+'/image'])assert.equal((await fetch(url+suffix)).status,400);
- assert.equal((await fetch(url+path,{headers:{Origin:'https://evil.example'}})).status,403);
  assert.equal((await fetch(url+path,{method:'POST'})).status,405);assert.equal(calls,0);
 });
 test('oversized, redirected, HTML and invalid JSON responses fail closed',async t=>{
@@ -25,4 +24,14 @@ test('image route returns only validated PNG bytes',async t=>{
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZ1sAAAAASUVORK5CYII=','base64');
  const url=await setup(t,{fetchResource:async u=>{assert.equal(u,'https://basepaint.xyz/api/art/image?day=14');return new Response(png,{headers:{'content-type':'image/png'}});}});
  const r=await fetch(url+'/media/basepaint/14/image',{headers:{Origin:origin}});assert.equal(r.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await r.arrayBuffer()),png);
+});
+
+
+test('public artwork loads in opaque marketplace frames without credential access',async t=>{
+ const url=await setup(t,{fetchResource:async()=>Response.json({name:'BasePaint Day #14'})});
+ for(const viewer of ['null','https://opensea.io','https://www.doodverse.xyz']){
+  const r=await fetch(url+path,{headers:{Origin:viewer}});
+  assert.equal(r.status,200);assert.equal(r.headers.get('access-control-allow-origin'),'*');
+  assert.equal(r.headers.get('access-control-allow-credentials'),null);
+ }
 });
