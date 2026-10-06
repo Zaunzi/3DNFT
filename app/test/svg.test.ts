@@ -14,3 +14,10 @@ test('SVG data decoding handles supported forms and rejects oversized or recursi
  for(const bad of ['data:text/html,<script/>','data:image/png;base64,AAAA','data:image/svg+xml;utf8,%ZZ','data:image/svg+xml;base64,!!!!','data:image/svg+xml,'+'a'.repeat(140000)])assert.throws(()=>decodeSVGDataURL(bad));
  assert.equal(parseMetadata('{"image":"data:text/html,hi"}','https://ipfs.io/ipfs/').image,undefined);
 });
+import {embeddedPNGLayers} from '../src/nfts/svg.ts';
+test('onchain Milady embedded PNG layers decode without enabling arbitrary CSS',()=>{
+ const svg=readFileSync(new URL('./fixtures/bootleg-milady-1.svg',import.meta.url),'utf8');
+ const style=/style="([^"]+)"/.exec(svg)![1];
+ assert.equal(embeddedPNGLayers(style).length,13);
+ for(const bad of [style+'position:fixed;',style.replace('data:image/png;base64,','https://example.com/'),style.replace('background-size:contain','background-size:cover'),style.replace('iVBOR','AAAAA')])assert.throws(()=>embeddedPNGLayers(bad));
+});

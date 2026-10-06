@@ -15,6 +15,34 @@ export function decodeSVGDataURL(uri: string): string {
     return text;
 }
 
+/** Accept only embedded PNG background layers, never general SVG CSS. */
+export function embeddedPNGLayers(style: string): string[] {
+    let images: string[];
+    const allowed: Record<string, string[]> = {
+        'background-repeat': ['no-repeat'], 'background-size': ['contain'],
+        'background-position': ['center'], 'image-rendering': ['pixelated', '-webkit-optimize-contrast', '-moz-crisp-edges'],
+        '-ms-interpolation-mode': ['nearest-neighbor']
+    };
+    const values = new Map<string,string>();
+    const match = /^background-image:((?:url\(data:image\/png;base64,[A-Za-z0-9+/=]+\),?)+);/.exec(style);
+    if (!match) throw new Error('Unsupported SVG background');
+    images = [...match[1].matchAll(/url\((data:image\/png;base64,[A-Za-z0-9+/=]+)\)/g)].map(m => m[1]);
+    if (!images.length || images.length > 32 || match[1] !== images.map(uri => `url(${uri})`).join(',')) throw new Error('Unsupported SVG layers');
+    for (const declaration of style.slice(match[0].length).split(';').filter(s => s.trim())) {
+        const [name, value, extra] = declaration.trim().split(':');
+        if (extra !== undefined || !allowed[name]?.includes(value)) throw new Error('Unsupported SVG background CSS');
+        values.set(name,value);
+    }
+    if (values.get('background-repeat') !== 'no-repeat' || values.get('background-size') !== 'contain' || values.get('background-position') !== 'center') throw new Error('Unsupported SVG background layout');
+    for (const uri of images) {
+        const bytes=Uint8Array.from(atob(uri.slice(22)), c=>c.charCodeAt(0));
+        if (bytes.length < 24 || bytes.length > MAX_SVG || ![137,80,78,71,13,10,26,10].every((b,i)=>bytes[i]===b) || String.fromCharCode(...bytes.subarray(12,16)) !== 'IHDR') throw new Error('Invalid embedded PNG');
+        const view=new DataView(bytes.buffer),w=view.getUint32(16),h=view.getUint32(20);
+        if (!w || !h || w>2048 || h>2048 || w*h>1000000) throw new Error('Embedded PNG too large');
+    }
+    return images;
+}
+
 /** Rebuild a small static geometry subset in a fresh document, never insert source SVG in the page. */
 export function sanitizeSVG(text: string): string {
     if (new TextEncoder().encode(text).length > MAX_SVG || /<!|<\?/.test(text)) throw new Error('Unsupported SVG declarations');
@@ -27,7 +55,20 @@ export function sanitizeSVG(text: string): string {
         const clean = output.createElementNS(SVG_NS, node.localName);
         for (const attr of Array.from(node.attributes)) {
             if (attr.name === 'xmlns' && attr.value === SVG_NS) continue;
-            // No CSS, event handlers, links, paint servers, embedded images, filters or animation.
+            if (node === source.documentElement && attr.name === 'version' && ['1.1','1.2'].includes(attr.value)) continue;
+            if (node === source.documentElement && attr.name === 'style') {
+                const layers=embeddedPNGLayers(attr.value);
+                const width=Number(node.getAttribute('width')),height=Number(node.getAttribute('height'));
+                if (!(width>0&&height>0&&width<=4096&&height<=4096)) throw new Error('Invalid background dimensions');
+                // CSS draws its first background on top; SVG paints the last image on top.
+                for (const uri of layers.reverse()) {
+                    const image=output.createElementNS(SVG_NS,'image');
+                    image.setAttribute('href',uri);image.setAttribute('width',String(width));image.setAttribute('height',String(height));
+                    image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('image-rendering','pixelated');clean.appendChild(image);
+                }
+                continue;
+            }
+            // Source links, general CSS, handlers and animation remain unsupported.
             if (attr.namespaceURI || !attributes.has(attr.name) || !/^[a-zA-Z0-9#.,+\-\s()%]*$/.test(attr.value) || /url\s*\(/i.test(attr.value)) throw new Error('Unsupported SVG attribute');
             clean.setAttribute(attr.name, attr.value);
         }
