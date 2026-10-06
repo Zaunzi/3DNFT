@@ -1,0 +1,4 @@
+<!doctype html><title>Speech bubble check</title><p id="result">Checking…</p><script type="module">
+import * as THREE from 'three';import {SpeechBubbles} from '../src/multiplayer/bubbles.ts';
+const scene=new THREE.Scene(),b=new SpeechBubbles(scene);b.show('player','Hello Doodverse!');b.update(()=>new THREE.Vector3(1,2,3));if(scene.children.length!==1||scene.children[0].position.y!==2.65)throw Error('position');b.show('player','Another message');if(scene.children.length!==1)throw Error('replacement');b.update(()=>undefined);if(scene.children[0].visible)throw Error('out of range');b.update(()=>new THREE.Vector3());setTimeout(()=>{b.update(()=>new THREE.Vector3());if(scene.children.length)throw Error('expiry');b.show('player','cleanup');b.clear();if(scene.children.length)throw Error('cleanup');document.querySelector('#result').textContent='PASS: follows player, replaces old message, hides absent players, expires after six seconds, cleans up.';},6200);
+</script>

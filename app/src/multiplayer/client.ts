@@ -1,3 +1,4 @@
+import {SpeechBubbles} from './bubbles.ts';
 import {GlobalChat} from './chat.ts';
 import {GUEST_DOOD_ID} from '../player/identity.ts';
 import {PerspectiveCamera,Scene,Vector3} from 'three';
@@ -5,6 +6,7 @@ import {PlayerAvatar} from '../player/avatar.ts';
 type Pose={id:string;character:number;x:number;y:number;z:number;yaw:number;animation:'Idle'|'Walk'|'Run'|'Jump'};
 export class Multiplayer {
  private chat=new GlobalChat(text=>{if(!this.accepted||this.socket?.readyState!==WebSocket.OPEN)return false;this.socket.send(JSON.stringify({type:'chat',text}));return true;});
+ private bubbles:SpeechBubbles;private selfId?:string;
  private socket?:WebSocket;private disposed=false;private retry?:ReturnType<typeof setTimeout>;private elapsed=0;
  private resumeToken?:string;private attempted=false;private accepted=false;
  private resolveReady!:()=>void;private rejectReady!:(error:Error)=>void;
@@ -18,13 +20,14 @@ export class Multiplayer {
  private authenticate?: (message:string)=>Promise<{address:string;collection?:string;character:number;signature:string}>;
  private mockCharacter=Number(GUEST_DOOD_ID);
  private scene:Scene;private url:string;private room:string;private status:HTMLElement;
- constructor(scene:Scene,url:string,room:string,authenticate?:Multiplayer['authenticate'],mockCharacter=Number(GUEST_DOOD_ID)){this.mockCharacter=mockCharacter;this.authenticate=authenticate;this.scene=scene;this.url=url;this.room=room;this.status=document.createElement('div');this.status.style.cssText='position:fixed;left:20px;bottom:55px;padding:8px 12px;background:#142e25cc;color:#dbe8d2;font:12px Arial;pointer-events:none';document.body.append(this.status);void this.ready.catch(()=>{});this.deadline=setTimeout(()=>this.fail(),120000);this.keepalive=setInterval(()=>{if(this.lastPose&&this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify(this.lastPose));},1000);this.connect();}
+ constructor(scene:Scene,url:string,room:string,authenticate?:Multiplayer['authenticate'],mockCharacter=Number(GUEST_DOOD_ID)){this.mockCharacter=mockCharacter;this.authenticate=authenticate;this.scene=scene;this.bubbles=new SpeechBubbles(scene);this.url=url;this.room=room;this.status=document.createElement('div');this.status.style.cssText='position:fixed;left:20px;bottom:55px;padding:8px 12px;background:#142e25cc;color:#dbe8d2;font:12px Arial;pointer-events:none';document.body.append(this.status);void this.ready.catch(()=>{});this.deadline=setTimeout(()=>this.fail(),120000);this.keepalive=setInterval(()=>{if(this.lastPose&&this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify(this.lastPose));},1000);this.connect();}
  private connect(){if(this.disposed)return;this.status.textContent='Connecting to nearby players…';try{const u=new URL(this.url);if(u.protocol!=='wss:'&&!(u.protocol==='ws:'&&['localhost','127.0.0.1'].includes(u.hostname)))throw Error();const ws=new WebSocket(u);this.socket=ws;
  ws.onopen=()=>ws.send(JSON.stringify({type:'join',room:this.room,guestCharacter:Number(GUEST_DOOD_ID),character:this.room.startsWith('mock:')?this.mockCharacter:undefined}));
  ws.onmessage=event=>{try{const message=JSON.parse(String(event.data));if(message.type==='authenticated'){if(typeof message.resumeToken==='string')this.resumeToken=message.resumeToken;this.accepted=true;this.chat.setOnline(true);clearTimeout(this.deadline);this.resolveReady();return;}
- if(message.type==='chat'||message.type==='chatError'){this.chat.receive(message);return;}
+ if(message.type==='chat'||message.type==='chatError'){if(this.chat.receive(message)&&message.type==='chat'&&(message.sender===this.selfId||this.remotes.has(message.sender)))this.bubbles.show(message.sender,message.text);return;}
  if(message.type==='authFailed'){this.fail();return;}
  if(message.type==='welcome'){
+  this.selfId=message.id;
   if(this.resumeToken){ws.send(JSON.stringify({type:'resume',token:this.resumeToken}));return;}
   if(!this.authenticate){this.accepted=true;this.chat.setOnline(true);clearTimeout(this.deadline);this.resolveReady();return;}
   if(this.attempted||!message.canAuthenticate||typeof message.message!=='string'||!message.message.startsWith('Doodverse multiplayer login\n')||!message.message.includes(`World: ${this.room}\n`)||message.message.length>=600){this.fail();return;}
@@ -34,8 +37,10 @@ export class Multiplayer {
  ws.onclose=()=>{this.chat.setOnline(false);this.clear();if(this.attempted&&!this.accepted)this.fail();if(!this.disposed){this.status.textContent='Offline · solo play available · reconnecting';this.retry=setTimeout(()=>this.connect(),3000);}};ws.onerror=()=>ws.close();
  }catch{this.fail();}}
  update(anchor:PerspectiveCamera,dt:number,animation:Pose['animation']){this.lastPose={type:'state',x:anchor.position.x,y:anchor.position.y,z:anchor.position.z,yaw:Math.atan2(Math.sin(anchor.rotation.y),Math.cos(anchor.rotation.y)),animation};this.elapsed+=dt;if(this.elapsed>=.1&&this.socket?.readyState===WebSocket.OPEN){this.elapsed=0;this.socket.send(JSON.stringify({type:'state',x:anchor.position.x,y:anchor.position.y,z:anchor.position.z,yaw:Math.atan2(Math.sin(anchor.rotation.y),Math.cos(anchor.rotation.y)),animation}));}
- for(const r of this.remotes.values()){const target=new Vector3(r.pose.x,r.pose.y,r.pose.z);r.camera.position.lerp(target,1-Math.exp(-dt*14));if(r.camera.position.distanceTo(target)>10)r.camera.position.copy(target);const diff=Math.atan2(Math.sin(r.pose.yaw-r.camera.rotation.y),Math.cos(r.pose.yaw-r.camera.rotation.y));r.camera.rotation.y+=diff*(1-Math.exp(-dt*14));r.avatar.update(r.camera,dt,r.pose.animation,10);}}
+ for(const r of this.remotes.values()){const target=new Vector3(r.pose.x,r.pose.y,r.pose.z);r.camera.position.lerp(target,1-Math.exp(-dt*14));if(r.camera.position.distanceTo(target)>10)r.camera.position.copy(target);const diff=Math.atan2(Math.sin(r.pose.yaw-r.camera.rotation.y),Math.cos(r.pose.yaw-r.camera.rotation.y));r.camera.rotation.y+=diff*(1-Math.exp(-dt*14));r.avatar.update(r.camera,dt,r.pose.animation,10);}
+ this.bubbles.update(id=>id===this.selfId?anchor.position:this.remotes.get(id)?.camera.position);
+ }
  useGuest(){this.mockCharacter=Number(GUEST_DOOD_ID);this.authenticate=undefined;this.resumeToken=undefined;if(this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify({type:'guest'}));}
- private clear(){this.remotes.forEach(r=>r.avatar.dispose());this.remotes.clear();}
+ private clear(){this.bubbles.clear();this.remotes.forEach(r=>r.avatar.dispose());this.remotes.clear();}
  dispose(){this.disposed=true;clearTimeout(this.retry);clearTimeout(this.deadline);clearInterval(this.keepalive);this.socket?.close();this.clear();this.status.remove();this.chat.dispose();}
 }

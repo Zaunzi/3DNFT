@@ -34,6 +34,7 @@ export class GlobalChat {
   name.title='Mute this player for this session';name.onclick=()=>{this.muted.add(m.sender);this.status.textContent=`Muted ${name.textContent}`;};
   text.textContent=m.text;row.append(name,text);const atBottom=this.log.scrollHeight-this.log.scrollTop-this.log.clientHeight<40;this.log.append(row);while(this.log.childElementCount>100)this.log.firstElementChild?.remove();if(atBottom)this.log.scrollTop=this.log.scrollHeight;
   if(!this.open){this.unread++;this.toggle.textContent=`Global chat (${Math.min(this.unread,99)}${this.unread>99?'+':''})`;}
+  return true;
  }
  dispose(){this.root.remove();}
 }
