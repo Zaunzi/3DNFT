@@ -35,6 +35,16 @@ export function createPresenceServer({origins=['http://127.0.0.1:5177'],maxPlaye
       peer.authBusy=true;const message=peer.challenge;peer.authMessage=message;peer.challenge=null;
       try{if(Date.now()<peer.challengeExpires&&peer.room.startsWith(`onchain:${chainId}:`)&&await checkIdentity(message,m)&&peer.authMessage===message&&ws.readyState===WebSocket.OPEN){peer.character=m.character;peer.auth=m;peer.authTime=Date.now();const resumeToken=randomUUID();peer.resumeToken=resumeToken;sessions.set(resumeToken,{room:peer.room,message,auth:m,expires:Date.now()+sessionTTL});while(sessions.size>maxPlayers*4)sessions.delete(sessions.keys().next().value);ws.send(JSON.stringify({type:'authenticated',resumeToken}));}else ws.send(JSON.stringify({type:'authFailed'}));}catch{ws.send(JSON.stringify({type:'authFailed'}));}finally{peer.authBusy=false;}return;
     }
+    if(m.type==='chat'&&peer.room){
+      if(typeof m.text!=='string'||m.text.length>280){ws.send(JSON.stringify({type:'chatError',message:'Keep messages under 280 characters.'}));return;}
+      const text=m.text.replace(/[\u0000-\u001f\u007f-\u009f]/g,' ').trim();
+      if(!text)return;
+      if(peer.lastChat&&now-peer.lastChat<1500){ws.send(JSON.stringify({type:'chatError',message:'Please wait a moment before sending again.'}));return;}
+      peer.lastChat=now;
+      const packet=JSON.stringify({type:'chat',id:randomUUID(),sender:peer.id,character:peer.character,guest:!peer.authTime,text,time:now});
+      for(const p of peers.values())if(p.room===peer.room&&p.ws.readyState===WebSocket.OPEN&&p.ws.bufferedAmount<65536)p.ws.send(packet);
+      return;
+    }
     if(m.type!=='state'||!peer.room)throw Error();
     const {x,y,z,yaw,animation}=m;
     if(![x,y,z,yaw].every(Number.isFinite)||x<0||x>6400||z<0||z>3200||Math.abs(y)>1000||Math.abs(yaw)>Math.PI||!['Idle','Walk','Run','Jump'].includes(animation))throw Error();

@@ -41,3 +41,15 @@ test('production character authentication accepts only the latest collection des
   if(collection===original)assert.equal(calls,0);else assert.ok(calls>=2);ws.close();
  }
 });
+
+test('global chat reaches distant players, isolates worlds and uses server identity',async t=>{
+ const url=await setup(t),a=await connect(url),b=await connect(url),c=await connect(url);let leaked=false;
+ for(const [ws,r]of [[a,room],[b,room],[c,room.replace('mock:','onchain:')]]){ws.send(JSON.stringify({type:'join',room:r,guestCharacter:42}));await message(ws,'welcome');}
+ c.on('message',raw=>{if(JSON.parse(raw).type==='chat')leaked=true;});
+ a.send(JSON.stringify(pose));b.send(JSON.stringify({...pose,x:6000,z:3000}));
+ const received=message(b,'chat'),echo=message(a,'chat');a.send(JSON.stringify({type:'chat',text:' Hello world ',character:999,guest:false,sender:'spoof'}));
+ const m=await received;assert.equal(m.text,'Hello world');assert.equal(m.character,42);assert.equal(m.guest,true);assert.notEqual(m.sender,'spoof');assert.equal((await echo).id,m.id);
+ const limited=message(a,'chatError');a.send(JSON.stringify({type:'chat',text:'Spam'}));assert.match((await limited).message,/wait/);
+ const oversized=message(b,'chatError');b.send(JSON.stringify({type:'chat',text:'x'.repeat(281)}));assert.match((await oversized).message,/280/);
+ c.send(JSON.stringify(pose));await message(c,'snapshot');assert.equal(leaked,false);
+});
